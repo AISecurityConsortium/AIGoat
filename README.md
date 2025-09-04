@@ -69,45 +69,7 @@ cp env.example .env
 nano .env
 ```
 
-### **3. Backend Setup**
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate          # Linux/macOS
-# or
-venv\Scripts\activate             # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Navigate to backend
-cd backend
-
-# Run migrations
-python manage.py migrate
-
-# Initialize demo data
-python manage.py initialize_app
-
-# Create admin user (optional)
-python manage.py createsuperuser
-```
-
-### **4. Frontend Setup**
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
-npm install
-
-# Build production version (optional)
-npm run build
-```
-
-### **5. Ollama Setup**
+### **3. Ollama Setup**
 ```bash
 # Install Ollama
 curl -fsSL https://ollama.ai/install.sh | sh
@@ -122,6 +84,32 @@ ollama pull mistral
 ollama list
 ```
 
+### **3. Project Setup**
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate          # Linux/macOS
+# or
+venv\Scripts\activate             # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### **4. Start the application**
+```bash
+# Start all services (recommended)
+./start_app.sh
+
+# Start with database cleanup
+./start_app.sh --clean-db
+
+# Non-interactive mode
+echo "y" | ./start_app.sh --clean-db
+```
+
 ## 👥 User Accounts
 
 ### **Demo Users (Auto-created)**
@@ -134,20 +122,6 @@ ollama list
 ### **User Capabilities**
 - **Customers**: Product browsing, cart management, order placement, reviews
 - **Admin**: User management, inventory control, AI service monitoring, system configuration
-
-## 🎮 Application Management
-
-### **Start Application**
-```bash
-# Start all services (recommended)
-./start_app.sh
-
-# Start with database cleanup
-./start_app.sh --clean-db
-
-# Non-interactive mode
-echo "y" | ./start_app.sh --clean-db
-```
 
 ### **Stop Application**
 ```bash
@@ -166,17 +140,6 @@ echo "y" | ./start_app.sh --clean-db
 - `--force`: Force kill all processes
 - `--help`: Display usage information
 
-## 🌐 Application Access
-
-### **Service URLs**
-- **Frontend Application**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **Admin Dashboard**: http://localhost:3000/admin-dashboard
-- **AI Service Status**: http://localhost:3000/ollama-ai-service
-
-### **Default Credentials**
-- **Customer Login**: alice/password123 or bob/password123
-- **Admin Login**: admin/admin123
 
 ## 📁 Project Structure
 
@@ -245,11 +208,6 @@ RedTeamShop/
 - **Smart Recommendations**: AI-driven product suggestions
 - **Natural Language Queries**: Conversational product search
 
-### **Security Testing Features**
-- **Vulnerability Injection Points**: Multiple attack vectors
-- **Monitoring & Logging**: Comprehensive security event tracking
-- **Admin Controls**: AI service management and monitoring
-- **Context Reset**: Model memory management capabilities
 
 ## 🤖 Ollama Management
 
@@ -327,39 +285,7 @@ RedTeamShop/
 - **Rate Limiting Bypass**: Circumventing usage restrictions
 - **Cost Manipulation**: Exploiting billing mechanisms
 
-## 🔧 Development & Testing
 
-### **Running in Development Mode**
-```bash
-# Backend (Django)
-cd backend
-python manage.py runserver
-
-# Frontend (React) - new terminal
-cd frontend
-npm start
-```
-
-### **Testing Vulnerabilities**
-```bash
-# Run security tests
-python manage.py test shop.tests.test_vulnerabilities
-
-# Run AI security tests
-python manage.py test shop.tests.test_ai_security
-```
-
-### **Code Quality**
-```bash
-# Python linting
-flake8 backend/ --max-line-length=120
-
-# JavaScript linting
-cd frontend && npm run lint
-
-# Type checking
-cd frontend && npm run type-check
-```
 
 ## 🤝 Contributing
 
@@ -397,3 +323,5 @@ We welcome contributions from the security research community!
 ---
 
 **Happy Security Research! 🔒🚀** 
+
+**With ❤️ from [Farooq](https://www.linkedin.com/in/farooqmohammad/) & [Nal](https://www.linkedin.com/in/nalinikanth-m/)**
