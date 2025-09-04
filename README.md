@@ -1,6 +1,6 @@
 # 🛒 Red Team Shop - LLM Vulnerability Testing Platform
 
-> **An internally developed vulnerable application designed to educate security professionals about LLM-based vulnerabilities in a controlled, realistic e-commerce environment.**
+> **An intentionally developed vulnerable application designed to educate security professionals about LLM-based vulnerabilities in a controlled, realistic e-commerce environment.**
 
 ## 📋 Project Overview
 
@@ -56,8 +56,8 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 ### **1. Clone Repository**
 ```bash
-git clone https://github.com/yourusername/red-team-shop.git
-cd red-team-shop
+git clone https://github.com/AISecurityConsortium/AIGoat.git
+cd AIGoat/
 ```
 
 ### **2. Environment Setup**
