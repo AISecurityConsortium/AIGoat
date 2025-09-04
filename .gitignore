@@ -1,0 +1,62 @@
+# Python virtual environment
+venv/
+
+# Development artifacts and logs
+*.log
+*.pid
+*.port
+backend.log
+django.log
+frontend.log
+
+# Database files (will be recreated on startup)
+db.sqlite3
+chroma_db/
+
+# Build artifacts
+frontend/build/
+frontend/node_modules/
+
+# System files
+.DS_Store
+**/.DS_Store
+
+# Unused system prompt files
+system_prompt_content.txt
+
+# Development documentation (keep only README.md)
+APP_RESTART_VERIFICATION.md
+IMPORT_CLEANUP_SUMMARY.md
+OLLAMA_INTEGRATION_GUIDE.md
+OLLAMA_INTEGRATION_SUMMARY.md
+DATABASE_CLEANUP_FEATURE.md
+DEMO_USER_PROFILES.md
+FEATURE_FLAGS_GUIDE.md
+PRODUCT_FEATURES_ROADMAP.md
+
+# Media files (user uploads)
+backend/media/
+backend/uploaded_tips/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Keep example environment file
+!env.example
+
+# Keep license file
+!LICENSE
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

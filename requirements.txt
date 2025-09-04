@@ -1,0 +1,61 @@
+# Red Team Shop - Complete Requirements
+# Core Django and REST Framework
+Django==5.2.5
+djangorestframework==3.16.1
+django-cors-headers==4.7.0
+
+# Database and ORM
+sqlparse==0.5.3
+
+# HTTP and API
+requests==2.32.4
+httpx==0.28.1
+httpcore==1.0.9
+urllib3==2.5.0
+
+# AI and Machine Learning
+sentence-transformers==5.1.0
+transformers==4.55.4
+torch==2.8.0
+scikit-learn==1.7.1
+scipy==1.16.1
+numpy==2.3.2
+tokenizers==0.21.4
+
+# Vector Database
+chromadb==1.0.20
+grpcio==1.74.0
+protobuf==6.32.0
+
+# Image Processing
+Pillow==11.3.0
+
+# Authentication and Security
+bcrypt==4.3.0
+oauthlib==3.3.1
+requests-oauthlib==2.0.0
+
+# Utilities
+python-dotenv==1.1.1
+python-dateutil==2.9.0.post0
+PyYAML==6.0.2
+click==8.2.1
+tqdm==4.67.1
+rich==14.1.0
+
+# Development and Testing
+watchfiles==1.1.0
+uvicorn==0.35.0
+uvloop==0.21.0
+
+# Note: This requirements.txt includes all necessary dependencies for:
+# - Django web framework and REST API
+# - RAG system with sentence transformers and ChromaDB
+# - Image handling and storage
+# - Authentication and security
+# - Development tools and utilities
+# 
+# Installation: pip install -r requirements.txt
+# 
+# Note: The 'ollama' Python package is not included since we use direct HTTP API calls
+# to the Ollama service instead of the Python library.
