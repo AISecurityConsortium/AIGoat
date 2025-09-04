@@ -69,10 +69,19 @@ cp env.example .env
 nano .env
 ```
 
-### **3. Ollama Setup**
+### **3. Ollama Setup (Skip if running already)**
 ```bash
-# Install Ollama
+# Install Ollama - Linux
 curl -fsSL https://ollama.ai/install.sh | sh
+
+# Install Ollama - Mac
+brew install ollama
+
+# Install Ollama - Windows
+Go to official site to download installer: https://ollama.com/download/windows
+
+# Verify the installation
+ollama --version
 
 # Start Ollama service
 ollama serve
