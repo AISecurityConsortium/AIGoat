@@ -89,6 +89,60 @@ initialize_app() {
     # Navigate to backend directory
     cd backend
     
+    # Ensure media directory exists and has images
+    if [ ! -d "media" ] || [ ! -f "media/The \"Code Break\" Hacker Cap (Hacker Cap).png" ]; then
+        echo -e "${BLUE}📸 Setting up product images...${NC}"
+        mkdir -p media
+        if [ -d "../imgs" ]; then
+            cp ../imgs/*.png media/ 2>/dev/null || true
+            
+            # Fix filename encoding issues (smart quotes to regular quotes)
+            cd media
+            for file in *"Jailbreak & Chill"*; do [ -f "$file" ] && mv "$file" "Jailbreak and Chill Sticker.png"; done
+            for file in *"Prompt Manipulator"*; do [ -f "$file" ] && mv "$file" "Prompt Manipulator Laptop Sticker.png"; done
+            for file in *"Pwn. Prompt. Repeat."*; do [ -f "$file" ] && mv "$file" "Pwn. Prompt. Repeat. Cold Brew Glass.png"; done
+            cd ..
+            
+            echo -e "${GREEN}✅ Product images copied and configured${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Images directory not found, some product images may not display${NC}"
+        fi
+        
+        # Create RTS logo if it doesn't exist
+        if [ ! -f "media/rts-logo.png" ] || [ ! -f "media/rts-logo.svg" ]; then
+            echo -e "${BLUE}🎨 Creating Red Team Shop logo...${NC}"
+            if [ -f "../../frontend/public/logo192.png" ]; then
+                cp ../../frontend/public/logo192.png media/rts-logo.png
+                echo -e "${GREEN}✅ RTS PNG logo created${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Could not create RTS PNG logo${NC}"
+            fi
+            
+            # Create SVG logo
+            cat > media/rts-logo.svg << 'EOF'
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="96" cy="96" r="90" fill="#d32f2f" stroke="#b71c1c" stroke-width="4"/>
+  
+  <!-- Shield shape -->
+  <path d="M96 20 L140 40 L140 80 Q140 120 96 140 Q52 120 52 80 L52 40 Z" fill="#ffffff" stroke="#d32f2f" stroke-width="2"/>
+  
+  <!-- RTS Text -->
+  <text x="96" y="60" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#d32f2f">RTS</text>
+  
+  <!-- Security icon -->
+  <circle cx="96" cy="100" r="8" fill="#d32f2f"/>
+  <path d="M88 100 L92 104 L104 92" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Red Team text -->
+  <text x="96" y="125" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#d32f2f">RED TEAM</text>
+  <text x="96" y="140" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#d32f2f">SHOP</text>
+</svg>
+EOF
+            echo -e "${GREEN}✅ RTS SVG logo created${NC}"
+        fi
+    fi
+    
     # Run migrations
     echo -e "${BLUE}🗄️  Running database migrations...${NC}"
     if ! python manage.py migrate; then

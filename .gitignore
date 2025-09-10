@@ -355,9 +355,14 @@ frontend.log
 # *.sqlite3
 
 # Media files (user uploads)
-# Uncomment if you want to ignore media files
+# Note: Product images in backend/media/ are tracked, but user uploads should be ignored
+# Uncomment if you want to ignore all media files
 # media/
 # uploads/
+
+# Ignore user-uploaded media but keep product images
+backend/media/uploads/
+backend/media/user_uploads/
 
 # =============================================================================
 # Security & Secrets
