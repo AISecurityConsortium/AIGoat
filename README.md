@@ -54,19 +54,21 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 ## 🚀 Installation & Setup
 
-### **1. Clone Repository**
+### **1. Pre requisite**
+```bash
+python3
+python3-venv
+pip
+node.js
+npm
+ollama
+
+```
+
+### **2. Clone Repository**
 ```bash
 git clone https://github.com/AISecurityConsortium/AIGoat.git
 cd AIGoat/
-```
-
-### **2. Environment Setup**
-```bash
-# Copy environment template
-cp env.example .env
-
-# Edit configuration (optional)
-nano .env
 ```
 
 ### **3. Ollama Setup (Skip if running already)**
@@ -83,7 +85,7 @@ Go to official site to download installer: https://ollama.com/download/windows
 # Verify the installation
 ollama --version
 
-# Start Ollama service
+# Start Ollama service if it's not running already 
 ollama serve
 
 # Pull Mistral model (in new terminal)
@@ -164,6 +166,7 @@ RedTeamShop/
 │   │   ├── views.py           # API endpoints
 │   │   ├── rag_service.py     # AI/RAG integration
 │   │   └── urls.py            # Application routing
+│   ├── media                  # Product images
 │   ├── manage.py              # Django management
 │   └── requirements.txt       # Python dependencies
 ├── frontend/                    # React frontend application
