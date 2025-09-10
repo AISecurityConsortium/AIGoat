@@ -46,20 +46,44 @@ initialize_app() {
     # Check if virtual environment exists
     if [ ! -d "venv" ]; then
         echo -e "${YELLOW}⚠️  Virtual environment not found. Creating one...${NC}"
-        python3 -m venv venv
+        if ! python3 -m venv venv; then
+            echo -e "${RED}❌ Failed to create virtual environment${NC}"
+            echo -e "${YELLOW}💡 Make sure python3-venv is installed:${NC}"
+            local os=$(detect_os)
+            case $os in
+                "linux")
+                    echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
+                    echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
+                    echo -e "${YELLOW}   Fedora: sudo dnf install python3-venv${NC}"
+                    ;;
+                "macos")
+                    echo -e "${YELLOW}   Usually included with Python 3.3+${NC}"
+                    ;;
+            esac
+            return 1
+        fi
     fi
     
     # Activate virtual environment
     echo -e "${BLUE}📦 Activating virtual environment...${NC}"
     source venv/bin/activate
     
+    # Create .env file if it doesn't exist
+    if [ ! -f ".env" ] && [ -f "env.example" ]; then
+        echo -e "${BLUE}📝 Creating .env file from template...${NC}"
+        cp env.example .env
+    fi
+    
     # Install dependencies if requirements.txt exists
-    if [ -f "backend/requirements.txt" ]; then
+    if [ -f "requirements.txt" ]; then
+        echo -e "${BLUE}📦 Installing Python dependencies...${NC}"
+        pip install -r requirements.txt
+    elif [ -f "backend/requirements.txt" ]; then
         echo -e "${BLUE}📦 Installing Python dependencies...${NC}"
         pip install -r backend/requirements.txt
     else
         echo -e "${BLUE}📦 Installing Django dependencies...${NC}"
-        pip install django djangorestframework django-cors-headers Pillow requests
+        pip install django djangorestframework django-cors-headers Pillow requests python-dotenv
     fi
     
     # Navigate to backend directory
@@ -67,11 +91,20 @@ initialize_app() {
     
     # Run migrations
     echo -e "${BLUE}🗄️  Running database migrations...${NC}"
-    python manage.py migrate
+    if ! python manage.py migrate; then
+        echo -e "${RED}❌ Database migration failed${NC}"
+        echo -e "${YELLOW}💡 This might be due to missing dependencies or configuration issues${NC}"
+        echo -e "${YELLOW}💡 Try running: pip install -r ../requirements.txt${NC}"
+        echo -e "${YELLOW}💡 Or check if all required packages are installed${NC}"
+        return 1
+    fi
     
     # Initialize application with all data
     echo -e "${BLUE}📊 Initializing application data...${NC}"
-    python manage.py initialize_app
+    if ! python manage.py initialize_app; then
+        echo -e "${YELLOW}⚠️  Application initialization failed, but continuing...${NC}"
+        echo -e "${YELLOW}💡 The app will start but may need manual data setup${NC}"
+    fi
     
     # Return to root directory
     cd ..
@@ -139,7 +172,21 @@ start_frontend() {
     # Check if node_modules exists
     if [ ! -d "node_modules" ]; then
         echo -e "${BLUE}📦 Installing Node.js dependencies...${NC}"
-        npm install
+        if ! npm install; then
+            echo -e "${RED}❌ Failed to install Node.js dependencies${NC}"
+            echo -e "${YELLOW}💡 Make sure Node.js and npm are properly installed:${NC}"
+            local os=$(detect_os)
+            case $os in
+                "linux")
+                    echo -e "${YELLOW}   Ubuntu/Debian: curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs${NC}"
+                    echo -e "${YELLOW}   Or use Node Version Manager: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash${NC}"
+                    ;;
+                "macos")
+                    echo -e "${YELLOW}   brew install node${NC}"
+                    ;;
+            esac
+            return 1
+        fi
     fi
     
     # Check if port 3000 is available
@@ -183,6 +230,19 @@ start_frontend() {
     return 1
 }
 
+# Function to detect OS
+detect_os() {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        echo "windows"
+    else
+        echo "unknown"
+    fi
+}
+
 # Function to check Ollama
 check_ollama() {
     echo -e "${BLUE}🤖 Checking Ollama AI service...${NC}"
@@ -190,7 +250,28 @@ check_ollama() {
     # Check if Ollama is installed
     if ! command -v ollama &> /dev/null; then
         echo -e "${YELLOW}⚠️  Ollama not found. AI features will not work${NC}"
-        echo -e "${YELLOW}💡 To install Ollama: brew install ollama${NC}"
+        
+        # Provide OS-specific installation instructions
+        local os=$(detect_os)
+        case $os in
+            "linux")
+                echo -e "${YELLOW}💡 To install Ollama on Linux:${NC}"
+                echo -e "${YELLOW}   curl -fsSL https://ollama.ai/install.sh | sh${NC}"
+                echo -e "${YELLOW}   Or visit: https://ollama.ai/download/linux${NC}"
+                ;;
+            "macos")
+                echo -e "${YELLOW}💡 To install Ollama on macOS:${NC}"
+                echo -e "${YELLOW}   brew install ollama${NC}"
+                echo -e "${YELLOW}   Or visit: https://ollama.ai/download/mac${NC}"
+                ;;
+            "windows")
+                echo -e "${YELLOW}💡 To install Ollama on Windows:${NC}"
+                echo -e "${YELLOW}   Visit: https://ollama.ai/download/windows${NC}"
+                ;;
+            *)
+                echo -e "${YELLOW}💡 To install Ollama, visit: https://ollama.ai/download${NC}"
+                ;;
+        esac
         return 0  # Continue with app startup
     fi
     
@@ -238,24 +319,93 @@ cleanup() {
 # Set up trap to cleanup on script exit (only on error or interrupt)
 trap 'echo -e "${RED}🛑 Received interrupt signal${NC}"; cleanup; exit 1' INT TERM
 
+# Function to check Linux system packages
+check_linux_packages() {
+    local os=$(detect_os)
+    if [ "$os" = "linux" ]; then
+        echo -e "${BLUE}🔍 Checking Linux system packages...${NC}"
+        
+        # Check for curl
+        if ! command -v curl &> /dev/null; then
+            echo -e "${YELLOW}⚠️  curl not found. Installing...${NC}"
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get update && sudo apt-get install -y curl
+            elif command -v yum &> /dev/null; then
+                sudo yum install -y curl
+            elif command -v dnf &> /dev/null; then
+                sudo dnf install -y curl
+            else
+                echo -e "${RED}❌ Please install curl manually${NC}"
+                return 1
+            fi
+        fi
+        
+        # Check for lsof
+        if ! command -v lsof &> /dev/null; then
+            echo -e "${YELLOW}⚠️  lsof not found. Installing...${NC}"
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get install -y lsof
+            elif command -v yum &> /dev/null; then
+                sudo yum install -y lsof
+            elif command -v dnf &> /dev/null; then
+                sudo dnf install -y lsof
+            else
+                echo -e "${RED}❌ Please install lsof manually${NC}"
+                return 1
+            fi
+        fi
+        
+        echo -e "${GREEN}✅ Linux system packages are available${NC}"
+    fi
+}
+
 # Main execution
 echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
+
+# Check Linux system packages first
+if ! check_linux_packages; then
+    echo -e "${RED}❌ Failed to install required system packages${NC}"
+    exit 1
+fi
 
 # Check if Python is available
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}❌ Python 3 is not installed${NC}"
+    local os=$(detect_os)
+    case $os in
+        "linux")
+            echo -e "${YELLOW}💡 Install Python 3:${NC}"
+            echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3 python3-pip${NC}"
+            echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3 python3-pip${NC}"
+            echo -e "${YELLOW}   Fedora: sudo dnf install python3 python3-pip${NC}"
+            ;;
+        "macos")
+            echo -e "${YELLOW}💡 Install Python 3: brew install python3${NC}"
+            ;;
+    esac
     exit 1
 fi
 
 # Check if Node.js is available
 if ! command -v node &> /dev/null; then
     echo -e "${RED}❌ Node.js is not installed${NC}"
+    local os=$(detect_os)
+    case $os in
+        "linux")
+            echo -e "${YELLOW}💡 Install Node.js:${NC}"
+            echo -e "${YELLOW}   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs${NC}"
+            ;;
+        "macos")
+            echo -e "${YELLOW}💡 Install Node.js: brew install node${NC}"
+            ;;
+    esac
     exit 1
 fi
 
 # Check if npm is available
 if ! command -v npm &> /dev/null; then
     echo -e "${RED}❌ npm is not installed${NC}"
+    echo -e "${YELLOW}💡 npm usually comes with Node.js. Try reinstalling Node.js${NC}"
     exit 1
 fi
 

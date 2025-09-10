@@ -1,62 +1,445 @@
-# Python virtual environment
+# Red Team Shop - Git Ignore File
+# This file specifies intentionally untracked files that Git should ignore
+
+# =============================================================================
+# Python & Django
+# =============================================================================
+
+# Virtual Environment
 venv/
+env/
+ENV/
+.venv/
+.env/
+.ENV/
 
-# Development artifacts and logs
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django specific
 *.log
-*.pid
-*.port
-backend.log
-django.log
-frontend.log
-
-# Database files (will be recreated on startup)
+local_settings.py
 db.sqlite3
-chroma_db/
+db.sqlite3-journal
+media/
+staticfiles/
+static/
 
-# Build artifacts
-frontend/build/
-frontend/node_modules/
+# Django migrations (keep initial migrations, ignore auto-generated ones)
+# Uncomment the next line if you want to ignore all migrations
+# */migrations/*.py
+# !*/migrations/__init__.py
 
-# System files
-.DS_Store
-**/.DS_Store
-
-# Unused system prompt files
-system_prompt_content.txt
-
-# Development documentation (keep only README.md)
-APP_RESTART_VERIFICATION.md
-IMPORT_CLEANUP_SUMMARY.md
-OLLAMA_INTEGRATION_GUIDE.md
-OLLAMA_INTEGRATION_SUMMARY.md
-DATABASE_CLEANUP_FEATURE.md
-DEMO_USER_PROFILES.md
-FEATURE_FLAGS_GUIDE.md
-PRODUCT_FEATURES_ROADMAP.md
-
-# Media files (user uploads)
-backend/media/
-backend/uploaded_tips/
-
-# Environment variables
+# Django secret key
 .env
 .env.local
-.env.development
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Keep example environment file
-!env.example
+# =============================================================================
+# Node.js & React
+# =============================================================================
 
-# Keep license file
-!LICENSE
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# IDE and editor files
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# =============================================================================
+# AI/ML & Data Science
+# =============================================================================
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# =============================================================================
+# Vector Databases & AI Models
+# =============================================================================
+
+# ChromaDB
+chroma_db/
+*.chroma
+
+# Model files
+*.model
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+
+# Embeddings cache
+embeddings_cache/
+*.embeddings
+
+# =============================================================================
+# System Files
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# IDE & Editor Files
+# =============================================================================
+
+# VSCode
 .vscode/
+*.code-workspace
+
+# IntelliJ IDEA
 .idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
 *.swp
 *.swo
 *~
 
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================================================
+# Logs & Debugging
+# =============================================================================
+
+# Log files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Debug files
+*.debug
+*.trace
+
+# =============================================================================
+# Application Specific
+# =============================================================================
+
+# Process ID files
+*.pid
+backend.pid
+frontend.pid
+backend.port
+frontend.port
+
+# Application logs
+backend.log
+frontend.log
+*.log
+
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.backup
+*.orig
+
+# Database files (except for development)
+# Uncomment if you want to ignore all database files
+# *.db
+# *.sqlite
+# *.sqlite3
+
+# Media files (user uploads)
+# Uncomment if you want to ignore media files
+# media/
+# uploads/
+
+# =============================================================================
+# Security & Secrets
+# =============================================================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# API keys and secrets
+secrets.json
+config.json
+credentials.json
+*.key
+*.pem
+*.p12
+*.pfx
+
+# =============================================================================
+# Build & Deployment
+# =============================================================================
+
+# Build outputs
+build/
+dist/
+out/
+target/
+
+# Deployment files
+docker-compose.override.yml
+.dockerignore
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+# Test coverage
+coverage/
+.nyc_output/
+htmlcov/
+
+# Test results
+test-results/
+junit.xml
+coverage.xml
+
+# =============================================================================
+# Documentation
+# =============================================================================
+
+# Generated documentation
+docs/_build/
+site/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
