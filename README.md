@@ -16,12 +16,6 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 ### **Hardware Requirements**
 
-#### **Minimum Configuration**
-- **CPU**: 2 cores
-- **RAM**: 8GB
-- **Storage**: 20GB SSD
-- **Network**: Stable internet connection
-
 #### **Recommended Configuration** ⭐
 - **CPU**: 2 cores
 - **RAM**: 16GB
@@ -42,9 +36,13 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 ## 🚀 Platform-Specific Setup
 
+- [**macOS Setup**](#macos-setup)
+- [**Linux Setup**](#linux-debian-setup)
+- [**Windows Setup**](#windows-support-)
+
 ### **macOS Setup**
 
-#### **1. Install Prerequisites**
+#### **1. Install Prerequisites (Skip if already installed)**
 ```bash
 # Install Homebrew (if not already installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -59,7 +57,7 @@ npm --version
 git --version
 ```
 
-#### **2. Install Ollama**
+#### **2. Install Ollama (Skip if already installed)**
 ```bash
 # Install Ollama
 brew install ollama
@@ -89,21 +87,17 @@ source venv/bin/activate
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependencies
-cd frontend
-npm install
-cd ..
 ```
 
-### **Linux Setup**
+### **Linux (Debian) Setup**
 
-#### **1. Install Prerequisites (Ubuntu/Debian)**
+#### **1. Install Prerequisites (Ubuntu/Debian) (Skip if already installed)**
 ```bash
 # Update package list
 sudo apt update
 
 # Install required software
-sudo apt install -y python3.11 python3.11-venv nodejs npm git curl
+sudo apt install -y python3.11 python3-venv nodejs npm git curl
 
 # Verify installations
 python3 --version
@@ -112,7 +106,7 @@ npm --version
 git --version
 ```
 
-#### **2. Install Ollama**
+#### **2. Install Ollama (Skip if already installed)**
 ```bash
 # Install Ollama
 curl -fsSL https://ollama.ai/install.sh | sh
@@ -142,10 +136,6 @@ source venv/bin/activate
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependencies
-cd frontend
-npm install
-cd ..
 ```
 
 ### **Windows Support** 🚧
@@ -165,9 +155,9 @@ cp env.example .env
 nano .env  # or use your preferred editor
 ```
 
-#### **2. Local Development Configuration**
+#### **2. Local Deployment Configuration**
 ```bash
-# .env file for local development
+# .env file for local deployment
 SECRET_KEY=your-secret-key-here
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
@@ -185,14 +175,14 @@ REACT_APP_API_URL=http://localhost:8000
 # .env file for cloud deployment
 SECRET_KEY=your-super-secure-secret-key-here
 DEBUG=False
-ALLOWED_HOSTS=your-domain.com,your-ip-address
+ALLOWED_HOSTS=your-domain.com,your-ip-address,localhost #localhost is needed in ALLOWED_HOSTS for cloud deployment. Ensure it's always there irrespective of your deployment choice. 
 
 # AI Service Configuration
 OLLAMA_BASE_URL=http://your-ollama-service:11434
 OLLAMA_MODEL=mistral
 
 # Frontend Configuration
-REACT_APP_API_URL=http://your-backend-api:8000
+REACT_APP_API_URL=http://your-domain.com:8000
 
 # React Development Server Configuration for Cloud
 DANGEROUSLY_DISABLE_HOST_CHECK=true
@@ -236,12 +226,10 @@ RAG_TIMEOUT=60                # Standard timeout
 # Start with database cleanup
 ./start_app.sh --clean-db
 
-# Non-interactive mode
-echo "y" | ./start_app.sh --clean-db
 ```
 
 ### **Application URLs**
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000 
 - **Backend API**: http://localhost:8000
 - **Ollama Service**: http://localhost:11434
 
@@ -341,82 +329,24 @@ AIGoat/
 
 ### **Currently Available for Testing**
 
-#### **LLM01: Prompt Injection**
-- **Direct Injection**: Malicious prompts in user input
-- **Indirect Injection**: Injection via product reviews and metadata
-- **Context Manipulation**: Exploiting conversation history
-- **System Prompt Leakage**: Revealing system instructions
-
-#### **LLM02: Sensitive Information Disclosure**
-- **Data Leakage**: Exposing internal system information
-- **User Privacy**: Unauthorized access to personal data
-- **Business Logic**: Revealing application internals
-- **Configuration Disclosure**: Exposing system settings
-
-#### **LLM04: Data Poisoning**
-- **Knowledge Base Manipulation**: Corrupting product information
-- **Training Data Pollution**: Injecting false information
-- **Persistent Attacks**: Long-term data corruption
-- **Review Poisoning**: Manipulating product reviews
-
-#### **LLM07: System Prompt Leakage**
-- **Prompt Extraction**: Revealing system instructions
-- **Security Bypass**: Circumventing access controls
-- **Configuration Disclosure**: Exposing system settings
-- **Internal Logic Exposure**: Revealing application internals
-
-#### **LLM08: Misinformation**
-- **False Information**: Generating incorrect product details
-- **Hallucination**: Creating non-existent product features
-- **Confidence Manipulation**: High-confidence false responses
-- **Fabricated Data**: Generating fake product information
+| Vulnerability | Description | Attack Vectors | Impact |
+|---------------|-------------|----------------|---------|
+| **LLM01: Prompt Injection** | Malicious prompts in user input | • Direct Injection<br>• Indirect Injection via reviews<br>• Context Manipulation<br>• System Prompt Leakage | • Bypass security controls<br>• Extract sensitive information<br>• Manipulate AI behavior |
+| **LLM02: Sensitive Information Disclosure** | Unauthorized access to sensitive data | • Data Leakage<br>• User Privacy violations<br>• Business Logic exposure<br>• Configuration Disclosure | • Privacy breaches<br>• Competitive intelligence loss<br>• System compromise |
+| **LLM04: Data Poisoning** | Corrupting training/knowledge data | • Knowledge Base Manipulation<br>• Training Data Pollution<br>• Persistent Attacks<br>• Review Poisoning | • AI model corruption<br>• False information propagation<br>• Long-term system damage |
+| **LLM07: System Prompt Leakage** | Revealing internal system instructions | • Prompt Extraction<br>• Security Bypass<br>• Configuration Disclosure<br>• Internal Logic Exposure | • Security control bypass<br>• System architecture exposure<br>• Attack surface expansion |
+| **LLM08: Misinformation** | Generating false or misleading information | • False Information<br>• Hallucination<br>• Confidence Manipulation<br>• Fabricated Data | • Decision-making corruption<br>• Trust degradation<br>• Business impact |
 
 ### **Upcoming Vulnerabilities** 🚧
 
-#### **LLM03: Supply Chain Vulnerabilities**
-- **Model Tampering**: Compromised model weights
-- **Dependency Attacks**: Malicious package injection
-- **Update Poisoning**: Corrupted model updates
+| Vulnerability | Description | Attack Vectors | Expected Impact |
+|---------------|-------------|----------------|-----------------|
+| **LLM03: Supply Chain Vulnerabilities** | Compromised model or dependencies | • Model Tampering<br>• Dependency Attacks<br>• Update Poisoning | • Complete system compromise<br>• Backdoor installation<br>• Persistent access |
+| **LLM05: Improper Output Handling** | Malicious code or data in outputs | • Malicious Code Generation<br>• Data Exfiltration<br>• Format Injection | • Code execution<br>• Data theft<br>• System takeover |
+| **LLM06: Excessive Agency** | AI performing unauthorized actions | • Unauthorized Actions<br>• Privilege Escalation<br>• System Modification | • Unauthorized system changes<br>• Privilege escalation<br>• Business logic bypass |
+| **LLM09: Vector and Embedding Weaknesses** | Manipulating AI understanding | • Adversarial Examples<br>• Embedding Poisoning<br>• Similarity Attacks | • AI model confusion<br>• Semantic understanding corruption<br>• Search/retrieval manipulation |
+| **LLM10: Unbounded Consumption** | Resource exhaustion attacks | • Resource Exhaustion<br>• Rate Limiting Bypass<br>• Cost Manipulation | • Service disruption<br>• Financial impact<br>• DoS attacks |
 
-#### **LLM05: Improper Output Handling**
-- **Malicious Code**: Executable code generation
-- **Data Exfiltration**: Unauthorized data transmission
-- **Format Injection**: Exploiting output parsing
-
-#### **LLM06: Excessive Agency**
-- **Unauthorized Actions**: Performing restricted operations
-- **Privilege Escalation**: Gaining elevated access
-- **System Modification**: Changing application state
-
-#### **LLM09: Vector and Embedding Weaknesses**
-- **Adversarial Examples**: Manipulating vector representations
-- **Embedding Poisoning**: Corrupting semantic understanding
-- **Similarity Attacks**: Exploiting distance metrics
-
-#### **LLM10: Unbounded Consumption**
-- **Resource Exhaustion**: Consuming excessive system resources
-- **Rate Limiting Bypass**: Circumventing usage restrictions
-- **Cost Manipulation**: Exploiting billing mechanisms
-
-## 🤖 Ollama Management
-
-### **Service Administration**
-- **Status Monitoring**: Real-time Ollama service health checks
-- **Model Management**: Context reset and model verification
-- **Performance Metrics**: Response time and availability tracking
-- **Error Handling**: Graceful degradation when AI services are unavailable
-
-### **Admin Controls**
-- **AI Service Dashboard**: Comprehensive monitoring interface
-- **Context Reset**: Clear model conversation history
-- **Service Configuration**: Ollama URL and model settings
-- **Performance Analytics**: Usage statistics and system health
-
-### **Integration Points**
-- **Product Search**: AI-powered semantic search functionality
-- **Cracky AI Chat**: Intelligent customer support system
-- **RAG System**: Retrieval-augmented generation for product queries
-- **Knowledge Base**: Dynamic product information management
 
 ## 🤝 Contributing
 
