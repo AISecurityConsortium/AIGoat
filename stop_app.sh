@@ -1,22 +1,49 @@
 #!/bin/bash
 
-# Red Team Shop - Stop Script
+# Red Team Shop - Optimized Stop Script
 # This script stops both the Django backend and React frontend servers gracefully
-# Usage: ./stop_app.sh [--clean-db]
+# Usage: ./stop_app.sh [--clean-db] [--force] [--quiet]
 #   --clean-db: Clean database and reset to initial state
+#   --force: Force kill all processes without graceful shutdown
+#   --quiet: Minimal output mode
+
+set -e
+
+# Script configuration
+SCRIPT_VERSION="2.0.0"
+SCRIPT_NAME="Red Team Shop Stop Script"
 
 # Parse command line arguments
 CLEAN_DB=false
+FORCE_MODE=false
+QUIET_MODE=false
+VERBOSE=false
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --clean-db)
             CLEAN_DB=true
             shift
             ;;
+        --force)
+            FORCE_MODE=true
+            shift
+            ;;
+        --quiet)
+            QUIET_MODE=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo "Options:"
             echo "  --clean-db    Clean database and reset to initial state"
+            echo "  --force       Force kill all processes without graceful shutdown"
+            echo "  --quiet       Minimal output mode"
+            echo "  --verbose     Verbose output mode"
             echo "  -h, --help    Show this help message"
             exit 0
             ;;
@@ -28,130 +55,375 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "🛑 Stopping Red Team Shop..."
-if [ "$CLEAN_DB" = true ]; then
-    echo "🧹 Database cleanup mode enabled"
-fi
-echo "================================"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Function to kill process by PID file
-kill_process() {
-    local pid_file=$1
-    local process_name=$2
+# Logging function
+log() {
+    local level=$1
+    local message=$2
+    local timestamp=$(date '+%H:%M:%S')
     
-    if [ -f "$pid_file" ]; then
-        local pid=$(cat "$pid_file")
-        if ps -p $pid > /dev/null 2>&1; then
-            echo -e "${BLUE}🛑 Stopping $process_name (PID: $pid)...${NC}"
-            # Try graceful shutdown first
-            kill $pid
-            sleep 2
-            # Check if process is still running
-            if ps -p $pid > /dev/null 2>&1; then
-                echo -e "${YELLOW}⚠️  Process still running, forcing shutdown...${NC}"
-                kill -9 $pid
-                sleep 1
+    if [[ "$QUIET_MODE" == true && "$level" != "ERROR" ]]; then
+        return
+    fi
+    
+    case $level in
+        "INFO")
+            echo -e "${BLUE}[$timestamp] ℹ️  $message${NC}"
+            ;;
+        "SUCCESS")
+            echo -e "${GREEN}[$timestamp] ✅ $message${NC}"
+            ;;
+        "WARN")
+            echo -e "${YELLOW}[$timestamp] ⚠️  $message${NC}"
+            ;;
+        "ERROR")
+            echo -e "${RED}[$timestamp] ❌ $message${NC}"
+            ;;
+        "DEBUG")
+            if [[ "$VERBOSE" == true ]]; then
+                echo -e "${CYAN}[$timestamp] 🔍 $message${NC}"
             fi
-            rm "$pid_file"
-            echo -e "${GREEN}✅ $process_name stopped${NC}"
-        else
-            echo -e "${YELLOW}⚠️  $process_name process not found${NC}"
-            rm "$pid_file"
+            ;;
+    esac
+}
+
+# Progress indicator
+show_progress() {
+    local current=$1
+    local total=$2
+    local message=$3
+    
+    if [[ "$QUIET_MODE" == false ]]; then
+        local percent=$((current * 100 / total))
+        printf "\r${BLUE}Progress: [%3d%%] %s${NC}" "$percent" "$message"
+        if [[ $current -eq $total ]]; then
+            echo
         fi
-    else
-        echo -e "${YELLOW}⚠️  No PID file found for $process_name${NC}"
     fi
 }
 
-# Function to kill processes by port gracefully
-kill_by_port() {
+# Check prerequisites
+check_prerequisites() {
+    log "DEBUG" "Checking prerequisites..."
+    
+    local missing_tools=()
+    
+    # Check for required tools
+    for tool in lsof pgrep pkill ps; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            missing_tools+=("$tool")
+        fi
+    done
+    
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        log "ERROR" "Missing required tools: ${missing_tools[*]}"
+        log "ERROR" "Please install the missing tools and try again"
+        exit 1
+    fi
+    
+    log "DEBUG" "All prerequisites satisfied"
+}
+
+# Get process PIDs by pattern
+get_process_pids() {
+    local pattern=$1
+    pgrep -f "$pattern" 2>/dev/null || true
+}
+
+# Get process PIDs by port
+get_port_pids() {
     local port=$1
-    local process_name=$2
+    lsof -ti :$port 2>/dev/null || true
+}
+
+# Kill processes by PIDs
+kill_processes() {
+    local process_name=$1
+    shift
+    local pids=("$@")
+    local graceful_timeout=${2:-2}
+    local force_timeout=${3:-1}
     
-    local pids=$(lsof -ti :$port 2>/dev/null)
-    if [ ! -z "$pids" ]; then
-        echo -e "${BLUE}🛑 Stopping $process_name on port $port...${NC}"
-        # Try graceful shutdown first
-        echo $pids | xargs kill
-        sleep 3
-        # Check if processes are still running
-        local remaining_pids=$(lsof -ti :$port 2>/dev/null)
-        if [ ! -z "$remaining_pids" ]; then
-            echo -e "${YELLOW}⚠️  Processes still running on port $port, forcing shutdown...${NC}"
-            echo $remaining_pids | xargs kill -9
-            sleep 1
+    if [[ ${#pids[@]} -eq 0 ]]; then
+        return 0
+    fi
+    
+    log "INFO" "Stopping $process_name (PIDs: ${pids[*]})..."
+    
+    if [[ "$FORCE_MODE" == false ]]; then
+        # Graceful shutdown
+        for pid in "${pids[@]}"; do
+            if ps -p $pid >/dev/null 2>&1; then
+                kill $pid 2>/dev/null || true
+            fi
+        done
+        
+        # Wait for graceful shutdown with timeout
+        local wait_count=0
+        local max_wait=$((graceful_timeout * 10))  # 10 checks per second
+        
+        while [[ $wait_count -lt $max_wait ]]; do
+            local remaining_pids=()
+            for pid in "${pids[@]}"; do
+                if ps -p $pid >/dev/null 2>&1; then
+                    remaining_pids+=($pid)
+                fi
+            done
+            
+            if [[ ${#remaining_pids[@]} -eq 0 ]]; then
+                break
+            fi
+            
+            sleep 0.1
+            ((wait_count++))
+        done
+        
+        # Force kill remaining processes
+        if [[ $wait_count -eq $max_wait ]]; then
+            log "WARN" "Processes still running, forcing shutdown..."
+            for pid in "${pids[@]}"; do
+                if ps -p $pid >/dev/null 2>&1; then
+                    kill -9 $pid 2>/dev/null || true
+                fi
+            done
+            sleep $force_timeout
         fi
-        echo -e "${GREEN}✅ $process_name stopped${NC}"
     else
-        echo -e "${YELLOW}⚠️  No process found on port $port${NC}"
+        # Force kill immediately
+        for pid in "${pids[@]}"; do
+            if ps -p $pid >/dev/null 2>&1; then
+                kill -9 $pid 2>/dev/null || true
+            fi
+        done
+        sleep $force_timeout
     fi
-}
-
-# Function to check if processes are still running
-check_processes() {
-    local process_pattern=$1
-    local process_name=$2
     
-    if pgrep -f "$process_pattern" > /dev/null; then
-        echo -e "${YELLOW}⚠️  Found remaining $process_name processes, killing them...${NC}"
-        pkill -f "$process_pattern"
-        sleep 2
-        # Force kill if still running
-        if pgrep -f "$process_pattern" > /dev/null; then
-            echo -e "${YELLOW}⚠️  Forcing shutdown of remaining $process_name processes...${NC}"
-            pkill -9 -f "$process_pattern"
-        fi
+    log "SUCCESS" "$process_name stopped"
+}
+
+# Stop processes by pattern and port
+stop_service() {
+    local service_name=$1
+    local pattern=$2
+    local ports=("${@:3}")
+    
+    log "INFO" "Stopping $service_name..."
+    
+    # Collect all PIDs
+    local all_pids=()
+    
+    # Get PIDs by pattern
+    local pattern_pids=($(get_process_pids "$pattern"))
+    all_pids+=("${pattern_pids[@]}")
+    
+    # Get PIDs by ports
+    for port in "${ports[@]}"; do
+        local port_pids=($(get_port_pids "$port"))
+        all_pids+=("${port_pids[@]}")
+    done
+    
+    # Remove duplicates
+    local unique_pids=($(printf '%s\n' "${all_pids[@]}" | sort -u))
+    
+    # Kill processes
+    if [[ ${#unique_pids[@]} -gt 0 ]]; then
+        kill_processes "$service_name" "${unique_pids[@]}"
+    else
+        log "WARN" "No $service_name processes found"
     fi
 }
 
-# Function to clean database and reset to initial state
+# Clean up temporary files created by start_app.sh
+cleanup_temp_files() {
+    log "INFO" "Starting temporary file cleanup..."
+    
+    # Ensure we're in the correct directory
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if ! cd "$script_dir"; then
+        log "ERROR" "Failed to change to script directory: $script_dir"
+        return 1
+    fi
+    
+    local temp_files=(
+        "backend.pid" "frontend.pid"
+        "backend.port" "frontend.port"
+        "backend.log" "frontend.log"
+        "startup.log"
+    )
+    
+    local cleaned_count=0
+    local total_files=${#temp_files[@]}
+    
+    # Debug: List all files in current directory that match our patterns
+    log "DEBUG" "Current directory: $(pwd)"
+    log "DEBUG" "Total files to check: $total_files"
+    log "DEBUG" "Files matching patterns: $(ls -la *.pid *.port *.log 2>/dev/null || echo 'No matching files found')"
+    
+    # Process each file individually with explicit error handling
+    local i=0
+    while [[ $i -lt $total_files ]]; do
+        local temp_file="${temp_files[$i]}"
+        log "DEBUG" "Processing file $((i+1))/$total_files: $temp_file"
+        
+        if [[ -f "$temp_file" ]]; then
+            log "DEBUG" "File exists: $temp_file"
+            if rm -f "$temp_file" 2>/dev/null; then
+                log "INFO" "Removed temporary file: $temp_file"
+                cleaned_count=$((cleaned_count + 1))
+            else
+                log "ERROR" "Failed to remove temporary file: $temp_file (permission denied?)"
+                # Try with sudo if available (for debugging)
+                if command -v sudo >/dev/null 2>&1; then
+                    log "DEBUG" "Attempting with sudo..."
+                    if sudo rm -f "$temp_file" 2>/dev/null; then
+                        log "INFO" "Removed temporary file with sudo: $temp_file"
+                        cleaned_count=$((cleaned_count + 1))
+                    else
+                        log "ERROR" "Failed to remove even with sudo: $temp_file"
+                    fi
+                fi
+            fi
+        else
+            log "DEBUG" "Temporary file not found: $temp_file"
+        fi
+        
+        i=$((i + 1))
+        log "DEBUG" "Completed processing file $((i))/$total_files, continuing to next file..."
+    done
+    
+    log "DEBUG" "Finished processing all $total_files files"
+    
+    # Final summary
+    if [[ $cleaned_count -gt 0 ]]; then
+        log "SUCCESS" "Cleaned up $cleaned_count out of $total_files temporary files"
+    else
+        log "INFO" "No temporary files to clean up (checked $total_files files)"
+    fi
+    
+    # Verify cleanup by listing remaining files
+    local remaining_files=$(ls -la *.pid *.port *.log 2>/dev/null | wc -l)
+    if [[ $remaining_files -gt 0 ]]; then
+        log "WARN" "Some temporary files may still remain:"
+        ls -la *.pid *.port *.log 2>/dev/null || true
+        
+        # Try alternative cleanup method using find
+        log "INFO" "Attempting alternative cleanup method..."
+        local alt_cleaned=0
+        
+        # Use find to locate and remove files
+        for pattern in "*.pid" "*.port" "*.log"; do
+            while IFS= read -r -d '' file; do
+                if [[ -f "$file" ]]; then
+                    if rm -f "$file" 2>/dev/null; then
+                        log "INFO" "Alternative method removed: $file"
+                        ((alt_cleaned++))
+                    fi
+                fi
+            done < <(find . -maxdepth 1 -name "$pattern" -type f -print0 2>/dev/null)
+        done
+        
+        if [[ $alt_cleaned -gt 0 ]]; then
+            log "SUCCESS" "Alternative cleanup removed $alt_cleaned additional files"
+        fi
+    else
+        log "DEBUG" "All temporary files successfully cleaned up"
+    fi
+}
+
+# Final verification
+verify_shutdown() {
+    log "INFO" "Verifying shutdown..."
+    
+    local backend_patterns=("manage.py runserver" "python.*manage.py")
+    local frontend_patterns=("react-scripts" "node.*react-scripts")
+    local ports=(3000 3001 8000 8001)
+    
+    local issues=()
+    
+    # Check for remaining processes (only if they actually exist)
+    for pattern in "${backend_patterns[@]}"; do
+        local pids=($(get_process_pids "$pattern"))
+        if [[ ${#pids[@]} -gt 0 ]]; then
+            issues+=("Backend processes still running (pattern: $pattern, PIDs: ${pids[*]})")
+        fi
+    done
+    
+    for pattern in "${frontend_patterns[@]}"; do
+        local pids=($(get_process_pids "$pattern"))
+        if [[ ${#pids[@]} -gt 0 ]]; then
+            issues+=("Frontend processes still running (pattern: $pattern, PIDs: ${pids[*]})")
+        fi
+    done
+    
+    # Check for remaining ports (only if they actually have processes)
+    for port in "${ports[@]}"; do
+        local pids=($(get_port_pids "$port"))
+        if [[ ${#pids[@]} -gt 0 ]]; then
+            issues+=("Process still using port $port (PIDs: ${pids[*]})")
+        fi
+    done
+    
+    if [[ ${#issues[@]} -eq 0 ]]; then
+        log "SUCCESS" "All processes stopped successfully"
+        return 0
+    else
+        log "WARN" "Some issues detected:"
+        for issue in "${issues[@]}"; do
+            log "WARN" "  - $issue"
+        done
+        return 1
+    fi
+}
+
+# Clean database and reset to initial state
 clean_database() {
-    echo -e "${BLUE}🗄️  Cleaning database and resetting to initial state...${NC}"
+    log "INFO" "Starting database cleanup..."
     
     # Check if we're in the right directory
-    if [ ! -f "backend/manage.py" ]; then
-        echo -e "${RED}❌ Error: backend/manage.py not found. Please run this script from the RedTeamShop directory.${NC}"
+    if [[ ! -f "backend/manage.py" ]]; then
+        log "ERROR" "backend/manage.py not found. Please run this script from the RedTeamShop directory."
         return 1
     fi
     
     # Check if virtual environment exists
-    if [ ! -d "venv" ]; then
-        echo -e "${RED}❌ Error: Virtual environment not found. Please run ./start_app.sh first.${NC}"
+    if [[ ! -d "venv" ]]; then
+        log "ERROR" "Virtual environment not found. Please run ./start_app.sh first."
         return 1
     fi
     
     # Activate virtual environment
-    echo -e "${BLUE}🔧 Activating virtual environment...${NC}"
+    log "INFO" "Activating virtual environment..."
     source venv/bin/activate
     
     # Change to backend directory
     cd backend
     
     # Confirm with user if not in non-interactive mode
-    if [ -t 0 ]; then
+    if [[ -t 0 && "$QUIET_MODE" == false ]]; then
         echo -e "${YELLOW}⚠️  WARNING: This will delete all user data except admin and demo users!${NC}"
         echo -e "${YELLOW}   - All reviews will be deleted${NC}"
         echo -e "${YELLOW}   - All users except admin and demo users will be deleted${NC}"
         echo -e "${YELLOW}   - All orders except demo user orders will be deleted${NC}"
         echo -e "${YELLOW}   - All product tips will be deleted${NC}"
+        echo -e "${YELLOW}   - All RAG chat sessions will be deleted${NC}"
         echo ""
         read -p "Are you sure you want to continue? (y/N): " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo -e "${YELLOW}🛑 Database cleanup cancelled${NC}"
+            log "WARN" "Database cleanup cancelled"
             cd ..
             return 1
         fi
     fi
     
-    echo -e "${BLUE}🧹 Starting database cleanup...${NC}"
+    log "INFO" "Creating database cleanup script..."
     
     # Create a temporary Python script for database cleanup
     cat > temp_cleanup.py << 'EOF'
@@ -188,8 +460,8 @@ rag_session_count = RAGChatSession.objects.count()
 RAGChatSession.objects.all().delete()
 print(f"✅ Deleted {rag_session_count} RAG chat sessions")
 
-# Delete orders from non-demo users
-demo_users = ['alice', 'bob', 'admin']
+# Delete orders from non-demo users (including frank)
+demo_users = ['alice', 'bob', 'charlie', 'frank', 'admin']
 demo_user_objects = User.objects.filter(username__in=demo_users)
 non_demo_orders = Order.objects.exclude(user__in=demo_user_objects)
 non_demo_order_count = non_demo_orders.count()
@@ -210,23 +482,24 @@ print("🎉 Database cleanup completed successfully!")
 EOF
 
     # Run the cleanup script
+    log "INFO" "Executing database cleanup..."
     if python temp_cleanup.py; then
-        echo -e "${GREEN}✅ Database cleanup completed successfully!${NC}"
+        log "SUCCESS" "Database cleanup completed successfully!"
         
         # Remove temporary script
         rm -f temp_cleanup.py
         
         # Reinitialize the database with fresh data
-        echo -e "${BLUE}🔄 Reinitializing database with fresh data...${NC}"
+        log "INFO" "Reinitializing database with fresh data..."
         if python manage.py initialize_app; then
-            echo -e "${GREEN}✅ Database reinitialized successfully!${NC}"
+            log "SUCCESS" "Database reinitialized successfully!"
         else
-            echo -e "${RED}❌ Error reinitializing database${NC}"
+            log "ERROR" "Error reinitializing database"
             cd ..
             return 1
         fi
     else
-        echo -e "${RED}❌ Error during database cleanup${NC}"
+        log "ERROR" "Error during database cleanup"
         rm -f temp_cleanup.py
         cd ..
         return 1
@@ -235,92 +508,66 @@ EOF
     # Go back to root directory
     cd ..
     
-    echo -e "${GREEN}🎉 Database reset complete!${NC}"
-    echo -e "${BLUE}💡 You can now start the app with: ./start_app.sh${NC}"
+    log "SUCCESS" "Database reset complete!"
 }
 
 # Main execution
-echo -e "${BLUE}🔍 Checking for running processes...${NC}"
-
-# Stop backend processes
-echo -e "${BLUE}🔧 Stopping Django Backend...${NC}"
-kill_process "backend.pid" "Django Backend"
-kill_by_port 8000 "Django Backend"
-kill_by_port 8001 "Django Backend"
-check_processes "manage.py runserver" "Django"
-
-# Stop frontend processes
-echo -e "${BLUE}🎨 Stopping React Frontend...${NC}"
-kill_process "frontend.pid" "React Frontend"
-kill_by_port 3000 "React Frontend"
-kill_by_port 3001 "React Frontend"
-check_processes "react-scripts" "React"
-
-# Additional cleanup for any remaining processes
-echo -e "${BLUE}🧹 Final cleanup...${NC}"
-
-# Kill any remaining Node.js processes that might be related to our app
-if pgrep -f "node.*react-scripts" > /dev/null; then
-    echo -e "${YELLOW}⚠️  Found remaining Node.js processes, killing them...${NC}"
-    pkill -f "node.*react-scripts"
-    sleep 1
-    pkill -9 -f "node.*react-scripts" 2>/dev/null
-fi
-
-# Kill any remaining Python processes that might be related to our app
-if pgrep -f "python.*manage.py" > /dev/null; then
-    echo -e "${YELLOW}⚠️  Found remaining Python processes, killing them...${NC}"
-    pkill -f "python.*manage.py"
-    sleep 1
-    pkill -9 -f "python.*manage.py" 2>/dev/null
-fi
-
-# Final check for any processes on our ports
-echo -e "${BLUE}🔍 Final port check...${NC}"
-for port in 3000 3001 8000 8001; do
-    if lsof -ti :$port > /dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  Found process on port $port, forcing shutdown...${NC}"
-        lsof -ti :$port | xargs kill -9 2>/dev/null
+main() {
+    if [[ "$QUIET_MODE" == false ]]; then
+        echo -e "${BLUE}🛑 $SCRIPT_NAME v$SCRIPT_VERSION${NC}"
+        if [[ "$CLEAN_DB" == true ]]; then
+            echo -e "${BLUE}🧹 Database cleanup mode enabled${NC}"
+        fi
+        if [[ "$FORCE_MODE" == true ]]; then
+            echo -e "${YELLOW}⚡ Force mode enabled${NC}"
+        fi
+        echo "================================"
     fi
-done
-
-# Wait a moment for all processes to fully terminate
-sleep 2
-
-# Final verification
-echo -e "${BLUE}✅ Verification...${NC}"
-backend_running=false
-frontend_running=false
-
-if pgrep -f "manage.py runserver" > /dev/null; then
-    backend_running=true
-fi
-
-if pgrep -f "react-scripts" > /dev/null; then
-    frontend_running=true
-fi
-
-if [ "$backend_running" = false ] && [ "$frontend_running" = false ]; then
-    echo -e "${GREEN}✅ All Red Team Shop processes stopped successfully${NC}"
-else
-    echo -e "${RED}❌ Some processes may still be running${NC}"
-    if [ "$backend_running" = true ]; then
-        echo -e "${RED}   - Backend processes still running${NC}"
+    
+    # Check prerequisites
+    check_prerequisites
+    
+    show_progress 1 6 "Checking prerequisites"
+    
+    # Stop services in parallel
+    show_progress 2 6 "Stopping services"
+    
+    # Stop backend and frontend simultaneously
+    (
+        stop_service "Django Backend" "manage.py runserver" 8000 8001
+    ) &
+    
+    (
+        stop_service "React Frontend" "react-scripts" 3000 3001
+    ) &
+    
+    # Wait for both to complete
+    wait
+    
+    show_progress 3 6 "Cleaning up temporary files"
+    cleanup_temp_files
+    
+    show_progress 4 6 "Final verification"
+    verify_shutdown
+    
+    show_progress 5 6 "Database cleanup (if requested)"
+    if [[ "$CLEAN_DB" == true ]]; then
+        clean_database
     fi
-    if [ "$frontend_running" = true ]; then
-        echo -e "${RED}   - Frontend processes still running${NC}"
+    
+    show_progress 6 6 "Complete"
+    
+    if [[ "$QUIET_MODE" == false ]]; then
+        echo ""
+        log "SUCCESS" "Red Team Shop shutdown complete"
+        echo "================================"
+        echo -e "${BLUE}💡 To start the app again, run: ./start_app.sh${NC}"
+        echo ""
     fi
-fi
+}
 
-echo ""
-echo -e "${GREEN}🎉 Red Team Shop shutdown complete${NC}"
-echo "================================"
+# Signal handlers
+trap 'log "WARN" "Script interrupted"; exit 130' INT TERM
 
-# Perform database cleanup if requested
-if [ "$CLEAN_DB" = true ]; then
-    echo ""
-    clean_database
-fi
-
-echo -e "${BLUE}💡 To start the app again, run: ./start_app.sh${NC}"
-echo "" 
+# Run main function
+main "$@"

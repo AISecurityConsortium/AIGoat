@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -200,7 +201,7 @@ const ProductList = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/products/');
+      const response = await axios.get(getApiUrl('/api/products/'));
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -217,7 +218,7 @@ const ProductList = () => {
         return;
       }
 
-      await axios.post('http://localhost:8000/api/cart/', {
+      await axios.post(getApiUrl('/api/cart/'), {
         product_id: productId,
         quantity: 1
       }, {
@@ -243,7 +244,7 @@ const ProductList = () => {
       }
 
       // Add the product to cart first
-      await axios.post('http://localhost:8000/api/cart/', {
+      await axios.post(getApiUrl('/api/cart/'), {
         product_id: productId,
         quantity: 1
       }, {

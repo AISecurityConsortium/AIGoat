@@ -174,11 +174,11 @@ const OllamaAIServicePage = () => {
               
               <Box display="flex" justifyContent="space-between">
                 <Typography variant="body2" color="text.secondary">
-                  Mistral Model:
+                  Model ({status?.model || 'mistral'}):
                 </Typography>
                 <Chip 
-                  label={status?.mistral_available ? 'Available' : 'Unavailable'} 
-                  color={status?.mistral_available ? 'success' : 'error'}
+                  label={status?.model_available ? 'Available' : 'Unavailable'} 
+                  color={status?.model_available ? 'success' : 'error'}
                   size="small"
                 />
               </Box>
@@ -317,7 +317,7 @@ const OllamaAIServicePage = () => {
               <strong>Start Ollama service:</strong> <code>ollama serve</code>
             </Typography>
             <Typography component="li" variant="body2" paragraph>
-              <strong>Pull Mistral model:</strong> <code>ollama pull mistral</code>
+              <strong>Pull model:</strong> <code>ollama pull {status?.model || 'mistral'}</code>
             </Typography>
             <Typography component="li" variant="body2" paragraph>
               <strong>Verify installation:</strong> <code>ollama list</code>

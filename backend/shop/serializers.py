@@ -24,7 +24,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image', 'image_url', 'average_rating', 'review_count', 'reviews', 'quantity', 'is_sold_out', 'is_available', 'stock_status', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'detailed_description', 'specifications', 'price', 'image', 'image_url', 'average_rating', 'review_count', 'reviews', 'quantity', 'is_sold_out', 'is_available', 'stock_status', 'created_at', 'updated_at']
 
     def get_image_url(self, obj):
         request = self.context.get('request')
@@ -56,7 +56,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image_url', 'quantity', 'is_sold_out', 'is_available', 'stock_status', 'total_orders', 'total_revenue', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'detailed_description', 'specifications', 'price', 'image_url', 'quantity', 'is_sold_out', 'is_available', 'stock_status', 'total_orders', 'total_revenue', 'created_at', 'updated_at']
     
     def get_image_url(self, obj):
         request = self.context.get('request')

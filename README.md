@@ -4,7 +4,7 @@
 
 ## 📋 Project Overview
 
-Red Team Shop is a deliberately vulnerable e-commerce platform that serves as a comprehensive testing ground for LLM security researchers, penetration testers, and cybersecurity professionals. Built with modern web technologies and integrated with Ollama/Mistral, this application provides hands-on experience with real-world LLM attack vectors while maintaining a professional, production-like interface.
+Red Team Shop is a deliberately vulnerable e-commerce platform that serves as a comprehensive testing ground for LLM security researchers, penetration testers, and cybersecurity professionals. Built with modern web technologies and integrated with Ollama and configurable LLM models, this application provides hands-on experience with real-world LLM attack vectors while maintaining a professional, production-like interface.
 
 The platform demonstrates how AI-powered features can be exploited through various attack techniques, making it an invaluable tool for:
 - **Security Research**: Understanding LLM vulnerability patterns
@@ -29,7 +29,7 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 #### **AI/ML Requirements**
 - **Ollama**: Latest stable release
-- **Mistral Model**: 7B or 8x7B variant
+- **LLM Model**: Mistral, Llama2, CodeLlama, or other Ollama-compatible models
 - **RAM**: 8GB+ for model loading
 - **Storage**: 10GB+ free space
 
@@ -48,7 +48,7 @@ The platform demonstrates how AI-powered features can be exploited through vario
 - **GPU**: NVIDIA RTX 3060+ (optional, for faster inference)
 
 #### **Ollama-Specific Requirements**
-- **RAM**: 8GB+ for Mistral 7B, 16GB+ for larger models
+- **RAM**: 8GB+ for 7B models, 16GB+ for larger models
 - **Storage**: 5GB+ for model files
 - **CPU**: Multi-core processor for optimal performance
 
@@ -88,8 +88,8 @@ ollama --version
 # Start Ollama service if it's not running already 
 ollama serve
 
-# Pull Mistral model (in new terminal)
-ollama pull mistral
+# Pull model (in new terminal)
+ollama pull mistral  # or llama2, codellama, etc.
 
 # Verify installation
 ollama list
@@ -199,7 +199,7 @@ RedTeamShop/
 - **HTTP Client**: Axios with interceptors
 
 ### **AI/ML Stack**
-- **Language Model**: Mistral 7B via Ollama
+- **Language Model**: Configurable (Mistral, Llama2, CodeLlama, etc.) via Ollama
 - **Vector Database**: ChromaDB with sentence transformers
 - **Embeddings**: all-MiniLM-L6-v2 model
 - **RAG System**: Custom implementation with context retrieval

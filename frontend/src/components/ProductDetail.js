@@ -464,18 +464,63 @@ const ProductDetail = () => {
           
           {/* Product Description */}
           <Typography variant="body1" paragraph sx={{ mb: 3 }}>
-            {separateDescriptionAndSpecs(product.description).description}
+            {product.description}
           </Typography>
           
+          {/* Detailed Product Description */}
+          {product.detailed_description && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Product Description
+              </Typography>
+              <Typography variant="body1" sx={{ lineHeight: 1.6, color: 'text.secondary' }}>
+                {product.detailed_description}
+              </Typography>
+            </Box>
+          )}
+          
           {/* Product Specifications */}
-          {separateDescriptionAndSpecs(product.description).specifications && (
+          {product.specifications && Object.keys(product.specifications).length > 0 && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Product Specifications
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                {separateDescriptionAndSpecs(product.description).specifications}
-              </Typography>
+              <Box sx={{ 
+                border: '1px solid', 
+                borderColor: 'divider', 
+                borderRadius: 1, 
+                overflow: 'hidden',
+                backgroundColor: 'background.paper'
+              }}>
+                {Object.entries(product.specifications).map(([key, value]) => (
+                  <Box 
+                    key={key}
+                    sx={{ 
+                      display: 'flex', 
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      '&:last-child': { borderBottom: 'none' }
+                    }}
+                  >
+                    <Box sx={{ 
+                      flex: '0 0 40%', 
+                      p: 2, 
+                      backgroundColor: 'grey.50',
+                      borderRight: '1px solid',
+                      borderColor: 'divider',
+                      fontWeight: 600,
+                      textTransform: 'capitalize'
+                    }}>
+                      {key.replace(/_/g, ' ')}
+                    </Box>
+                    <Box sx={{ flex: 1, p: 2 }}>
+                      <Typography variant="body2">
+                        {value}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             </Box>
           )}
           

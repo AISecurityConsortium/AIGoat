@@ -14,6 +14,7 @@ import {
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useSearch } from '../contexts/SearchContext';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 const SearchBar = () => {
   const { searchQuery, setSearchQuery } = useSearch();
@@ -28,7 +29,7 @@ const SearchBar = () => {
     setSearchResult(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:8000/api/search/', {
+      const response = await axios.post(getApiUrl('/api/search/'), {
         query: searchQuery.trim()
       }, {
         headers: {

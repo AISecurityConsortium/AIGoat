@@ -16,6 +16,7 @@ import {
 import { Add as AddIcon, Search as SearchIcon, ShoppingCart as ShoppingCartIcon } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 const SearchResults = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -48,7 +49,7 @@ const SearchResults = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:8000/api/search/',
+        getApiUrl('/api/search/'),
         { query },
         {
           headers: {
@@ -66,7 +67,7 @@ const SearchResults = () => {
       
       if (recommendedProduct) {
         // Fetch all products and find the one that matches the recommendation
-        const productsResponse = await axios.get('http://localhost:8000/api/products/');
+        const productsResponse = await axios.get(getApiUrl('/api/products/'));
         const allProducts = productsResponse.data;
         
         // Find the product that matches the recommended product name
@@ -151,7 +152,7 @@ const SearchResults = () => {
         return;
       }
 
-      await axios.post('http://localhost:8000/api/cart/', {
+      await axios.post(getApiUrl('/api/cart/'), {
         product_id: productId,
         quantity: 1
       }, {
@@ -178,7 +179,7 @@ const SearchResults = () => {
       }
 
       // Add the product to cart first
-      await axios.post('http://localhost:8000/api/cart/', {
+      await axios.post(getApiUrl('/api/cart/'), {
         product_id: productId,
         quantity: 1
       }, {

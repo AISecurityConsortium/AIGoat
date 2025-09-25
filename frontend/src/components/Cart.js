@@ -14,6 +14,7 @@ import {
 import { Add as AddIcon, Remove as RemoveIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 import CheckoutForm from './CheckoutForm';
 
 const Cart = () => {
@@ -35,7 +36,7 @@ const Cart = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:8000/api/cart/', {
+      const response = await axios.get(getApiUrl('/api/cart/'), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -54,7 +55,7 @@ const Cart = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:8000/api/cart/items/${itemId}/`, {
+      await axios.patch(getApiUrl(`/api/cart/items/${itemId}/`), {
         quantity: newQuantity
       }, {
         headers: {
@@ -72,7 +73,7 @@ const Cart = () => {
   const handleRemoveItem = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/cart/items/${itemId}/`, {
+      await axios.delete(getApiUrl(`/api/cart/items/${itemId}/`), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

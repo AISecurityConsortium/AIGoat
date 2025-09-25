@@ -218,11 +218,11 @@ const OllamaStatus = () => {
                 </Box>
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Mistral Available:
+                    Model Available:
                   </Typography>
                   <Chip
-                    label={status.mistral_available ? 'Yes' : 'No'}
-                    color={status.mistral_available ? 'success' : 'error'}
+                    label={status.model_available ? 'Yes' : 'No'}
+                    color={status.model_available ? 'success' : 'error'}
                     size="small"
                   />
                 </Box>
@@ -263,7 +263,7 @@ const OllamaStatus = () => {
                   <Typography variant="body2" component="ul" sx={{ mt: 1, pl: 2 }}>
                     <li>Install Ollama: <code>brew install ollama</code></li>
                     <li>Start Ollama service: <code>ollama serve</code></li>
-                    <li>Pull Mistral model: <code>ollama pull mistral</code></li>
+                    <li>Pull model: <code>ollama pull {status.model || 'mistral'}</code></li>
                   </Typography>
                 </Alert>
               </>

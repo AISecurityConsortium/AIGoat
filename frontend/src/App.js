@@ -41,8 +41,8 @@ const DynamicRAGChat = () => {
 const DynamicKnowledgeBase = () => {
   const { enabled: ragEnabled, loading } = useFeatureFlag('rag_system');
   
-  if (loading) return null;
-  if (!ragEnabled) return null;
+  if (loading) return <div>Loading...</div>;
+  if (!ragEnabled) return <div>RAG system is disabled</div>;
   
   const KnowledgeBaseManagement = require('./components/KnowledgeBaseManagement').default;
   return <KnowledgeBaseManagement />;

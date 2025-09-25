@@ -427,19 +427,27 @@ class CrackyChatView(APIView):
         
         try:
             # Call Ollama API with optimized parameters using connection pooling
-            response = _optimized_session.post('http://localhost:11434/api/generate', 
+            ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+            model_name = os.getenv('OLLAMA_MODEL', 'mistral')
+            temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.7'))
+            top_p = float(os.getenv('OLLAMA_TOP_P', '0.9'))
+            top_k = int(os.getenv('OLLAMA_TOP_K', '40'))
+            num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '500'))
+            timeout = int(os.getenv('OLLAMA_TIMEOUT', '60'))
+            
+            response = _optimized_session.post(f'{ollama_url}/api/generate', 
                 json={
-                    'model': 'mistral',
+                    'model': model_name,
                     'prompt': full_prompt,
                     'stream': False,
                     'options': {
-                        'temperature': 0.7,  # Slightly lower for faster, more focused responses
-                        'top_p': 0.9,       # Optimize for speed
-                        'top_k': 40,        # Reduce for faster generation
-                        'num_predict': 500  # Increased response length to prevent truncation
+                        'temperature': temperature,
+                        'top_p': top_p,
+                        'top_k': top_k,
+                        'num_predict': num_predict
                     }
                 },
-                timeout=60  # Increased timeout for longer responses
+                timeout=timeout
             )
             
             if response.status_code == 200:
@@ -815,19 +823,27 @@ We offer secure payment processing, fast shipping, and excellent customer servic
         try:
             # Call Ollama API with optimized parameters for search using connection pooling
             print(f"DEBUG: Calling Ollama with optimized prompt length: {len(full_prompt)}")
-            response = _optimized_session.post('http://localhost:11434/api/generate', 
+            ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+            model_name = os.getenv('OLLAMA_MODEL', 'mistral')
+            temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.5'))
+            top_p = float(os.getenv('OLLAMA_TOP_P', '0.8'))
+            top_k = int(os.getenv('OLLAMA_TOP_K', '30'))
+            num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '300'))
+            timeout = int(os.getenv('OLLAMA_TIMEOUT', '45'))
+            
+            response = _optimized_session.post(f'{ollama_url}/api/generate', 
                                   json={
-                                      'model': 'mistral',
+                                      'model': model_name,
                                       'prompt': full_prompt,
                                       'stream': False,
                                       'options': {
-                                          'temperature': 0.5,  # Lower temperature for more focused search results
-                                          'top_p': 0.8,       # Optimize for speed
-                                          'top_k': 30,        # Reduce for faster generation
-                                          'num_predict': 300  # Increased response length for search
+                                          'temperature': temperature,
+                                          'top_p': top_p,
+                                          'top_k': top_k,
+                                          'num_predict': num_predict
                                       }
                                   }, 
-                                  timeout=45)  # Increased timeout for longer search responses
+                                  timeout=timeout)
             
             print(f"DEBUG: Ollama response status: {response.status_code}")
             
@@ -1031,7 +1047,7 @@ class GetDemoUsersView(APIView):
                     'last_name': user.last_name,
                     'email': user.email,
                     'demo_token': demo_token,
-                    'is_demo': user.username in ['alice', 'bob', 'charlie'],
+                    'is_demo': user.username in ['alice', 'bob', 'charlie', 'frank'],
                     'is_admin': user.username == 'admin'
                 })
             
@@ -1051,8 +1067,8 @@ class UserManagementView(APIView):
             if request.user.username != 'admin':
                 return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
             
-            # Get all users except demo users (alice, bob, charlie)
-            users = User.objects.exclude(username__in=['alice', 'bob', 'charlie']).order_by('date_joined')
+            # Get all users except demo users (alice, bob, charlie, frank)
+            users = User.objects.exclude(username__in=['alice', 'bob', 'charlie', 'frank']).order_by('date_joined')
             
             user_list = []
             for user in users:
@@ -1109,7 +1125,7 @@ class UserManagementView(APIView):
                 return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
             
             # Prevent deletion of demo users and admin
-            protected_users = ['alice', 'bob', 'charlie', 'admin']
+            protected_users = ['alice', 'bob', 'charlie', 'frank', 'admin']
             
             try:
                 user_to_delete = User.objects.get(id=user_id)
@@ -1278,7 +1294,9 @@ class UserCouponsView(APIView):
             )
             
             for coupon in active_coupons:
-                can_use, message = coupon.can_be_used_by_user(request.user)
+                # For the coupons page, show all active coupons regardless of minimum order amount
+                # The minimum order check will be done when actually applying the coupon
+                can_use, message = coupon.can_be_used_by_user(request.user, order_amount=float('inf'))
                 if can_use:
                     available_coupons.append(coupon)
             
@@ -1736,12 +1754,58 @@ class ProductKnowledgeBaseView(APIView):
     
     @rag_feature_required
     @demo_auth_required
-    def get(self, request):
-        """Get all knowledge base documents"""
+    def patch(self, request):
+        """Sync knowledge base to vector database"""
         try:
-            documents = ProductKnowledgeBase.objects.all()
+            from .rag_service import rag_service
+            
+            # Sync knowledge base to vector database
+            result = rag_service.sync_knowledge_base()
+            
+            if result['success']:
+                return Response({
+                    'message': 'Knowledge base synced successfully',
+                    'synced_count': result['synced_count'],
+                    'total_entries': result['total_entries']
+                })
+            else:
+                return Response({
+                    'error': 'Failed to sync knowledge base',
+                    'details': result.get('error', 'Unknown error')
+                }, status=500)
+                
+        except Exception as e:
+            logger.error(f"Error syncing knowledge base: {str(e)}")
+            return Response({'error': 'Failed to sync knowledge base'}, status=500)
+    
+    @rag_feature_required
+    @demo_auth_required
+    def get(self, request):
+        """Get all knowledge base documents with statistics"""
+        try:
+            documents = ProductKnowledgeBase.objects.all().order_by('-created_at')
             serializer = ProductKnowledgeBaseSerializer(documents, many=True)
-            return Response(serializer.data)
+            
+            # Get statistics
+            total_documents = documents.count()
+            products_with_kb = documents.values('product').distinct().count()
+            categories = documents.values('category').distinct().count()
+            
+            # Get category breakdown
+            category_stats = {}
+            for category, _ in ProductKnowledgeBase._meta.get_field('category').choices:
+                count = documents.filter(category=category).count()
+                category_stats[category] = count
+            
+            return Response({
+                'documents': serializer.data,
+                'statistics': {
+                    'total_documents': total_documents,
+                    'products_with_knowledge': products_with_kb,
+                    'categories': categories,
+                    'category_breakdown': category_stats
+                }
+            })
         except Exception as e:
             logger.error(f"Error fetching knowledge base: {str(e)}")
             return Response({'error': 'Failed to fetch knowledge base'}, status=500)
@@ -1788,6 +1852,70 @@ class ProductKnowledgeBaseView(APIView):
         except Exception as e:
             logger.error(f"Error adding knowledge document: {str(e)}")
             return Response({'error': 'Failed to add knowledge document'}, status=500)
+    
+    @rag_feature_required
+    @demo_auth_required
+    def put(self, request):
+        """Regenerate entire knowledge base"""
+        try:
+            from django.core.management import call_command
+            from io import StringIO
+            import sys
+            
+            # Capture output
+            old_stdout = sys.stdout
+            sys.stdout = captured_output = StringIO()
+            
+            try:
+                # Call the initialize_app command to regenerate knowledge base
+                call_command('initialize_app', '--knowledge-only')
+                output = captured_output.getvalue()
+                
+                # Get updated statistics
+                documents = ProductKnowledgeBase.objects.all()
+                total_documents = documents.count()
+                products_with_kb = documents.values('product').distinct().count()
+                
+                return Response({
+                    'message': 'Knowledge base regenerated successfully',
+                    'output': output,
+                    'statistics': {
+                        'total_documents': total_documents,
+                        'products_with_knowledge': products_with_kb
+                    }
+                })
+            finally:
+                sys.stdout = old_stdout
+                
+        except Exception as e:
+            logger.error(f"Error regenerating knowledge base: {str(e)}")
+            return Response({'error': 'Failed to regenerate knowledge base'}, status=500)
+    
+    @rag_feature_required
+    @demo_auth_required
+    def patch(self, request):
+        """Sync knowledge base to vector database"""
+        try:
+            from .rag_service import rag_service
+            
+            # Sync knowledge base to vector database
+            result = rag_service.sync_knowledge_base()
+            
+            if result['success']:
+                return Response({
+                    'message': 'Knowledge base synced successfully',
+                    'synced_count': result['synced_count'],
+                    'total_entries': result['total_entries']
+                })
+            else:
+                return Response({
+                    'error': 'Failed to sync knowledge base',
+                    'details': result.get('error', 'Unknown error')
+                }, status=500)
+                
+        except Exception as e:
+            logger.error(f"Error syncing knowledge base: {str(e)}")
+            return Response({'error': 'Failed to sync knowledge base'}, status=500)
 
 class RAGChatHistoryView(APIView):
     """View RAG chat history"""
@@ -1869,9 +1997,9 @@ class OllamaStatusView(APIView):
             if not RAG_SYSTEM_ENABLED:
                 return Response({
                     'status': 'disabled',
-                    'message': 'RAG system is disabled',
-                    'ollama_available': False,
-                    'mistral_available': False
+                'message': 'RAG system is disabled',
+                'ollama_available': False,
+                'model_available': False
                 })
             
             # Import RAG service
@@ -1886,9 +2014,9 @@ class OllamaStatusView(APIView):
                 'status': 'available' if ollama_available else 'unavailable',
                 'message': 'Ollama service is available' if ollama_available else 'Ollama service is not available',
                 'ollama_available': ollama_available,
-                'mistral_available': ollama_available,  # If Ollama is available, Mistral should be too
-                'service_url': 'http://localhost:11434',
-                'model': 'mistral'
+                'model_available': ollama_available,  # If Ollama is available, configured model should be too
+                'service_url': os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'),
+                'model': os.getenv('OLLAMA_MODEL', 'mistral')
             }
             
             return Response(status_info)
@@ -1899,7 +2027,7 @@ class OllamaStatusView(APIView):
                 'status': 'error',
                 'message': f'Error checking Ollama status: {str(e)}',
                 'ollama_available': False,
-                'mistral_available': False
+                'model_available': False
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @demo_auth_required
@@ -1933,8 +2061,9 @@ class OllamaStatusView(APIView):
             try:
                 # Send a simple reset message to clear context via HTTP API
                 
+                model_name = os.getenv('OLLAMA_MODEL', 'mistral')
                 reset_data = {
-                    'model': 'mistral',
+                    'model': model_name,
                     'messages': [
                         {
                             'role': 'user',
@@ -1942,8 +2071,8 @@ class OllamaStatusView(APIView):
                         }
                     ],
                     'options': {
-                        'temperature': 0.1,
-                        'num_predict': 10
+                        'temperature': float(os.getenv('OLLAMA_TEMPERATURE', '0.1')),
+                        'num_predict': int(os.getenv('OLLAMA_NUM_PREDICT', '10'))
                     },
                     'stream': False  # Disable streaming to get single JSON response
                 }
@@ -1953,7 +2082,7 @@ class OllamaStatusView(APIView):
                 reset_response = requests.post(
                     f'{ollama_url}/api/chat',
                     json=reset_data,
-                    timeout=30
+                    timeout=int(os.getenv('OLLAMA_TIMEOUT', '30'))
                 )
                 
                 if reset_response.status_code == 200:

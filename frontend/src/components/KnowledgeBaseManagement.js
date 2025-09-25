@@ -35,6 +35,7 @@ import axios from 'axios';
 
 const KnowledgeBaseManagement = () => {
   const [documents, setDocuments] = useState([]);
+  const [statistics, setStatistics] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -48,10 +49,10 @@ const KnowledgeBaseManagement = () => {
 
   const categories = [
     { value: 'product_info', label: 'Product Information' },
-    { value: 'security_features', label: 'Security Features' },
-    { value: 'red_team_use', label: 'Red Team Usage' },
-    { value: 'vulnerabilities', label: 'Known Vulnerabilities' },
-    { value: 'mitigation', label: 'Mitigation Strategies' }
+    { value: 'features', label: 'Product Features' },
+    { value: 'usage', label: 'Usage & Applications' },
+    { value: 'care_instructions', label: 'Care & Maintenance' },
+    { value: 'specifications', label: 'Technical Specifications' }
   ];
 
   useEffect(() => {
@@ -65,7 +66,14 @@ const KnowledgeBaseManagement = () => {
       const response = await axios.get('/api/knowledge-base/', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      setDocuments(response.data);
+      // Handle both old format (array) and new format (object with documents property)
+      if (response.data.documents) {
+        setDocuments(response.data.documents);
+        setStatistics(response.data.statistics);
+      } else {
+        setDocuments(response.data);
+        setStatistics(null);
+      }
     } catch (error) {
       console.error('Error fetching documents:', error);
     } finally {
@@ -136,6 +144,39 @@ const KnowledgeBaseManagement = () => {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (window.confirm('This will regenerate the entire knowledge base. Are you sure?')) {
+      try {
+        setLoading(true);
+        await axios.put('/api/knowledge-base/', {}, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        fetchDocuments();
+        alert('Knowledge base regenerated successfully!');
+      } catch (error) {
+        console.error('Error regenerating knowledge base:', error);
+        alert('Error regenerating knowledge base');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleSync = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.patch('/api/knowledge-base/', {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      alert(`Knowledge base synced successfully! ${response.data.synced_count} documents synced.`);
+    } catch (error) {
+      console.error('Error syncing knowledge base:', error);
+      alert('Error syncing knowledge base');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getProductName = (productId) => {
     const product = products.find(p => p.id === productId);
     return product ? product.name : 'Unknown Product';
@@ -144,10 +185,10 @@ const KnowledgeBaseManagement = () => {
   const getCategoryColor = (category) => {
     const colors = {
       'product_info': 'primary',
-      'security_features': 'success',
-      'red_team_use': 'warning',
-      'vulnerabilities': 'error',
-      'mitigation': 'info'
+      'features': 'success',
+      'usage': 'warning',
+      'care_instructions': 'info',
+      'specifications': 'secondary'
     };
     return colors[category] || 'default';
   };
@@ -168,17 +209,90 @@ const KnowledgeBaseManagement = () => {
         </Typography>
       </Alert>
 
+      {/* Statistics */}
+      {statistics && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="primary">
+                  {statistics.total_documents}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Documents
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="primary">
+                  {statistics.products_with_knowledge}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Products Covered
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="primary">
+                  {statistics.categories}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Categories
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="primary">
+                  {Object.keys(statistics.category_breakdown || {}).length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Category Types
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">
           Knowledge Documents ({documents.length})
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenDialog(true)}
-        >
-          Add Document
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={handleSync}
+            disabled={loading}
+            size="small"
+          >
+            Sync to Vector DB
+          </Button>
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={handleRegenerate}
+            disabled={loading}
+            size="small"
+          >
+            Regenerate All
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenDialog(true)}
+          >
+            Add Document
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>

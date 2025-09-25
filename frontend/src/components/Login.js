@@ -52,7 +52,7 @@ const Login = () => {
         }
       }
     } catch (error) {
-      setError('Invalid credentials. Try: alice/password123, bob/password123, or charlie/password123');
+      setError('Invalid credentials. Try: alice/password123, bob/password123, charlie/password123, frank/password123, or admin/admin123');
     } finally {
       setLoading(false);
     }
@@ -172,6 +172,20 @@ const Login = () => {
                     label="Demo"
                     size="small"
                     color="primary"
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      fontSize: '0.6rem',
+                      height: 16
+                    }}
+                  />
+                )}
+                {user.is_admin && (
+                  <Chip
+                    label="Admin"
+                    size="small"
+                    color="secondary"
                     sx={{
                       position: 'absolute',
                       top: -8,

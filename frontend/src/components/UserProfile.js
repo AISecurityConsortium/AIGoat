@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -237,7 +238,7 @@ const UserProfile = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:8000/api/profile/', {
+      const response = await axios.get(getApiUrl('/api/profile/'), {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -319,7 +320,7 @@ const UserProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put('http://localhost:8000/api/profile/', formData, {
+      const response = await axios.put(getApiUrl('/api/profile/'), formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -354,7 +355,7 @@ const UserProfile = () => {
       const formData = new FormData();
       formData.append('profile_picture', selectedFile);
 
-      const response = await axios.post('http://localhost:8000/api/profile/picture/', formData, {
+      const response = await axios.post(getApiUrl('/api/profile/picture/'), formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',

@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 class Product(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
+    detailed_description = models.TextField(blank=True, null=True, help_text="Detailed product description")
+    specifications = models.JSONField(default=dict, blank=True, help_text="Product specifications in JSON format")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.ImageField(upload_to='', blank=True, null=True)  # Uses MEDIA_ROOT/imgs
     quantity = models.PositiveIntegerField(default=0, help_text="Available quantity in stock")
@@ -318,10 +320,10 @@ class ProductKnowledgeBase(models.Model):
     content = models.TextField()
     category = models.CharField(max_length=100, choices=[
         ('product_info', 'Product Information'),
-        ('security_features', 'Security Features'),
-        ('red_team_use', 'Red Team Usage'),
-        ('vulnerabilities', 'Known Vulnerabilities'),
-        ('mitigation', 'Mitigation Strategies'),
+        ('features', 'Product Features'),
+        ('usage', 'Usage & Applications'),
+        ('care_instructions', 'Care & Maintenance'),
+        ('specifications', 'Technical Specifications'),
     ])
     embedding_id = models.CharField(max_length=255, null=True, blank=True)  # ChromaDB document ID
     created_at = models.DateTimeField(auto_now_add=True)
@@ -340,7 +342,7 @@ class RAGChatSession(models.Model):
     query = models.TextField()
     response = models.TextField()
     context_used = models.JSONField(default=list)  # List of document IDs used
-    model_used = models.CharField(max_length=100, default='mistral')
+    model_used = models.CharField(max_length=100, default='mistral', help_text="LLM model used for this chat session")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

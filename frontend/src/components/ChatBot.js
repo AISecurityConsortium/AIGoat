@@ -23,6 +23,7 @@ import {
 import { useSearch } from '../contexts/SearchContext';
 import { useChat } from '../contexts/ChatContext';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 // Add CSS keyframes for pulse animation
 const pulseKeyframes = `
@@ -152,7 +153,7 @@ const ChatBot = () => {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await axios.post('http://localhost:8000/api/chat/', {
+      const response = await axios.post(getApiUrl('/api/chat/'), {
         message: chatInput
       }, { headers });
 
@@ -171,7 +172,7 @@ const ChatBot = () => {
       
       // Check if it's an authentication error
       if (error.response && error.response.status === 401) {
-        errorText = "Please log in to chat with Cracky. You can use the demo accounts: Alice, Bob, or Charlie.";
+        errorText = "Please log in to chat with Cracky. You can use the demo accounts: Alice, Bob, Charlie, or Frank.";
       }
       
       setError('Failed to send message. Please try again.');

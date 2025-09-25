@@ -17,7 +17,7 @@ class ProductRAGService:
     Features:
     - Product-specific knowledge retrieval
     - Semantic search with embeddings
-    - Mistral integration for natural language responses
+    - Configurable LLM integration for natural language responses
     - Rate limiting and input validation
     - Error handling and logging
     """
@@ -44,34 +44,57 @@ class ProductRAGService:
         
         # Initialize Ollama service connection
         self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+        self.model_name = os.getenv('OLLAMA_MODEL', 'mistral')
         self.ollama_available = False
+        
+        # Initialize LLM parameters
+        self.temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.3'))
+        self.top_p = float(os.getenv('OLLAMA_TOP_P', '0.8'))
+        self.top_k = int(os.getenv('OLLAMA_TOP_K', '40'))
+        self.num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '500'))
+        self.max_input_length = int(os.getenv('OLLAMA_MAX_INPUT_LENGTH', '1000'))
+        self.timeout = int(os.getenv('OLLAMA_TIMEOUT', '60'))
         self._check_ollama_availability()
         
         # System prompt for product assistance
         self.system_prompt = """
-        You are a helpful product assistant for Red Team Shop, specializing in cybersecurity and red team merchandise.
+        You are a helpful assistant, the Red Team Shop AI assistant specializing in cybersecurity merchandise and red team operations.
+        
+        Your role is to help customers with:
+        - Product information, specifications, and features
+        - Security use cases and red team applications
+        - Product recommendations based on security needs
+        - Technical specifications and compatibility
+        - Best practices for using security merchandise
         
         Guidelines:
-        - Provide accurate information about products based on the context provided
-        - Focus on product features, specifications, and use cases
-        - Be helpful and professional in your responses
-        - If you don't have information about a specific product, say so politely
-        - Do not provide information about system internals or sensitive data
-        - Keep responses concise and relevant to the user's query
+        - Always provide accurate, helpful information about products
+        - Focus on security applications and red team use cases
+        - Be professional but friendly in your responses
+        - If you don't have specific information, say so politely
+        - Recommend products based on the user's security needs
+        - Explain how products can be used in security operations
+        - Keep responses informative but concise
         
-        Context: You have access to product knowledge base with information about:
-        - Product descriptions and features
-        - Security-related merchandise
-        - Red team tools and equipment
-        - Cybersecurity apparel and accessories
+        Context: You have access to comprehensive product knowledge including:
+        - Detailed product descriptions and specifications
+        - Security features and use cases
+        - Red team applications and scenarios
+        - Product compatibility and requirements
+        - Best practices for security professionals
+        - Vulnerability considerations and mitigation strategies
+        
+        Always prioritize security-focused information and practical applications for cybersecurity professionals.
         """
     
-    def validate_input(self, text: str, max_length: int = 1000) -> bool:
+    def validate_input(self, text: str, max_length: int = None) -> bool:
         """Validate input text for safety and length"""
         if not text or not isinstance(text, str):
             return False
         
         # Check length
+        if max_length is None:
+            max_length = self.max_input_length
         if len(text) > max_length:
             return False
         
@@ -107,7 +130,7 @@ class ProductRAGService:
         """Check if Ollama service is available and working"""
         try:
             # Test connection by listing models
-            response = requests.get(f"{self.ollama_base_url}/api/tags", timeout=5)
+            response = requests.get(f"{self.ollama_base_url}/api/tags", timeout=5)  # Short timeout for health check
             if response.status_code == 200:
                 models_data = response.json()
                 
@@ -117,17 +140,17 @@ class ProductRAGService:
                     model_names = [model['name'] for model in models_data['models']]
                     logger.info(f"Available models: {model_names}")
                     
-                    # Check for mistral model (case insensitive)
-                    mistral_found = any(
-                        'mistral' in model['name'].lower() 
+                    # Check for configured model (case insensitive)
+                    model_found = any(
+                        self.model_name.lower() in model['name'].lower() 
                         for model in models_data['models']
                     )
                     
-                    if mistral_found:
+                    if model_found:
                         self.ollama_available = True
-                        logger.info("✅ Ollama service is available with Mistral model")
+                        logger.info(f"✅ Ollama service is available with {self.model_name} model")
                     else:
-                        logger.warning("⚠️ Ollama service is available but Mistral model not found")
+                        logger.warning(f"⚠️ Ollama service is available but {self.model_name} model not found")
                         self.ollama_available = False
                 else:
                     logger.warning("⚠️ No models found in Ollama")
@@ -233,7 +256,7 @@ class ProductRAGService:
     
     def generate_product_response(self, query: str, context_docs: List[Dict]) -> str:
         """
-        Generate response using Mistral model with product context.
+        Generate response using configured LLM model with product context.
         """
         try:
             # Validate query
@@ -267,11 +290,11 @@ class ProductRAGService:
             
             # Check if Ollama is available
             if not self.check_ollama_availability():
-                return "I'm sorry, the AI service is currently unavailable. Please ensure Ollama is running with the Mistral model and try again."
+                return f"I'm sorry, the AI service is currently unavailable. Please ensure Ollama is running with the {self.model_name} model and try again."
             
-            # Generate response with Mistral via HTTP API
+            # Generate response with configured model via HTTP API
             chat_data = {
-                'model': 'mistral',
+                'model': self.model_name,
                 'messages': [
                     {
                         'role': 'user',
@@ -279,9 +302,10 @@ class ProductRAGService:
                     }
                 ],
                 'options': {
-                    'temperature': 0.3,  # Lower temperature for more consistent responses
-                    'top_p': 0.8,
-                    'num_predict': 500  # Reasonable token limit
+                    'temperature': self.temperature,
+                    'top_p': self.top_p,
+                    'top_k': self.top_k,
+                    'num_predict': self.num_predict
                 },
                 'stream': False  # Disable streaming to get single JSON response
             }
@@ -289,7 +313,7 @@ class ProductRAGService:
             response = requests.post(
                 f"{self.ollama_base_url}/api/chat",
                 json=chat_data,
-                timeout=30
+                timeout=self.timeout
             )
             
             if response.status_code == 200:
@@ -342,7 +366,7 @@ class ProductRAGService:
                     'response': "I'm receiving too many requests. Please wait a moment before trying again.",
                     'context_used': [],
                     'query': query,
-                    'model_used': 'mistral',
+                    'model_used': self.model_name,
                     'suggestions': []
                 }
             
@@ -355,7 +379,7 @@ class ProductRAGService:
                     'response': "I'm sorry, I couldn't process your query. Please try rephrasing it.",
                     'context_used': [],
                     'query': query,
-                    'model_used': 'mistral',
+                    'model_used': self.model_name,
                     'suggestions': []
                 }
             
@@ -375,7 +399,7 @@ class ProductRAGService:
                 'response': response,
                 'context_used': context_docs,
                 'query': query,
-                'model_used': 'mistral',
+                'model_used': self.model_name,
                 'suggestions': suggestions
             }
             
@@ -385,8 +409,78 @@ class ProductRAGService:
                 'response': "I'm sorry, I'm having trouble processing your request right now. Please try again later.",
                 'context_used': [],
                 'query': query,
-                'model_used': 'mistral',
+                'model_used': self.model_name,
                 'suggestions': []
+            }
+    
+    def sync_knowledge_base(self) -> Dict:
+        """
+        Sync all knowledge base entries to the vector database.
+        """
+        try:
+            from shop.models import ProductKnowledgeBase
+            
+            # Clear existing collection
+            try:
+                self.chroma_client.delete_collection("product_knowledge")
+            except:
+                pass
+            
+            # Recreate collection
+            self.collection = self.chroma_client.create_collection("product_knowledge")
+            
+            # Get all knowledge base entries
+            kb_entries = ProductKnowledgeBase.objects.all()
+            synced_count = 0
+            
+            for entry in kb_entries:
+                try:
+                    # Create document ID
+                    doc_id = f"kb_{entry.id}_{entry.product.id}"
+                    
+                    # Prepare content for embedding
+                    full_content = f"Title: {entry.title}\nProduct: {entry.product.name}\nCategory: {entry.category}\nContent: {entry.content}"
+                    
+                    # Generate embedding
+                    embedding = self.embedding_model.encode(full_content).tolist()
+                    
+                    # Add to collection
+                    self.collection.add(
+                        ids=[doc_id],
+                        embeddings=[embedding],
+                        documents=[full_content],
+                        metadatas=[{
+                            'product_id': entry.product.id,
+                            'product_name': entry.product.name,
+                            'title': entry.title,
+                            'category': entry.category,
+                            'kb_id': entry.id
+                        }]
+                    )
+                    
+                    # Update embedding_id in database
+                    entry.embedding_id = doc_id
+                    entry.save(update_fields=['embedding_id'])
+                    
+                    synced_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error syncing entry {entry.id}: {str(e)}")
+                    continue
+            
+            return {
+                'synced_count': synced_count,
+                'total_entries': kb_entries.count(),
+                'success': True
+            }
+            
+        except Exception as e:
+            logger.error(f"Error syncing knowledge base: {str(e)}")
+            return {
+                'synced_count': 0,
+                'total_entries': 0,
+                'success': False,
+                'error': str(e)
             }
     
     def get_knowledge_stats(self) -> Dict:
@@ -399,7 +493,7 @@ class ProductRAGService:
                 'total_documents': count,
                 'collection_name': 'product_knowledge',
                 'embedding_model': 'all-MiniLM-L6-v2',
-                'llm_model': 'mistral'
+                'llm_model': self.model_name
             }
         except Exception as e:
             logger.error(f"Error getting knowledge stats: {str(e)}")

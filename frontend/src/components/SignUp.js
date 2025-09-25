@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../config/api';
 
 const steps = ['User Information', 'OTP Verification', 'Success'];
 
@@ -64,7 +65,7 @@ const SignUp = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/signup/', formData);
+      const response = await axios.post(getApiUrl('/api/auth/signup/'), formData);
       
       if (response.data.success) {
         setNewUser(response.data.user);
@@ -84,7 +85,7 @@ const SignUp = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/verify-otp/', {
+      const response = await axios.post(getApiUrl('/api/auth/verify-otp/'), {
         username: newUser.username,
         otp: otp,
       });

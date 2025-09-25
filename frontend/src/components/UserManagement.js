@@ -130,7 +130,7 @@ const UserManagement = () => {
             Registered Users ({users.length})
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage user accounts. Demo users (Alice, Bob, Charlie) are protected and cannot be deleted.
+            Manage user accounts. Demo users (Alice, Bob, Charlie, Frank) are protected and cannot be deleted.
           </Typography>
         </Box>
 
