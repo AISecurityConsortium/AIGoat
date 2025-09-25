@@ -2,6 +2,31 @@
 
 > **An intentionally developed vulnerable application designed to educate security professionals about LLM-based vulnerabilities in a controlled, realistic e-commerce environment.**
 
+## 📑 Table of Contents
+
+### **Setup & Installation**
+- [📋 Project Overview](#-project-overview)
+- [🎯 Prerequisites](#-prerequisites)
+- [🚀 Platform-Specific Setup](#-platform-specific-setup)
+- [⚙️ Configuration](#️-configuration)
+- [🚀 Running the Application](#-running-the-application)
+
+### **Project Documentation**
+- [📁 Project Structure](#-project-structure)
+- [🏗️ Architecture & Tech Stack](#️-architecture--tech-stack)
+- [🚀 Application Capabilities](#-application-capabilities)
+
+### **Security Research**
+- [🚨 LLM Vulnerabilities](#-llm-vulnerabilities)
+- [🤖 Ollama Management](#-ollama-management)
+
+### **Development & Support**
+- [🤝 Contributing](#-contributing)
+- [⚠️ Disclaimer](#️-disclaimer)
+- [📞 Support & Issues](#-support--issues)
+
+---
+
 ## 📋 Project Overview
 
 Red Team Shop is a deliberately vulnerable e-commerce platform that serves as a comprehensive testing ground for LLM security researchers, penetration testers, and cybersecurity professionals. Built with modern web technologies and integrated with Ollama and configurable LLM models, this application provides hands-on experience with real-world LLM attack vectors while maintaining a professional, production-like interface.
