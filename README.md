@@ -2,12 +2,21 @@
 
 > **An intentionally developed vulnerable application designed to educate security professionals about LLM-based vulnerabilities in a controlled, realistic e-commerce environment.**
 
+## 📋 Project Overview
+
+Red Team Shop is a deliberately vulnerable e-commerce platform that serves as a comprehensive testing ground for LLM security researchers, penetration testers, and cybersecurity professionals. Built with modern web technologies and integrated with Ollama and configurable LLM models, this application provides hands-on experience with real-world LLM attack vectors while maintaining a professional, production-like interface.
+
+The platform demonstrates how AI-powered features can be exploited through various attack techniques, making it an invaluable tool for:
+- **Security Research**: Understanding LLM vulnerability patterns
+- **Red Team Training**: Practicing AI security testing techniques
+- **Defense Development**: Building robust LLM security controls
+- **Compliance Testing**: Validating AI system security requirements
+
 ## 📑 Table of Contents
 
 ### **Setup & Installation**
-- [📋 Project Overview](#-project-overview)
 - [🎯 Prerequisites](#-prerequisites)
-- [🚀 Platform-Specific Setup](#-platform-specific-setup)
+- [📋 Platform-Specific Setup](#-platform-specific-setup)
 - [⚙️ Configuration](#️-configuration)
 - [🚀 Running the Application](#-running-the-application)
 
@@ -26,16 +35,6 @@
 - [📞 Support & Issues](#-support--issues)
 
 ---
-
-## 📋 Project Overview
-
-Red Team Shop is a deliberately vulnerable e-commerce platform that serves as a comprehensive testing ground for LLM security researchers, penetration testers, and cybersecurity professionals. Built with modern web technologies and integrated with Ollama and configurable LLM models, this application provides hands-on experience with real-world LLM attack vectors while maintaining a professional, production-like interface.
-
-The platform demonstrates how AI-powered features can be exploited through various attack techniques, making it an invaluable tool for:
-- **Security Research**: Understanding LLM vulnerability patterns
-- **Red Team Training**: Practicing AI security testing techniques
-- **Defense Development**: Building robust LLM security controls
-- **Compliance Testing**: Validating AI system security requirements
 
 ## 🎯 Prerequisites
 
