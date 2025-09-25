@@ -47,13 +47,13 @@ class ProductRAGService:
         self.model_name = os.getenv('OLLAMA_MODEL', 'mistral')
         self.ollama_available = False
         
-        # Initialize LLM parameters
-        self.temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.3'))
-        self.top_p = float(os.getenv('OLLAMA_TOP_P', '0.8'))
-        self.top_k = int(os.getenv('OLLAMA_TOP_K', '40'))
-        self.num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '500'))
+        # Initialize LLM parameters for RAG Chat
+        self.temperature = float(os.getenv('RAG_TEMPERATURE', '0.3'))
+        self.top_p = float(os.getenv('RAG_TOP_P', '0.8'))
+        self.top_k = int(os.getenv('RAG_TOP_K', '40'))
+        self.num_predict = int(os.getenv('RAG_NUM_PREDICT', '500'))
         self.max_input_length = int(os.getenv('OLLAMA_MAX_INPUT_LENGTH', '1000'))
-        self.timeout = int(os.getenv('OLLAMA_TIMEOUT', '60'))
+        self.timeout = int(os.getenv('RAG_TIMEOUT', '60'))
         self._check_ollama_availability()
         
         # System prompt for product assistance

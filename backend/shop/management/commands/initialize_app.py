@@ -76,9 +76,6 @@ class Command(BaseCommand):
         self.setup_rag_knowledge()
         
         self.stdout.write(self.style.SUCCESS('✅ Red Team Shop initialization complete!'))
-        self.stdout.write(self.style.SUCCESS('🌐 Frontend: http://localhost:3000'))
-        self.stdout.write(self.style.SUCCESS('🔧 Backend API: http://localhost:8000'))
-        self.stdout.write(self.style.SUCCESS('👤 Demo Users: alice/password123, bob/password123, admin/admin123'))
 
     def check_database_file(self):
         """Check if database file exists, create if not"""
@@ -625,7 +622,7 @@ class Command(BaseCommand):
                     'warranty': '1 Year Limited Warranty'
                 },
                 'price': 12.99,
-                'image': 'LLM Adversary\'s shot Glass.png',
+                'image': 'LLM Adversary shot Glass.png',
                 'quantity': 120
             },
             {
@@ -1235,6 +1232,18 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'✅ Created {created_knowledge} knowledge base entries for {len(products)} products'))
         else:
             self.stdout.write(self.style.SUCCESS('✅ RAG knowledge base already has data'))
+        
+        # Sync knowledge base to vector database
+        try:
+            from shop.rag_service import rag_service
+            self.stdout.write('🔄 Syncing knowledge base to vector database...')
+            sync_result = rag_service.sync_knowledge_base()
+            if sync_result['success']:
+                self.stdout.write(self.style.SUCCESS(f'✅ Synced {sync_result["synced_count"]} entries to vector database'))
+            else:
+                self.stdout.write(self.style.WARNING(f'⚠️ Failed to sync vector database: {sync_result.get("error", "Unknown error")}'))
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'⚠️ Error syncing vector database: {str(e)}'))
     
     def _generate_product_knowledge(self, product):
         """Generate comprehensive knowledge base entries for a product"""

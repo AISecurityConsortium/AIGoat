@@ -429,11 +429,11 @@ class CrackyChatView(APIView):
             # Call Ollama API with optimized parameters using connection pooling
             ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
             model_name = os.getenv('OLLAMA_MODEL', 'mistral')
-            temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.7'))
-            top_p = float(os.getenv('OLLAMA_TOP_P', '0.9'))
-            top_k = int(os.getenv('OLLAMA_TOP_K', '40'))
-            num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '500'))
-            timeout = int(os.getenv('OLLAMA_TIMEOUT', '60'))
+            temperature = float(os.getenv('CRACKY_TEMPERATURE', '0.7'))
+            top_p = float(os.getenv('CRACKY_TOP_P', '0.9'))
+            top_k = int(os.getenv('CRACKY_TOP_K', '40'))
+            num_predict = int(os.getenv('CRACKY_NUM_PREDICT', '500'))
+            timeout = int(os.getenv('CRACKY_TIMEOUT', '60'))
             
             response = _optimized_session.post(f'{ollama_url}/api/generate', 
                 json={
@@ -825,11 +825,11 @@ We offer secure payment processing, fast shipping, and excellent customer servic
             print(f"DEBUG: Calling Ollama with optimized prompt length: {len(full_prompt)}")
             ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
             model_name = os.getenv('OLLAMA_MODEL', 'mistral')
-            temperature = float(os.getenv('OLLAMA_TEMPERATURE', '0.5'))
-            top_p = float(os.getenv('OLLAMA_TOP_P', '0.8'))
-            top_k = int(os.getenv('OLLAMA_TOP_K', '30'))
-            num_predict = int(os.getenv('OLLAMA_NUM_PREDICT', '300'))
-            timeout = int(os.getenv('OLLAMA_TIMEOUT', '45'))
+            temperature = float(os.getenv('SEARCH_TEMPERATURE', '0.5'))
+            top_p = float(os.getenv('SEARCH_TOP_P', '0.8'))
+            top_k = int(os.getenv('SEARCH_TOP_K', '30'))
+            num_predict = int(os.getenv('SEARCH_NUM_PREDICT', '300'))
+            timeout = int(os.getenv('SEARCH_TIMEOUT', '45'))
             
             response = _optimized_session.post(f'{ollama_url}/api/generate', 
                                   json={
@@ -2071,18 +2071,17 @@ class OllamaStatusView(APIView):
                         }
                     ],
                     'options': {
-                        'temperature': float(os.getenv('OLLAMA_TEMPERATURE', '0.1')),
-                        'num_predict': int(os.getenv('OLLAMA_NUM_PREDICT', '10'))
+                        'temperature': float(os.getenv('RAG_TEMPERATURE', '0.1')),
+                        'num_predict': int(os.getenv('RAG_NUM_PREDICT', '10'))
                     },
                     'stream': False  # Disable streaming to get single JSON response
                 }
                 
-                import os
                 ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
                 reset_response = requests.post(
                     f'{ollama_url}/api/chat',
                     json=reset_data,
-                    timeout=int(os.getenv('OLLAMA_TIMEOUT', '30'))
+                    timeout=int(os.getenv('RAG_TIMEOUT', '30'))
                 )
                 
                 if reset_response.status_code == 200:

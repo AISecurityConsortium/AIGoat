@@ -14,102 +14,221 @@ The platform demonstrates how AI-powered features can be exploited through vario
 
 ## 🎯 Prerequisites
 
-### **Operating System Support**
-- **Linux**: Ubuntu 20.04+, CentOS 8+, RHEL 8+
-- **macOS**: 11.0+ (Big Sur) or later
-- **Windows**: Windows 10/11 with WSL2 or native Python support
+### **Hardware Requirements**
 
-### **Software Requirements**
-
-#### **Core Dependencies**
-- **Python**: 3.11+ (3.12 recommended)
-- **Node.js**: 18+ (20+ recommended)
-- **npm**: 9+ or **yarn**: 1.22+
-- **Git**: 2.30+
-
-#### **AI/ML Requirements**
-- **Ollama**: Latest stable release
-- **LLM Model**: Mistral, Llama2, CodeLlama, or other Ollama-compatible models
-- **RAM**: 8GB+ for model loading
-- **Storage**: 10GB+ free space
-
-### **Hardware Configuration**
-
-#### **Minimum Requirements**
-- **CPU**: 4 cores (Intel i5/AMD Ryzen 5 or better)
-- **RAM**: 8GB DDR4
+#### **Minimum Configuration**
+- **CPU**: 2 cores
+- **RAM**: 8GB
 - **Storage**: 20GB SSD
 - **Network**: Stable internet connection
 
-#### **Recommended Requirements**
-- **CPU**: 8+ cores (Intel i7/AMD Ryzen 7 or better)
-- **RAM**: 16GB+ DDR4
-- **Storage**: 50GB+ NVMe SSD
-- **GPU**: NVIDIA RTX 3060+ (optional, for faster inference)
+#### **Recommended Configuration** ⭐
+- **CPU**: 2 cores
+- **RAM**: 16GB
+- **Storage**: 50GB SSD
+- **GPU**: NVIDIA RTX 3060 (optional, for faster performance)
 
-#### **Ollama-Specific Requirements**
-- **RAM**: 8GB+ for 7B models, 16GB+ for larger models
-- **Storage**: 5GB+ for model files
-- **CPU**: Multi-core processor for optimal performance
+### **Software Prerequisites**
 
-## 🚀 Installation & Setup
+| Software | Version | Purpose |
+|----------|---------|---------|
+| **Python** | 3.11+ | Backend development |
+| **python3-venv** | Latest | Virtual environment management |
+| **Node.js** | 18+ | Frontend development |
+| **npm** | 9+ | Package management |
+| **Git** | 2.30+ | Version control |
+| **pip** | Latest | Python package management |
+| **Ollama** | Latest | LLM model serving |
 
-### **1. Pre requisite**
+## 🚀 Platform-Specific Setup
+
+### **macOS Setup**
+
+#### **1. Install Prerequisites**
 ```bash
-python3
-python3-venv
-pip
-node.js
-npm
-ollama
+# Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
+# Install required software
+brew install python@3.11 node git
+
+# Verify installations
+python3 --version
+node --version
+npm --version
+git --version
 ```
 
-### **2. Clone Repository**
+#### **2. Install Ollama**
 ```bash
-git clone https://github.com/AISecurityConsortium/AIGoat.git
-cd AIGoat/
-```
-
-### **3. Ollama Setup (Skip if running already)**
-```bash
-# Install Ollama - Linux
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Install Ollama - Mac
+# Install Ollama
 brew install ollama
 
-# Install Ollama - Windows
-Go to official site to download installer: https://ollama.com/download/windows
-
-# Verify the installation
-ollama --version
-
-# Start Ollama service if it's not running already 
+# Start Ollama service
 ollama serve
 
-# Pull model (in new terminal)
-ollama pull mistral  # or llama2, codellama, etc.
+# Pull Mistral model (in new terminal)
+ollama pull mistral
 
 # Verify installation
 ollama list
 ```
 
-### **3. Project Setup**
+#### **3. Clone and Setup Project**
 ```bash
+# Clone repository
+git clone https://github.com/AISecurityConsortium/AIGoat.git
+cd AIGoat/
+
 # Create virtual environment
 python3 -m venv venv
 
 # Activate virtual environment
-source venv/bin/activate          # Linux/macOS
-# or
-venv\Scripts\activate             # Windows
+source venv/bin/activate
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install Node.js dependencies
+cd frontend
+npm install
+cd ..
 ```
 
-### **4. Start the application**
+### **Linux Setup**
+
+#### **1. Install Prerequisites (Ubuntu/Debian)**
+```bash
+# Update package list
+sudo apt update
+
+# Install required software
+sudo apt install -y python3.11 python3.11-venv nodejs npm git curl
+
+# Verify installations
+python3 --version
+node --version
+npm --version
+git --version
+```
+
+#### **2. Install Ollama**
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama service (automatically starts with 'ollama serve')
+ollama serve
+
+# Pull Mistral model (in new terminal)
+ollama pull mistral
+
+# Verify installation
+ollama list
+```
+
+#### **3. Clone and Setup Project**
+```bash
+# Clone repository
+git clone https://github.com/AISecurityConsortium/AIGoat.git
+cd AIGoat/
+
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Node.js dependencies
+cd frontend
+npm install
+cd ..
+```
+
+### **Windows Support** 🚧
+
+> **Note**: Windows support is currently in development. For now, please use WSL2 (Windows Subsystem for Linux) or a Linux virtual machine to run this application.
+
+## ⚙️ Configuration
+
+### **Environment Setup**
+
+#### **1. Configure Environment Variables**
+```bash
+# Copy environment template
+cp env.example .env
+
+# Edit configuration file
+nano .env  # or use your preferred editor
+```
+
+#### **2. Local Development Configuration**
+```bash
+# .env file for local development
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# AI Service Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=mistral
+
+# Frontend Configuration
+REACT_APP_API_URL=http://localhost:8000
+```
+
+#### **3. Cloud Deployment Configuration (AWS/Azure)**
+```bash
+# .env file for cloud deployment
+SECRET_KEY=your-super-secure-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=your-domain.com,your-ip-address
+
+# AI Service Configuration
+OLLAMA_BASE_URL=http://your-ollama-service:11434
+OLLAMA_MODEL=mistral
+
+# Frontend Configuration
+REACT_APP_API_URL=http://your-backend-api:8000
+
+# React Development Server Configuration for Cloud
+DANGEROUSLY_DISABLE_HOST_CHECK=true
+HOST=0.0.0.0
+WDS_SOCKET_HOST=0.0.0.0
+WDS_SOCKET_PORT=3000
+HTTPS=false
+```
+
+#### **4. LLM Parameters Configuration**
+```bash
+# CRACKY AI ASSISTANT - Creative and unpredictable behavior
+CRACKY_TEMPERATURE=0.7          # High creativity for "cracky" responses
+CRACKY_TOP_P=0.9               # High diversity in word choices
+CRACKY_TOP_K=40                # Balanced diversity
+CRACKY_NUM_PREDICT=500         # Longer responses for creativity
+CRACKY_TIMEOUT=60              # Standard timeout
+
+# SEARCH AI ASSISTANT - Focused and relevant search results
+SEARCH_TEMPERATURE=0.5          # Moderate creativity for search relevance
+SEARCH_TOP_P=0.8               # Focused vocabulary
+SEARCH_TOP_K=30                 # More focused responses
+SEARCH_NUM_PREDICT=300         # Shorter, focused responses
+SEARCH_TIMEOUT=45              # Faster timeout for search
+
+# RAG CHAT ASSISTANT - Factual and knowledge-based responses
+RAG_TEMPERATURE=0.3             # Low creativity for factual accuracy
+RAG_TOP_P=0.8                  # Consistent vocabulary
+RAG_TOP_K=40                   # Balanced for knowledge retrieval
+RAG_NUM_PREDICT=500           # Longer responses for detailed answers
+RAG_TIMEOUT=60                # Standard timeout
+```
+
+## 🚀 Running the Application
+
+### **Quick Start**
 ```bash
 # Start all services (recommended)
 ./start_app.sh
@@ -121,18 +240,19 @@ pip install -r requirements.txt
 echo "y" | ./start_app.sh --clean-db
 ```
 
-## 👥 User Accounts
+### **Application URLs**
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **Ollama Service**: http://localhost:11434
 
-### **Demo Users (Auto-created)**
+### **Demo User Accounts**
 | Username | Password | Role | Purpose |
 |----------|----------|------|---------|
 | `alice` | `password123` | Customer | General user testing, cart operations |
 | `bob` | `password123` | Customer | Order management, review testing |
+| `charlie` | `password123` | Customer | Product browsing, search testing |
+| `frank` | `password123` | Demo | Demo user for testing |
 | `admin` | `admin123` | Administrator | System management, AI service control |
-
-### **User Capabilities**
-- **Customers**: Product browsing, cart management, order placement, reviews
-- **Admin**: User management, inventory control, AI service monitoring, system configuration
 
 ### **Stop Application**
 ```bash
@@ -146,16 +266,10 @@ echo "y" | ./start_app.sh --clean-db
 ./stop_app.sh --force
 ```
 
-### **Supported Flags**
-- `--clean-db`: Reset database to initial state
-- `--force`: Force kill all processes
-- `--help`: Display usage information
-
-
 ## 📁 Project Structure
 
 ```
-RedTeamShop/
+AIGoat/
 ├── backend/                     # Django backend application
 │   ├── backend/                # Django project configuration
 │   │   ├── settings.py         # Application settings
@@ -165,15 +279,17 @@ RedTeamShop/
 │   │   ├── models.py          # Database models
 │   │   ├── views.py           # API endpoints
 │   │   ├── rag_service.py     # AI/RAG integration
+│   │   ├── management/        # Django management commands
 │   │   └── urls.py            # Application routing
-│   ├── media                  # Product images
+│   ├── media/                  # Product images and assets
 │   ├── manage.py              # Django management
 │   └── requirements.txt       # Python dependencies
 ├── frontend/                    # React frontend application
 │   ├── src/                   # Source code
 │   │   ├── components/        # Reusable components
 │   │   ├── pages/            # Page components
-│   │   └── config/           # Configuration files
+│   │   ├── config/           # Configuration files
+│   │   └── contexts/         # React contexts
 │   ├── package.json          # Node.js dependencies
 │   └── public/               # Static assets
 ├── start_app.sh               # Application startup script
@@ -219,58 +335,43 @@ RedTeamShop/
 - **Semantic Search**: Vector-based product discovery
 - **Smart Recommendations**: AI-driven product suggestions
 - **Natural Language Queries**: Conversational product search
+- **Cracky AI Assistant**: Creative and unpredictable AI responses
 
+## 🚨 LLM Vulnerabilities
 
-## 🤖 Ollama Management
-
-### **Service Administration**
-- **Status Monitoring**: Real-time Ollama service health checks
-- **Model Management**: Context reset and model verification
-- **Performance Metrics**: Response time and availability tracking
-- **Error Handling**: Graceful degradation when AI services are unavailable
-
-### **Admin Controls**
-- **AI Service Dashboard**: Comprehensive monitoring interface
-- **Context Reset**: Clear model conversation history
-- **Service Configuration**: Ollama URL and model settings
-- **Performance Analytics**: Usage statistics and system health
-
-### **Integration Points**
-- **Product Search**: AI-powered semantic search functionality
-- **Cracky AI Chat**: Intelligent customer support system
-- **RAG System**: Retrieval-augmented generation for product queries
-- **Knowledge Base**: Dynamic product information management
-
-## 🚨 LLM Vulnerabilities Tested
-
-### **Current Vulnerabilities**
+### **Currently Available for Testing**
 
 #### **LLM01: Prompt Injection**
 - **Direct Injection**: Malicious prompts in user input
 - **Indirect Injection**: Injection via product reviews and metadata
 - **Context Manipulation**: Exploiting conversation history
+- **System Prompt Leakage**: Revealing system instructions
 
 #### **LLM02: Sensitive Information Disclosure**
 - **Data Leakage**: Exposing internal system information
 - **User Privacy**: Unauthorized access to personal data
 - **Business Logic**: Revealing application internals
+- **Configuration Disclosure**: Exposing system settings
 
 #### **LLM04: Data Poisoning**
 - **Knowledge Base Manipulation**: Corrupting product information
 - **Training Data Pollution**: Injecting false information
 - **Persistent Attacks**: Long-term data corruption
+- **Review Poisoning**: Manipulating product reviews
 
 #### **LLM07: System Prompt Leakage**
 - **Prompt Extraction**: Revealing system instructions
 - **Security Bypass**: Circumventing access controls
 - **Configuration Disclosure**: Exposing system settings
+- **Internal Logic Exposure**: Revealing application internals
 
 #### **LLM08: Misinformation**
 - **False Information**: Generating incorrect product details
 - **Hallucination**: Creating non-existent product features
 - **Confidence Manipulation**: High-confidence false responses
+- **Fabricated Data**: Generating fake product information
 
-### **Upcoming Vulnerabilities**
+### **Upcoming Vulnerabilities** 🚧
 
 #### **LLM03: Supply Chain Vulnerabilities**
 - **Model Tampering**: Compromised model weights
@@ -297,7 +398,25 @@ RedTeamShop/
 - **Rate Limiting Bypass**: Circumventing usage restrictions
 - **Cost Manipulation**: Exploiting billing mechanisms
 
+## 🤖 Ollama Management
 
+### **Service Administration**
+- **Status Monitoring**: Real-time Ollama service health checks
+- **Model Management**: Context reset and model verification
+- **Performance Metrics**: Response time and availability tracking
+- **Error Handling**: Graceful degradation when AI services are unavailable
+
+### **Admin Controls**
+- **AI Service Dashboard**: Comprehensive monitoring interface
+- **Context Reset**: Clear model conversation history
+- **Service Configuration**: Ollama URL and model settings
+- **Performance Analytics**: Usage statistics and system health
+
+### **Integration Points**
+- **Product Search**: AI-powered semantic search functionality
+- **Cracky AI Chat**: Intelligent customer support system
+- **RAG System**: Retrieval-augmented generation for product queries
+- **Knowledge Base**: Dynamic product information management
 
 ## 🤝 Contributing
 
@@ -313,7 +432,6 @@ We welcome contributions from the security research community!
 - **Responsible Disclosure**: Report vulnerabilities through proper channels
 - **Testing Environment**: Use only in controlled, authorized environments
 - **Documentation**: Document all findings and exploitation techniques
-
 
 ## ⚠️ Disclaimer
 
@@ -334,6 +452,6 @@ We welcome contributions from the security research community!
 
 ---
 
-**Happy Security Research! 🔒🚀** 
+**Happy Security Research! 🔒🚀**
 
 **With ❤️ from [Farooq](https://www.linkedin.com/in/farooqmohammad/) & [Nal](https://www.linkedin.com/in/nalinikanth-m/)**

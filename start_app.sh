@@ -103,6 +103,11 @@ ENVIRONMENT VARIABLES:
 
     Frontend Configuration:
     REACT_APP_API_URL         Backend API URL for frontend (default: $DEFAULT_REACT_APP_API_URL)
+    DANGEROUSLY_DISABLE_HOST_CHECK  Disable host header validation (for AWS deployment)
+    HOST                        Bind React dev server to specific host (0.0.0.0 for all interfaces)
+    WDS_SOCKET_HOST            Webpack dev server socket host
+    WDS_SOCKET_PORT            Webpack dev server socket port
+    HTTPS                      Enable HTTPS for React dev server (true/false)
 
     Logging Configuration:
     LOG_LEVEL                 Log level (DEBUG, INFO, WARN, ERROR, default: INFO)
@@ -817,7 +822,25 @@ start_frontend() {
     local frontend_port=${FRONTEND_PORT:-$DEFAULT_FRONTEND_PORT}
     frontend_port=$(find_available_port $frontend_port "frontend")
     
-    local start_command="cd frontend && PORT=$frontend_port BROWSER=none npm start"
+    # Set React environment variables from main .env file
+    local react_env=""
+    if [[ -n "$DANGEROUSLY_DISABLE_HOST_CHECK" ]]; then
+        react_env="$react_env DANGEROUSLY_DISABLE_HOST_CHECK=$DANGEROUSLY_DISABLE_HOST_CHECK"
+    fi
+    if [[ -n "$HOST" ]]; then
+        react_env="$react_env HOST=$HOST"
+    fi
+    if [[ -n "$WDS_SOCKET_HOST" ]]; then
+        react_env="$react_env WDS_SOCKET_HOST=$WDS_SOCKET_HOST"
+    fi
+    if [[ -n "$WDS_SOCKET_PORT" ]]; then
+        react_env="$react_env WDS_SOCKET_PORT=$WDS_SOCKET_PORT"
+    fi
+    if [[ -n "$HTTPS" ]]; then
+        react_env="$react_env HTTPS=$HTTPS"
+    fi
+    
+    local start_command="cd frontend && PORT=$frontend_port BROWSER=none$react_env npm start"
     
     if start_service "frontend" "$frontend_port" "$start_command" "frontend" "frontend.log"; then
         log "INFO" "Frontend started successfully on port $frontend_port"
@@ -1091,14 +1114,13 @@ echo "================================"
         echo -e "${BLUE}🌐 Frontend: http://$frontend_host:$frontend_port${NC}"
         echo -e "${BLUE}🔧 Backend API: http://$backend_host:$backend_port${NC}"
         echo -e "${BLUE}🤖 Ollama: ${DEFAULT_OLLAMA_BASE_URL}${NC}"
-echo -e "${BLUE}📚 Documentation: README.md${NC}"
         echo -e "${BLUE}🎯 Demo Users: alice/password123, bob/password123, charlie/password123, frank/password123, admin/admin123${NC}"
         echo -e "${BLUE}🎫 Demo Coupon: WELCOME20 (20% off, min \$0 purchase)${NC}"
-echo ""
-echo -e "${YELLOW}💡 Use ./stop_app.sh to stop the application${NC}"
-echo ""
+        echo ""
+        echo -e "${YELLOW}💡 Use ./stop_app.sh to stop the application${NC}"
+        echo ""
         echo -e "${BLUE}📝 Logs are being written to startup.log, backend.log, and frontend.log${NC}"
-echo -e "${BLUE}🔄 Servers are running in the background...${NC}"
+        echo -e "${BLUE}🔄 Servers are running in the background...${NC}"
 
         # Interactive mode if enabled
         interactive_mode
