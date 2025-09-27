@@ -26,6 +26,7 @@ import {
   ShoppingBag as OrderIcon,
   Inventory as InventoryIcon,
   LocalOffer as CouponIcon,
+  Feedback as FeedbackIcon,
   TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
   Assignment as OrderManagementIcon,
@@ -457,6 +458,15 @@ const AdminDashboard = () => {
                 </Button>
                 <Button
                   variant="contained"
+                  startIcon={<FeedbackIcon />}
+                  onClick={() => navigate('/feedback-management')}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start' }}
+                >
+                  Manage Feedback
+                </Button>
+                <Button
+                  variant="contained"
                   startIcon={<PeopleIcon />}
                   onClick={() => navigate('/user-management')}
                   fullWidth
@@ -473,15 +483,15 @@ const AdminDashboard = () => {
                 >
                   Manage Inventory
                 </Button>
-                                  <Button
-                    variant="contained"
-                    startIcon={<CouponIcon />}
-                    onClick={() => navigate('/coupons')}
-                    fullWidth
-                    sx={{ justifyContent: 'flex-start' }}
-                  >
-                    Manage Coupons
-                  </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<CouponIcon />}
+                  onClick={() => navigate('/coupons')}
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start' }}
+                >
+                  Manage Coupons
+                </Button>
                   <Button
                     variant="contained"
                     startIcon={<AIIcon />}

@@ -146,10 +146,10 @@ get_port_pids() {
 # Kill processes by PIDs
 kill_processes() {
     local process_name=$1
-    shift
-    local pids=("$@")
     local graceful_timeout=${2:-2}
     local force_timeout=${3:-1}
+    shift 3
+    local pids=("$@")
     
     if [[ ${#pids[@]} -eq 0 ]]; then
         return 0
@@ -160,7 +160,7 @@ kill_processes() {
     if [[ "$FORCE_MODE" == false ]]; then
         # Graceful shutdown
         for pid in "${pids[@]}"; do
-            if ps -p $pid >/dev/null 2>&1; then
+            if timeout 1 ps -p $pid >/dev/null 2>&1; then
                 kill $pid 2>/dev/null || true
             fi
         done
@@ -172,7 +172,8 @@ kill_processes() {
         while [[ $wait_count -lt $max_wait ]]; do
             local remaining_pids=()
             for pid in "${pids[@]}"; do
-                if ps -p $pid >/dev/null 2>&1; then
+                # Use timeout to prevent hanging on ps command
+                if timeout 1 ps -p $pid >/dev/null 2>&1; then
                     remaining_pids+=($pid)
                 fi
             done
@@ -189,7 +190,7 @@ kill_processes() {
         if [[ $wait_count -eq $max_wait ]]; then
             log "WARN" "Processes still running, forcing shutdown..."
             for pid in "${pids[@]}"; do
-                if ps -p $pid >/dev/null 2>&1; then
+                if timeout 1 ps -p $pid >/dev/null 2>&1; then
                     kill -9 $pid 2>/dev/null || true
                 fi
             done
@@ -198,7 +199,7 @@ kill_processes() {
     else
         # Force kill immediately
         for pid in "${pids[@]}"; do
-            if ps -p $pid >/dev/null 2>&1; then
+            if timeout 1 ps -p $pid >/dev/null 2>&1; then
                 kill -9 $pid 2>/dev/null || true
             fi
         done
@@ -234,7 +235,7 @@ stop_service() {
     
     # Kill processes
     if [[ ${#unique_pids[@]} -gt 0 ]]; then
-        kill_processes "$service_name" "${unique_pids[@]}"
+        kill_processes "$service_name" 2 1 "${unique_pids[@]}"
     else
         log "WARN" "No $service_name processes found"
     fi
@@ -411,7 +412,8 @@ clean_database() {
         echo -e "${YELLOW}   - All reviews will be deleted${NC}"
         echo -e "${YELLOW}   - All users except admin and demo users will be deleted${NC}"
         echo -e "${YELLOW}   - All orders except demo user orders will be deleted${NC}"
-        echo -e "${YELLOW}   - All product tips will be deleted${NC}"
+        echo -e "${YELLOW}   - All customer submitted tips will be deleted${NC}"
+        echo -e "${YELLOW}   - All admin-created coupons will be deleted${NC}"
         echo -e "${YELLOW}   - All RAG chat sessions will be deleted${NC}"
         echo ""
         read -p "Are you sure you want to continue? (y/N): " -n 1 -r
@@ -436,7 +438,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from shop.models import Review, Order, ProductTip, CouponUsage, RAGChatSession
+from shop.models import Review, Order, ProductTip, CouponUsage, Coupon, RAGChatSession
 
 print("🗄️  Cleaning database...")
 
@@ -445,15 +447,20 @@ review_count = Review.objects.count()
 Review.objects.all().delete()
 print(f"✅ Deleted {review_count} reviews")
 
-# Delete all product tips
+# Delete all customer submitted tips/feedback
 tip_count = ProductTip.objects.count()
 ProductTip.objects.all().delete()
-print(f"✅ Deleted {tip_count} product tips")
+print(f"✅ Deleted {tip_count} customer submitted tips/feedback")
 
 # Delete all coupon usage records
 coupon_usage_count = CouponUsage.objects.count()
 CouponUsage.objects.all().delete()
 print(f"✅ Deleted {coupon_usage_count} coupon usage records")
+
+# Delete all admin-created coupons
+coupon_count = Coupon.objects.count()
+Coupon.objects.all().delete()
+print(f"✅ Deleted {coupon_count} admin-created coupons")
 
 # Delete all RAG chat sessions
 rag_session_count = RAGChatSession.objects.count()
@@ -489,9 +496,9 @@ EOF
         # Remove temporary script
         rm -f temp_cleanup.py
         
-        # Reinitialize the database with fresh data
+        # Reinitialize the database with fresh data (suppress verbose output)
         log "INFO" "Reinitializing database with fresh data..."
-        if python manage.py initialize_app; then
+        if python manage.py initialize_app 2>/dev/null; then
             log "SUCCESS" "Database reinitialized successfully!"
         else
             log "ERROR" "Error reinitializing database"

@@ -30,6 +30,7 @@ import {
   Chat as ChatIcon,
   LibraryBooks as LibraryBooksIcon,
   SmartToy as AIIcon,
+  Feedback as FeedbackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../contexts/SearchContext';
@@ -338,6 +339,15 @@ const Header = () => {
                 )}
                 
                 {isAdmin && (
+                  <MenuItem onClick={() => handleMenuClick('/feedback-management')}>
+                    <ListItemIcon>
+                      <FeedbackIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Feedback Management</ListItemText>
+                  </MenuItem>
+                )}
+                
+                {isAdmin && (
                   <MenuItem onClick={() => handleMenuClick('/inventory')}>
                     <ListItemIcon>
                       <InventoryIcon fontSize="small" />
@@ -371,7 +381,7 @@ const Header = () => {
                   </MenuItem>
                 )}
                 
-                {ragSystemEnabled && !ragLoading && (
+                {isLoggedIn && (
                   <MenuItem onClick={() => handleMenuClick('/rag-chat')}>
                     <ListItemIcon>
                       <ChatIcon fontSize="small" />

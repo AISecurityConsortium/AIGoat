@@ -754,7 +754,8 @@ initialize_app() {
     if [[ "$SKIP_DB_INIT" == "true" ]]; then
         log "INFO" "Skipping database initialization (--no-db-init flag set)"
     else
-        if ! $python_cmd manage.py initialize_app; then
+        # Suppress verbose output from knowledge base syncing
+        if ! $python_cmd manage.py initialize_app 2>/dev/null; then
             log "WARN" "Application initialization had issues, but continuing..."
         fi
     fi
@@ -1116,11 +1117,11 @@ echo "================================"
         echo -e "${BLUE}🤖 Ollama: ${DEFAULT_OLLAMA_BASE_URL}${NC}"
         echo -e "${BLUE}🎯 Demo Users: alice/password123, bob/password123, charlie/password123, frank/password123, admin/admin123${NC}"
         echo -e "${BLUE}🎫 Demo Coupon: WELCOME20 (20% off, min \$0 purchase)${NC}"
-        echo ""
-        echo -e "${YELLOW}💡 Use ./stop_app.sh to stop the application${NC}"
-        echo ""
+echo ""
+echo -e "${YELLOW}💡 Use ./stop_app.sh to stop the application${NC}"
+echo ""
         echo -e "${BLUE}📝 Logs are being written to startup.log, backend.log, and frontend.log${NC}"
-        echo -e "${BLUE}🔄 Servers are running in the background...${NC}"
+echo -e "${BLUE}🔄 Servers are running in the background...${NC}"
 
         # Interactive mode if enabled
         interactive_mode

@@ -20,6 +20,7 @@ import AdminOrderManagement from './components/AdminOrderManagement';
 import AdminDashboard from './components/AdminDashboard';
 import Coupons from './components/Coupons';
 import InventoryManagement from './components/InventoryManagement';
+import FeedbackManagement from './components/FeedbackManagement';
 import OllamaAIServicePage from './components/OllamaAIServicePage';
 import { SearchProvider } from './contexts/SearchContext';
 import { ChatProvider } from './contexts/ChatContext';
@@ -107,6 +108,11 @@ function App() {
                 <Route path="/inventory" element={
                   <ProtectedRoute>
                     <InventoryManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/feedback-management" element={
+                  <ProtectedRoute>
+                    <FeedbackManagement />
                   </ProtectedRoute>
                 } />
                 <Route path="/rag-chat" element={

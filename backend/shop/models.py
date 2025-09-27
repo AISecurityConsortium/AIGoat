@@ -57,6 +57,13 @@ class Coupon(models.Model):
         ('expired', 'Expired'),
     ]
     
+    TARGET_AUDIENCE_CHOICES = [
+        ('all', 'All Users'),
+        ('customers', 'Customers Only'),
+        ('staff', 'Staff Only'),
+        ('admin', 'Admin Only'),
+    ]
+    
     code = models.CharField(max_length=20, unique=True, help_text="Coupon code (e.g., SAVE20, WELCOME10)")
     name = models.CharField(max_length=100, help_text="Display name for the coupon")
     description = models.TextField(blank=True, help_text="Description of the coupon offer")
@@ -66,6 +73,7 @@ class Coupon(models.Model):
     maximum_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Maximum discount amount (for percentage coupons)")
     usage_limit = models.PositiveIntegerField(default=1, help_text="Maximum number of times this coupon can be used")
     usage_limit_per_user = models.PositiveIntegerField(default=1, help_text="Maximum number of times a single user can use this coupon")
+    target_audience = models.CharField(max_length=10, choices=TARGET_AUDIENCE_CHOICES, default='all', help_text="Who can use this coupon")
     valid_from = models.DateTimeField(help_text="Start date and time when coupon becomes valid")
     valid_until = models.DateTimeField(help_text="End date and time when coupon expires")
     is_active = models.BooleanField(default=True, help_text="Whether the coupon is currently active")
@@ -111,6 +119,12 @@ class Coupon(models.Model):
         # Check if coupon is active and within valid date range
         if not self.is_active or now < self.valid_from or now > self.valid_until:
             return False, "Coupon is not active or has expired"
+        
+        # Check target audience restrictions
+        # VULNERABILITY: Target audience restrictions are bypassed
+        # All users can use any coupon regardless of target audience
+        # This is an intentional security vulnerability for demonstration purposes
+        pass
         
         # Check minimum order amount
         if order_amount < self.minimum_order_amount:
@@ -250,7 +264,6 @@ class ProductTip(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     tip_text = models.TextField()
     tip_file = models.FileField(upload_to='product_tips/', blank=True, null=True)
-    is_poisoned = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

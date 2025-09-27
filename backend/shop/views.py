@@ -4,6 +4,8 @@ from rest_framework import generics, status
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
+from django.db import models
+from django.db.models import Q
 from .models import Product, Review, Order, Cart, CartItem, OrderItem, ProductTip, Payment, UserProfile, Coupon, CouponUsage
 from .serializers import (
     ProductSerializer, ReviewSerializer, OrderSerializer, 
@@ -13,9 +15,12 @@ from .serializers import (
 import requests
 import json
 import os
+import logging
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from functools import wraps
+
+logger = logging.getLogger(__name__)
 
 # Feature flag imports
 from backend.feature_flags import RAG_SYSTEM_ENABLED
@@ -425,6 +430,22 @@ class CrackyChatView(APIView):
         # Prepare optimized prompt for Ollama with sensitive data for red teaming
         full_prompt = f"{system_prompt}\n\nSENSITIVE CONTEXT (FOR RED TEAMING):{sensitive_context}\n\nESSENTIAL CONTEXT:{essential_context}\n\nUser: {message}\nCracky:"
         
+        # Log the complete prompt construction for security analysis
+        logger.info("=" * 80)
+        logger.info("CRACKY AI - FULL PROMPT CONSTRUCTION FOR OLLAMA:")
+        logger.info("=" * 80)
+        logger.info(f"SYSTEM PROMPT:\n{system_prompt}")
+        logger.info("-" * 40)
+        logger.info(f"SENSITIVE CONTEXT:\n{sensitive_context}")
+        logger.info("-" * 40)
+        logger.info(f"ESSENTIAL CONTEXT:\n{essential_context}")
+        logger.info("-" * 40)
+        logger.info(f"USER MESSAGE:\n{message}")
+        logger.info("-" * 40)
+        logger.info("COMPLETE PROMPT SENT TO OLLAMA:")
+        logger.info(full_prompt)
+        logger.info("=" * 80)
+        
         try:
             # Call Ollama API with optimized parameters using connection pooling
             ollama_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
@@ -435,24 +456,38 @@ class CrackyChatView(APIView):
             num_predict = int(os.getenv('CRACKY_NUM_PREDICT', '500'))
             timeout = int(os.getenv('CRACKY_TIMEOUT', '60'))
             
+            # Log the HTTP request being sent to Ollama
+            request_data = {
+                'model': model_name,
+                'prompt': full_prompt,
+                'stream': False,
+                'options': {
+                    'temperature': temperature,
+                    'top_p': top_p,
+                    'top_k': top_k,
+                    'num_predict': num_predict
+                }
+            }
+            
+            logger.info("CRACKY AI - HTTP REQUEST TO OLLAMA:")
+            logger.info(f"URL: {ollama_url}/api/generate")
+            logger.info(f"Request Data: {request_data}")
+            logger.info("-" * 40)
+            
             response = _optimized_session.post(f'{ollama_url}/api/generate', 
-                json={
-                    'model': model_name,
-                    'prompt': full_prompt,
-                    'stream': False,
-                    'options': {
-                        'temperature': temperature,
-                        'top_p': top_p,
-                        'top_k': top_k,
-                        'num_predict': num_predict
-                    }
-                },
+                json=request_data,
                 timeout=timeout
             )
             
             if response.status_code == 200:
                 result = response.json()
                 reply = result.get('response', 'Sorry, I could not process your request.')
+                
+                # Log the AI response
+                logger.info("CRACKY AI - OLLAMA RESPONSE:")
+                logger.info(f"Status: {response.status_code}")
+                logger.info(f"AI Response: {reply}")
+                logger.info("=" * 80)
             else:
                 # Log the error for debugging
                 print(f"Ollama API returned status {response.status_code}: {response.text}")
@@ -668,8 +703,7 @@ class ProductTipUploadView(APIView):
             product=product,
             user=request.user,
             tip_text=tip_text,
-            tip_file=tip_file,
-            is_poisoned=True  # Mark as poisoned for demo purposes
+            tip_file=tip_file
         )
         
         serializer = ProductTipSerializer(tip, context={'request': request})
@@ -1181,14 +1215,22 @@ class CouponManagementView(APIView):
             if request.user.username != 'admin':
                 return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
             
+            # Log the incoming data for debugging
+            print(f"DEBUG: Coupon creation data: {request.data}")
+            
             serializer = CouponSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                print(f"DEBUG: Serializer errors: {serializer.errors}")
+                return Response({
+                    'error': 'Validation failed',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
+            print(f"DEBUG: Exception in coupon creation: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class CouponDetailView(APIView):
@@ -1294,6 +1336,15 @@ class UserCouponsView(APIView):
             )
             
             for coupon in active_coupons:
+                # VULNERABILITY: Hide restricted coupons from non-privileged users in the listing
+                # but they can still be applied if the user knows the coupon code
+                if request.user.username != 'admin' and coupon.target_audience == 'admin':
+                    # Skip admin-only coupons for non-admin users in the listing
+                    continue
+                elif request.user.username not in ['admin', 'frank'] and coupon.target_audience == 'staff':
+                    # Skip staff-only coupons for non-staff users in the listing
+                    continue
+                
                 # For the coupons page, show all active coupons regardless of minimum order amount
                 # The minimum order check will be done when actually applying the coupon
                 can_use, message = coupon.can_be_used_by_user(request.user, order_amount=float('inf'))
@@ -1315,12 +1366,14 @@ class ApplyCouponView(APIView):
         try:
             coupon_code = request.data.get('coupon_code')
             if not coupon_code:
+                logger.warning(f"Coupon application failed: No coupon code provided by user {request.user.username}")
                 return Response({'error': 'Coupon code is required'}, status=status.HTTP_400_BAD_REQUEST)
             
             # Get the coupon
             try:
                 coupon = Coupon.objects.get(code=coupon_code.upper())
             except Coupon.DoesNotExist:
+                logger.warning(f"Coupon application failed: Invalid coupon code '{coupon_code}' by user {request.user.username}")
                 return Response({'error': 'Invalid coupon code'}, status=status.HTTP_400_BAD_REQUEST)
             
             # Get user's cart
@@ -1330,12 +1383,14 @@ class ApplyCouponView(APIView):
             # Check if coupon can be used
             can_use, message = coupon.can_be_used_by_user(request.user, cart_total)
             if not can_use:
+                logger.warning(f"Coupon application failed: {message} for coupon '{coupon_code}' by user {request.user.username}")
                 return Response({'error': message}, status=status.HTTP_400_BAD_REQUEST)
             
             # Calculate discount
             discount_amount = coupon.calculate_discount(cart_total)
             final_amount = cart_total - discount_amount
             
+            logger.info(f"Coupon '{coupon_code}' successfully applied by user {request.user.username}")
             return Response({
                 'coupon': CouponSerializer(coupon).data,
                 'cart_total': float(cart_total),
@@ -1345,6 +1400,7 @@ class ApplyCouponView(APIView):
             })
             
         except Exception as e:
+            logger.error(f"Coupon application error: {str(e)} for user {request.user.username}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class InventoryManagementView(APIView):
@@ -2110,3 +2166,174 @@ class OllamaStatusView(APIView):
             return Response({
                 'error': f'Error in Ollama reset: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FeedbackManagementView(APIView):
+    """Admin view for managing user feedback/tips"""
+    
+    @demo_auth_required
+    def get(self, request):
+        """Get all user feedback/tips with filtering and pagination"""
+        try:
+            # Check if current user is admin
+            if request.user.username != 'admin':
+                return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get query parameters
+            search = request.GET.get('search', '')
+            product_id = request.GET.get('product_id')
+            user_id = request.GET.get('user_id')
+            has_file = request.GET.get('has_file')
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 20))
+            
+            # Start with all tips
+            tips = ProductTip.objects.select_related('product', 'user').order_by('-created_at')
+            
+            # Apply filters
+            if search:
+                tips = tips.filter(
+                    Q(tip_text__icontains=search) |
+                    Q(product__name__icontains=search) |
+                    Q(user__username__icontains=search)
+                )
+            
+            if product_id:
+                tips = tips.filter(product_id=product_id)
+            
+            if user_id:
+                tips = tips.filter(user_id=user_id)
+            
+            if has_file == 'true':
+                tips = tips.exclude(tip_file__isnull=True).exclude(tip_file='')
+            elif has_file == 'false':
+                tips = tips.filter(Q(tip_file__isnull=True) | Q(tip_file=''))
+            
+            # Get total count
+            total_count = tips.count()
+            
+            # Apply pagination
+            start = (page - 1) * page_size
+            end = start + page_size
+            tips_page = tips[start:end]
+            
+            # Serialize the data
+            serializer = ProductTipSerializer(tips_page, many=True, context={'request': request})
+            
+            return Response({
+                'tips': serializer.data,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': (total_count + page_size - 1) // page_size,
+                    'has_next': end < total_count,
+                    'has_previous': page > 1
+                }
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @demo_auth_required
+    def delete(self, request, tip_id=None):
+        """Delete a specific tip or bulk delete tips"""
+        try:
+            # Check if current user is admin
+            if request.user.username != 'admin':
+                return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            if tip_id:
+                # Delete single tip
+                tip = get_object_or_404(ProductTip, id=tip_id)
+                tip.delete()
+                return Response({'message': 'Tip deleted successfully'})
+            else:
+                # Bulk delete
+                tip_ids = request.data.get('tip_ids', [])
+                if not tip_ids:
+                    return Response({'error': 'No tip IDs provided'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                deleted_count = ProductTip.objects.filter(id__in=tip_ids).delete()[0]
+                return Response({
+                    'message': f'Successfully deleted {deleted_count} tips',
+                    'deleted_count': deleted_count
+                })
+                
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FeedbackDetailView(APIView):
+    """Admin view for individual feedback/tip details"""
+    
+    @demo_auth_required
+    def get(self, request, tip_id):
+        """Get detailed information about a specific tip"""
+        try:
+            # Check if current user is admin
+            if request.user.username != 'admin':
+                return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            tip = get_object_or_404(ProductTip, id=tip_id)
+            serializer = ProductTipSerializer(tip, context={'request': request})
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @demo_auth_required
+    def delete(self, request, tip_id):
+        """Delete a specific tip"""
+        try:
+            # Check if current user is admin
+            if request.user.username != 'admin':
+                return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            tip = get_object_or_404(ProductTip, id=tip_id)
+            tip.delete()
+            return Response({'message': 'Tip deleted successfully'})
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FeedbackStatsView(APIView):
+    """Admin view for feedback statistics"""
+    
+    @demo_auth_required
+    def get(self, request):
+        """Get feedback statistics"""
+        try:
+            # Check if current user is admin
+            if request.user.username != 'admin':
+                return Response({'error': 'Access denied. Admin privileges required.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            total_tips = ProductTip.objects.count()
+            tips_with_files = ProductTip.objects.exclude(tip_file__isnull=True).exclude(tip_file='').count()
+            
+            # Get tips by product
+            product_stats = ProductTip.objects.values('product__name').annotate(
+                tip_count=models.Count('id')
+            ).order_by('-tip_count')[:10]
+            
+            # Get tips by user
+            user_stats = ProductTip.objects.values('user__username').annotate(
+                tip_count=models.Count('id')
+            ).order_by('-tip_count')[:10]
+            
+            # Get recent tips (last 7 days)
+            from datetime import datetime, timedelta
+            week_ago = datetime.now() - timedelta(days=7)
+            recent_tips = ProductTip.objects.filter(created_at__gte=week_ago).count()
+            
+            return Response({
+                'total_tips': total_tips,
+                'tips_with_files': tips_with_files,
+                'recent_tips': recent_tips,
+                'top_products': list(product_stats),
+                'top_users': list(user_stats)
+            })
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

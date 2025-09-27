@@ -136,3 +136,62 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Media files (for product images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Logging configuration
+# Set LOG_LEVEL environment variable to control logging verbosity
+# Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'WARNING').upper()
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': LOG_LEVEL,
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'backend.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': LOG_LEVEL,
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['file', 'console'],
+        'level': LOG_LEVEL,
+    },
+    'loggers': {
+        'shop.rag_service': {
+            'handlers': ['file', 'console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'shop.views': {
+            'handlers': ['file', 'console'],
+            'level': LOG_LEVEL,  # Suppress verbose Cracky AI logging
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': LOG_LEVEL,  # Reduce Django framework logging
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}

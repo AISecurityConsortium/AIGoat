@@ -90,8 +90,8 @@ class ProductTipSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ProductTip
-        fields = ['id', 'tip_text', 'tip_file', 'user_name', 'product_name', 'created_at', 'is_poisoned', 'file_content']
-        read_only_fields = ['user_name', 'product_name', 'created_at', 'is_poisoned', 'file_content']
+        fields = ['id', 'tip_text', 'tip_file', 'user_name', 'product_name', 'created_at', 'file_content']
+        read_only_fields = ['user_name', 'product_name', 'created_at', 'file_content']
     
     def get_file_content(self, obj):
         """Get the content of uploaded file for poisoning demonstrations"""
@@ -207,10 +207,53 @@ class CouponSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'code', 'name', 'description', 'discount_type', 'discount_value',
             'minimum_order_amount', 'maximum_discount', 'usage_limit', 'usage_limit_per_user',
-            'valid_from', 'valid_until', 'is_active', 'status', 'total_usage_count',
+            'target_audience', 'valid_from', 'valid_until', 'is_active', 'status', 'total_usage_count',
             'remaining_usage', 'created_at', 'updated_at'
         ]
         read_only_fields = ['status', 'total_usage_count', 'remaining_usage', 'created_at', 'updated_at']
+    
+    def validate_valid_from(self, value):
+        """Convert datetime-local format to proper datetime"""
+        if isinstance(value, str) and 'T' in value:
+            # Handle datetime-local format from frontend
+            if len(value) == 16:  # "YYYY-MM-DDTHH:MM" format
+                value = value + ':00'  # Add seconds
+            return value
+        return value
+    
+    def validate_valid_until(self, value):
+        """Convert datetime-local format to proper datetime"""
+        if isinstance(value, str) and 'T' in value:
+            # Handle datetime-local format from frontend
+            if len(value) == 16:  # "YYYY-MM-DDTHH:MM" format
+                value = value + ':00'  # Add seconds
+            return value
+        return value
+    
+    def validate(self, data):
+        """Custom validation for coupon data"""
+        # Ensure valid_from is before valid_until
+        if data.get('valid_from') and data.get('valid_until'):
+            if data['valid_from'] >= data['valid_until']:
+                raise serializers.ValidationError("Valid from date must be before valid until date")
+        
+        # Ensure usage limits are positive
+        if data.get('usage_limit', 0) <= 0:
+            raise serializers.ValidationError("Usage limit must be greater than 0")
+        
+        if data.get('usage_limit_per_user', 0) <= 0:
+            raise serializers.ValidationError("Usage limit per user must be greater than 0")
+        
+        # Ensure discount value is positive
+        if data.get('discount_value', 0) <= 0:
+            raise serializers.ValidationError("Discount value must be greater than 0")
+        
+        # For percentage discounts, ensure value is between 0 and 100
+        if data.get('discount_type') == 'percentage':
+            if data.get('discount_value', 0) > 100:
+                raise serializers.ValidationError("Percentage discount cannot exceed 100%")
+        
+        return data
 
 class CouponUsageSerializer(serializers.ModelSerializer):
     coupon_code = serializers.CharField(source='coupon.code', read_only=True)
@@ -240,4 +283,43 @@ class RAGChatSessionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = RAGChatSession
-        fields = ['id', 'user', 'user_name', 'session_id', 'query', 'response', 'context_used', 'model_used', 'created_at'] 
+        fields = ['id', 'user', 'user_name', 'session_id', 'query', 'response', 'context_used', 'model_used', 'created_at']
+
+class ProductTipSerializer(serializers.ModelSerializer):
+    """Serializer for product tips/feedback"""
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_id = serializers.IntegerField(source='product.id', read_only=True)
+    tip_file_url = serializers.SerializerMethodField()
+    file_size = serializers.SerializerMethodField()
+    file_extension = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProductTip
+        fields = ['id', 'product', 'product_id', 'product_name', 'user', 'user_name', 'tip_text', 'tip_file', 'tip_file_url', 'file_size', 'file_extension', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def get_tip_file_url(self, obj):
+        """Get the URL for the tip file if it exists"""
+        if obj.tip_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.tip_file.url)
+            return obj.tip_file.url
+        return None
+    
+    def get_file_size(self, obj):
+        """Get the file size in bytes"""
+        if obj.tip_file:
+            try:
+                return obj.tip_file.size
+            except:
+                return None
+        return None
+    
+    def get_file_extension(self, obj):
+        """Get the file extension"""
+        if obj.tip_file:
+            import os
+            return os.path.splitext(obj.tip_file.name)[1].lower()
+        return None 

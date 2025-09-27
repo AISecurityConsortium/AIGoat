@@ -65,6 +65,9 @@ const API_CONFIG = {
 
 // Helper function to get full API URL
 export const getApiUrl = (endpoint) => {
+  if (!endpoint) {
+    return API_CONFIG.BASE_URL;
+  }
   if (typeof endpoint === 'function') {
     return `${API_CONFIG.BASE_URL}${endpoint()}`;
   }

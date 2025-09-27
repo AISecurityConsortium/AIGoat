@@ -1233,11 +1233,21 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.SUCCESS('✅ RAG knowledge base already has data'))
         
-        # Sync knowledge base to vector database
+        # Sync knowledge base to vector database (quiet mode)
         try:
             from shop.rag_service import rag_service
+            # Suppress stdout during sync to avoid progress bars
+            import sys
+            from contextlib import redirect_stdout
+            import io
+            
             self.stdout.write('🔄 Syncing knowledge base to vector database...')
-            sync_result = rag_service.sync_knowledge_base()
+            
+            # Redirect stdout to suppress progress bars
+            f = io.StringIO()
+            with redirect_stdout(f):
+                sync_result = rag_service.sync_knowledge_base()
+            
             if sync_result['success']:
                 self.stdout.write(self.style.SUCCESS(f'✅ Synced {sync_result["synced_count"]} entries to vector database'))
             else:

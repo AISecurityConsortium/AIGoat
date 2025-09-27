@@ -11,6 +11,7 @@ import {
   Chip,
   Button,
   TextField,
+  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -58,6 +59,7 @@ const Coupons = () => {
     maximum_discount: '',
     usage_limit: '',
     usage_limit_per_user: '',
+    target_audience: 'all',
     valid_from: '',
     valid_until: '',
     is_active: true,
@@ -69,8 +71,24 @@ const Coupons = () => {
 
   useEffect(() => {
     if (isAdmin !== null) {
-      fetchCoupons();
+      // Add a small delay to ensure the API is ready
+      const timer = setTimeout(() => {
+        fetchCoupons();
+      }, 100);
+      return () => clearTimeout(timer);
     }
+  }, [isAdmin]);
+
+  // Add a refresh mechanism to ensure data is loaded
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAdmin !== null) {
+        fetchCoupons();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAdmin]);
 
   const checkUserRole = () => {
@@ -81,14 +99,21 @@ const Coupons = () => {
 
   const fetchCoupons = async () => {
     try {
+      setLoading(true);
+      setError('');
+      
       const token = localStorage.getItem('token');
       const endpoint = isAdmin ? '/api/admin/coupons/' : '/api/coupons/';
       
-              const response = await axios.get(`${endpoint}`, {
+      console.log('Fetching coupons from:', endpoint);
+      
+      const response = await axios.get(`${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setCoupons(response.data);
+      console.log('Coupons fetched:', response.data);
+      console.log('Number of coupons:', response.data.length);
+      setCoupons(response.data || []);
     } catch (error) {
       console.error('Error fetching coupons:', error);
       setError('Failed to load coupons');
@@ -100,7 +125,7 @@ const Coupons = () => {
   const fetchUsageStats = async () => {
     try {
       const token = localStorage.getItem('token');
-              const response = await axios.get('/api/admin/coupons/usage/', {
+      const response = await axios.get('/api/admin/coupons/usage/', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsageStats(response.data);
@@ -112,6 +137,17 @@ const Coupons = () => {
 
   const handleCreateCoupon = () => {
     setEditingCoupon(null);
+    
+    // Set default dates to current time and 1 year from now
+    const now = new Date();
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(now.getFullYear() + 1);
+    
+    // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+    const formatDateTime = (date) => {
+      return date.toISOString().slice(0, 16);
+    };
+    
     setFormData({
       code: '',
       name: '',
@@ -122,8 +158,9 @@ const Coupons = () => {
       maximum_discount: '',
       usage_limit: '',
       usage_limit_per_user: '',
-      valid_from: '',
-      valid_until: '',
+      target_audience: 'all',
+      valid_from: formatDateTime(now), // Default to current time
+      valid_until: formatDateTime(oneYearFromNow), // Default to 1 year from now
       is_active: true,
     });
     setDialogOpen(true);
@@ -141,6 +178,7 @@ const Coupons = () => {
       maximum_discount: coupon.maximum_discount || '',
       usage_limit: coupon.usage_limit,
       usage_limit_per_user: coupon.usage_limit_per_user,
+      target_audience: coupon.target_audience || 'all',
       valid_from: coupon.valid_from.slice(0, 16), // Format for datetime-local input
       valid_until: coupon.valid_until.slice(0, 16),
       is_active: coupon.is_active,
@@ -157,7 +195,60 @@ const Coupons = () => {
       
       const method = editingCoupon ? 'put' : 'post';
       
-              const response = await axios[method](`${endpoint}`, formData, {
+      // Validate required fields
+      if (!formData.code.trim()) {
+        setError('Coupon code is required');
+        return;
+      }
+      if (!formData.name.trim()) {
+        setError('Coupon name is required');
+        return;
+      }
+      if (!formData.discount_value || parseFloat(formData.discount_value) <= 0) {
+        setError('Discount value must be greater than 0');
+        return;
+      }
+      if (!formData.usage_limit || parseInt(formData.usage_limit) <= 0) {
+        setError('Usage limit must be greater than 0');
+        return;
+      }
+      if (!formData.usage_limit_per_user || parseInt(formData.usage_limit_per_user) <= 0) {
+        setError('Usage limit per user must be greater than 0');
+        return;
+      }
+      if (!formData.valid_from) {
+        setError('Valid from date is required');
+        return;
+      }
+      if (!formData.valid_until) {
+        setError('Valid until date is required');
+        return;
+      }
+      if (new Date(formData.valid_from) >= new Date(formData.valid_until)) {
+        setError('Valid from date must be before valid until date');
+        return;
+      }
+
+      // Clean and prepare form data
+      const cleanedData = {
+        code: formData.code.trim(),
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        discount_type: formData.discount_type,
+        discount_value: parseFloat(formData.discount_value),
+        minimum_order_amount: parseFloat(formData.minimum_order_amount) || 0,
+        maximum_discount: formData.maximum_discount ? parseFloat(formData.maximum_discount) : null,
+        usage_limit: parseInt(formData.usage_limit),
+        usage_limit_per_user: parseInt(formData.usage_limit_per_user),
+        target_audience: formData.target_audience,
+        valid_from: formData.valid_from,
+        valid_until: formData.valid_until,
+        is_active: formData.is_active
+      };
+      
+      console.log('Sending coupon data:', cleanedData);
+      
+      const response = await axios[method](`${endpoint}`, cleanedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -166,7 +257,8 @@ const Coupons = () => {
       fetchCoupons();
     } catch (error) {
       console.error('Error saving coupon:', error);
-      setError(error.response?.data?.error || 'Failed to save coupon');
+      console.error('Error response:', error.response?.data);
+      setError(error.response?.data?.error || error.response?.data?.details || 'Failed to save coupon');
     }
   };
 
@@ -223,28 +315,37 @@ const Coupons = () => {
         <Typography variant="h4" component="h1">
           {isAdmin ? 'Coupon Management' : 'Available Coupons'}
         </Typography>
-        {isAdmin && (
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={<StatsIcon />}
-              onClick={() => {
-                fetchUsageStats();
-                setStatsDialogOpen(true);
-              }}
-              sx={{ mr: 2 }}
-            >
-              Usage Statistics
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateCoupon}
-            >
-              Create Coupon
-            </Button>
-          </Box>
-        )}
+        <Box>
+          <Button
+            variant="outlined"
+            onClick={fetchCoupons}
+            sx={{ mr: isAdmin ? 2 : 0 }}
+          >
+            Refresh
+          </Button>
+          {isAdmin && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<StatsIcon />}
+                onClick={() => {
+                  fetchUsageStats();
+                  setStatsDialogOpen(true);
+                }}
+                sx={{ mr: 2 }}
+              >
+                Usage Statistics
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleCreateCoupon}
+              >
+                Create Coupon
+              </Button>
+            </>
+          )}
+        </Box>
       </Box>
       
       {error && (
@@ -321,6 +422,19 @@ const Coupons = () => {
                       {coupon.description}
                     </Typography>
                   )}
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Chip
+                      label={coupon.target_audience === 'all' ? 'All Users' : 
+                             coupon.target_audience === 'customers' ? 'Customers Only' :
+                             coupon.target_audience === 'staff' ? 'Staff Only' : 'Admin Only'}
+                      color={coupon.target_audience === 'all' ? 'default' : 
+                             coupon.target_audience === 'customers' ? 'primary' :
+                             coupon.target_audience === 'staff' ? 'secondary' : 'error'}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    />
+                  </Box>
                   
                   <Box sx={{ mb: 2 }}>
                     <Chip
@@ -403,8 +517,8 @@ const Coupons = () => {
                 onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
                 required
               >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed Amount</option>
+                <MenuItem value="percentage">Percentage</MenuItem>
+                <MenuItem value="fixed">Fixed Amount</MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -460,6 +574,21 @@ const Coupons = () => {
                 placeholder="1"
                 required
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                label="Target Audience"
+                value={formData.target_audience}
+                onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
+                required
+              >
+                <MenuItem value="all">All Users</MenuItem>
+                <MenuItem value="customers">Customers Only</MenuItem>
+                <MenuItem value="staff">Staff Only</MenuItem>
+                <MenuItem value="admin">Admin Only</MenuItem>
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField

@@ -7,6 +7,7 @@ import os
 import logging
 import re
 from django.core.cache import cache
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,12 @@ class ProductRAGService:
     """
     
     def __init__(self):
-        # Initialize embedding model
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Suppress warnings and progress bars
+        warnings.filterwarnings("ignore")
+        os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+        
+        # Initialize embedding model with progress bar disabled
+        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
         
         # Initialize ChromaDB with proper configuration
         chroma_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'chroma_db')
@@ -229,8 +234,8 @@ class ProductRAGService:
             # Limit top_k to reasonable range
             top_k = max(1, min(top_k, 10))
             
-            # Generate query embedding
-            query_embedding = self.embedding_model.encode(query).tolist()
+            # Generate query embedding with progress bar disabled
+            query_embedding = self.embedding_model.encode(query, show_progress_bar=False).tolist()
             
             # Query vector database
             results = self.collection.query(
@@ -288,6 +293,20 @@ class ProductRAGService:
             Response:
             """
             
+            # Log the complete prompt for security analysis
+            logger.info("=" * 80)
+            logger.info("FULL PROMPT CONSTRUCTION FOR OLLAMA:")
+            logger.info("=" * 80)
+            logger.info(f"SYSTEM PROMPT:\n{self.system_prompt}")
+            logger.info("-" * 40)
+            logger.info(f"SENSITIVE CONTEXT:\n{context_text}")
+            logger.info("-" * 40)
+            logger.info(f"USER MESSAGE:\n{query}")
+            logger.info("-" * 40)
+            logger.info("COMPLETE PROMPT SENT TO OLLAMA:")
+            logger.info(prompt)
+            logger.info("=" * 80)
+            
             # Check if Ollama is available
             if not self.check_ollama_availability():
                 return f"I'm sorry, the AI service is currently unavailable. Please ensure Ollama is running with the {self.model_name} model and try again."
@@ -310,6 +329,12 @@ class ProductRAGService:
                 'stream': False  # Disable streaming to get single JSON response
             }
             
+            # Log the HTTP request being sent to Ollama
+            logger.info("HTTP REQUEST TO OLLAMA:")
+            logger.info(f"URL: {self.ollama_base_url}/api/chat")
+            logger.info(f"Request Data: {chat_data}")
+            logger.info("-" * 40)
+            
             response = requests.post(
                 f"{self.ollama_base_url}/api/chat",
                 json=chat_data,
@@ -318,7 +343,15 @@ class ProductRAGService:
             
             if response.status_code == 200:
                 response_data = response.json()
-                return response_data['message']['content'].strip()
+                ai_response = response_data['message']['content'].strip()
+                
+                # Log the AI response
+                logger.info("OLLAMA RESPONSE:")
+                logger.info(f"Status: {response.status_code}")
+                logger.info(f"AI Response: {ai_response}")
+                logger.info("=" * 80)
+                
+                return ai_response
             else:
                 logger.error(f"Ollama API error: {response.status_code} - {response.text}")
                 return "I'm sorry, I'm having trouble generating a response right now. Please try again later."
@@ -441,8 +474,8 @@ class ProductRAGService:
                     # Prepare content for embedding
                     full_content = f"Title: {entry.title}\nProduct: {entry.product.name}\nCategory: {entry.category}\nContent: {entry.content}"
                     
-                    # Generate embedding
-                    embedding = self.embedding_model.encode(full_content).tolist()
+                    # Generate embedding with progress bar disabled
+                    embedding = self.embedding_model.encode(full_content, show_progress_bar=False).tolist()
                     
                     # Add to collection
                     self.collection.add(
