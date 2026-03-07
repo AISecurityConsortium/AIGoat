@@ -1,462 +1,55 @@
-# Red Team Shop - Git Ignore File
-# This file specifies intentionally untracked files that Git should ignore
+# AI Goat - Git Ignore
 
-# =============================================================================
-# Python & Django
-# =============================================================================
-
-# Virtual Environment
+# Python
 venv/
-env/
-ENV/
-.venv/
-.env/
-.ENV/
-
-# Python Cache
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-*.pyc
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
-# Django specific
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-staticfiles/
-static/
+# Database
+aigoat.db
+aigoat.db-journal
+*.sqlite3
+*.sqlite3-journal
 
-# Django migrations (keep initial migrations, ignore auto-generated ones)
-# Uncomment the next line if you want to ignore all migrations
-# */migrations/*.py
-# !*/migrations/__init__.py
-
-# Django secret key
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# =============================================================================
-# Node.js & React
-# =============================================================================
-
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Grunt intermediate storage
-.grunt
-
-# Bower dependency directory
-bower_components
-
-# node-waf configuration
-.lock-wscript
-
-# Compiled binary addons
-build/Release
-
-# Dependency directories
-jspm_packages/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# =============================================================================
-# AI/ML & Data Science
-# =============================================================================
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# =============================================================================
-# Vector Databases & AI Models
-# =============================================================================
-
-# ChromaDB
-chroma_db/
-*.chroma
-
-# Model files
-*.model
-*.pkl
-*.joblib
-*.h5
-*.hdf5
-*.pt
-*.pth
-*.onnx
-*.tflite
-*.pb
-
-# Embeddings cache
-embeddings_cache/
-*.embeddings
-
-# =============================================================================
-# System Files
-# =============================================================================
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
-*.lnk
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-# =============================================================================
-# IDE & Editor Files
-# =============================================================================
-
-# VSCode
-.vscode/
-*.code-workspace
-
-# IntelliJ IDEA
-.idea/
-*.iws
-*.iml
-*.ipr
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Vim
-*.swp
-*.swo
-*~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# =============================================================================
-# Logs & Debugging
-# =============================================================================
-
-# Log files
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-startup.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Debug files
-*.debug
-*.trace
-
-# =============================================================================
-# Application Specific
-# =============================================================================
-
-# Process ID files
-*.pid
-backend.pid
-frontend.pid
-backend.port
-frontend.port
-
-# Application logs
-backend.log
-frontend.log
-startup.log
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-*.orig
-
-# Database files (except for development)
-# Uncomment if you want to ignore all database files
-# *.db
-# *.sqlite
-# *.sqlite3
-
-# Media files (user uploads)
-# Note: Product images in backend/media/ are tracked, but user uploads should be ignored
-# Uncomment if you want to ignore all media files
-# media/
-# uploads/
-
-# Ignore user-uploaded media but keep product images
-backend/media/uploads/
-backend/media/user_uploads/
-
-# =============================================================================
-# Security & Secrets
-# =============================================================================
-
-# Environment variables
+# Environment
 .env
 .env.*
 !.env.example
 
-# API keys and secrets
+# ChromaDB
+chroma_db/
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+build/
+
+# Logs and runtime
+*.log
+*.pid
+*.port
+
+# System files
+.DS_Store
+Thumbs.db
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Secrets
 secrets.json
-config.json
 credentials.json
 *.key
 *.pem
-*.p12
-*.pfx
 
-# =============================================================================
-# Build & Deployment
-# =============================================================================
-
-# Build outputs
-build/
-dist/
-out/
-target/
-
-# Deployment files
+# Docker overrides
 docker-compose.override.yml
-.dockerignore
 
-# =============================================================================
-# Testing
-# =============================================================================
-
-# Test coverage
-coverage/
-.nyc_output/
-htmlcov/
-
-# Test results
-test-results/
-junit.xml
-coverage.xml
-
-# =============================================================================
-# Documentation
-# =============================================================================
-
-# Generated documentation
-docs/_build/
-site/
-
-# =============================================================================
-# Modern Development Tools
-# =============================================================================
-
-# Turbo
-.turbo
-
-# Vercel
-.vercel
-
-# Sentry
-.sentryclirc
-
-# Local development
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# =============================================================================
-# Miscellaneous
-# =============================================================================
-
-# Backup files
-*.bak
-*.backup
-*.old
-*.orig
-
-# Archive files
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-
-# OS generated files (duplicates removed - already covered in System Files section)
+#Solution Files
+docs/challenges-walkthrough.md

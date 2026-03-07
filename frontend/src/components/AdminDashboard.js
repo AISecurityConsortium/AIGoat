@@ -10,15 +10,12 @@ import {
   Alert,
   Chip,
   LinearProgress,
-  Paper,
   Divider,
   List,
   ListItem,
   ListItemText,
   ListItemAvatar,
   Avatar,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import OllamaStatus from './OllamaStatus';
 import {
@@ -26,13 +23,10 @@ import {
   ShoppingBag as OrderIcon,
   Inventory as InventoryIcon,
   LocalOffer as CouponIcon,
-  Feedback as FeedbackIcon,
   TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
   Assignment as OrderManagementIcon,
   AdminPanelSettings as AdminIcon,
-  Visibility as VisibilityIcon,
-  ShoppingCart as CartIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
@@ -52,15 +46,17 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  Legend,
   ResponsiveContainer,
   AreaChart,
   Area,
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
+import { useTheme } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 
 const AdminDashboard = () => {
+  const theme = useTheme();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalOrders: 0,
@@ -132,7 +128,7 @@ const AdminDashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `$${parseFloat(amount).toFixed(2)}`;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
   };
 
   const formatDate = (dateString) => {
@@ -214,13 +210,18 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
+      {/* Ollama AI Service Status -- Top of dashboard */}
+      <Box sx={{ mb: 3 }}>
+        <OllamaStatus />
+      </Box>
+
       {/* Key Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             height: '100%', 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white'
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.85)} 0%, ${alpha(theme.palette.custom?.brand?.accent || theme.palette.secondary.main, 0.85)} 100%)`,
+            color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -247,8 +248,8 @@ const AdminDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             height: '100%', 
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            color: 'white'
+            background: `linear-gradient(135deg, ${alpha(theme.palette.custom?.brand?.accent || theme.palette.secondary.main, 0.85)} 0%, ${alpha(theme.palette.error.main, 0.85)} 100%)`,
+            color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -275,8 +276,8 @@ const AdminDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             height: '100%', 
-            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            color: 'white'
+            background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.85)} 0%, ${alpha(theme.palette.custom?.brand?.accent || theme.palette.info.light, 0.85)} 100%)`,
+            color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -303,8 +304,8 @@ const AdminDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ 
             height: '100%', 
-            background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            color: 'white'
+            background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.85)} 0%, ${alpha(theme.palette.custom?.brand?.accent || theme.palette.success.light, 0.85)} 100%)`,
+            color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -458,15 +459,6 @@ const AdminDashboard = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  startIcon={<FeedbackIcon />}
-                  onClick={() => navigate('/feedback-management')}
-                  fullWidth
-                  sx={{ justifyContent: 'flex-start' }}
-                >
-                  Manage Feedback
-                </Button>
-                <Button
-                  variant="contained"
                   startIcon={<PeopleIcon />}
                   onClick={() => navigate('/user-management')}
                   fullWidth
@@ -542,12 +534,6 @@ const AdminDashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Ollama AI Service Status */}
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        <Grid item xs={12}>
-          <OllamaStatus />
-        </Grid>
-      </Grid>
     </Container>
   );
 };

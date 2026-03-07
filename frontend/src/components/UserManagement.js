@@ -25,10 +25,9 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
-  LocationOn as LocationIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);

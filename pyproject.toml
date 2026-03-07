@@ -1,0 +1,24 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "E712",   # `== True` is required for SQLAlchemy column expressions
+    "E741",   # ambiguous variable names in comprehensions (l for lab)
+    "F821",   # SQLAlchemy string-referenced relationships are resolved at runtime
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/seed.py" = ["E402"]   # sys.path manipulation requires imports after path setup
+"app/main.py" = ["E402"]       # routers must be imported after app object is created
+"app/api/profile.py" = ["E402"]  # inline import inside function for lazy loading

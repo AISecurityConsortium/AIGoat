@@ -28,8 +28,9 @@ import {
   LocalOffer as CouponIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { useTheme, alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const steps = ['Cart Review', 'Shipping Information', 'Payment Details', 'Order Confirmation'];
 
@@ -39,6 +40,7 @@ const CheckoutForm = ({ cart, onBack }) => {
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
   const navigate = useNavigate();
+  const theme = useTheme();
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -77,9 +79,9 @@ const CheckoutForm = ({ cart, onBack }) => {
           const response = await axios.get('/api/profile/data/', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          
+
           const profile = response.data;
-          
+
           // Auto-populate shipping information
           setShippingInfo(prev => ({
             ...prev,
@@ -106,7 +108,6 @@ const CheckoutForm = ({ cart, onBack }) => {
         }
       } catch (error) {
         console.log('Could not auto-populate form with profile data:', error);
-        // This is not a critical error, so we don't show it to the user
       }
     };
 
@@ -185,18 +186,18 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   const handlePaymentChange = (field) => (event) => {
     let value = event.target.value;
-    
+
     // Format card number with spaces
     if (field === 'cardNumber') {
       value = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
       if (value.length > 19) value = value.slice(0, 19);
     }
-    
+
     // Format CVV
     if (field === 'cvv') {
       value = value.replace(/\D/g, '').slice(0, 4);
     }
-    
+
     // Auto-detect card type
     if (field === 'cardNumber') {
       const cleanNumber = value.replace(/\s/g, '');
@@ -232,8 +233,7 @@ const CheckoutForm = ({ cart, onBack }) => {
     try {
       const token = localStorage.getItem('token');
       const newOrderId = generateOrderId();
-      
-      // Create order with shipping and payment info
+
       const orderData = {
         shipping_info: shippingInfo,
         payment_info: paymentInfo,
@@ -246,11 +246,10 @@ const CheckoutForm = ({ cart, onBack }) => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.data.success) {
         setOrderId(newOrderId);
-        setActiveStep(3); // Move to confirmation step
-        // Dispatch cart update event
+        setActiveStep(3);
         window.dispatchEvent(new Event('cartUpdated'));
       }
     } catch (error) {
@@ -263,40 +262,49 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   const renderCartReview = () => (
     <Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
         <CartIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
         Order Summary
       </Typography>
-      
+
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           {cart.items.map((item) => (
-            <Card key={item.id} variant="outlined" sx={{ mb: 2 }}>
+            <Card
+              key={item.id}
+              variant="outlined"
+              sx={{
+                mb: 2,
+                border: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
+                bgcolor: (t) => t.palette.custom?.surface?.main ?? t.palette.background.paper,
+              }}
+            >
               <CardContent>
                 <Grid container spacing={2} alignItems="center">
                   <Grid item xs={2}>
-                    <img
+                    <Box
+                      component="img"
                       src={item.product_image_url}
                       alt={item.product_name}
-                      style={{ 
-                        width: '60px', 
-                        height: '60px', 
+                      sx={{
+                        width: 60,
+                        height: 60,
                         objectFit: 'cover',
-                        borderRadius: '4px'
+                        borderRadius: 1,
                       }}
                     />
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="subtitle1">
+                    <Typography variant="subtitle1" sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
                       {item.product_name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary }}>
                       Quantity: {item.quantity}
                     </Typography>
                   </Grid>
                   <Grid item xs={4} sx={{ textAlign: 'right' }}>
-                    <Typography variant="subtitle1">
-                      ${(item.product_price * item.quantity).toFixed(2)}
+                    <Typography variant="subtitle1" sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
+                      ₹{(item.product_price * item.quantity).toFixed(0)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -304,25 +312,29 @@ const CheckoutForm = ({ cart, onBack }) => {
             </Card>
           ))}
         </Grid>
-        
+
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card
+            sx={{
+              border: (t) => `1px solid ${t.palette.custom?.border?.medium ?? t.palette.divider}`,
+              bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.paper,
+            }}
+          >
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
                 Order Summary
               </Typography>
-              
-              {/* Coupon Section */}
+
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+                <Typography variant="subtitle2" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
                   <CouponIcon sx={{ mr: 0.5, fontSize: 16 }} />
                   Apply Coupon
                 </Typography>
-                
+
                 {appliedCoupon ? (
                   <Box sx={{ mb: 2 }}>
                     <Chip
-                      label={`${appliedCoupon.code} - ${appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`}`}
+                      label={`${appliedCoupon.code} - ${appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `₹${appliedCoupon.discount_value}`}`}
                       color="success"
                       onDelete={handleRemoveCoupon}
                       deleteIcon={<CloseIcon />}
@@ -349,36 +361,36 @@ const CheckoutForm = ({ cart, onBack }) => {
                     </Button>
                   </Box>
                 )}
-                
+
                 {couponError && (
                   <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
                     {couponError}
                   </Alert>
                 )}
               </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
+
+              <Divider sx={{ my: 2, borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
+
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography>Subtotal:</Typography>
-                <Typography>${calculateTotal().toFixed(2)}</Typography>
+                <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>Subtotal:</Typography>
+                <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>₹{calculateTotal().toFixed(0)}</Typography>
               </Box>
-              
+
               {appliedCoupon && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography color="success.main">Discount:</Typography>
                   <Typography color="success.main">
-                    -${calculateDiscount().toFixed(2)}
+                    -₹{calculateDiscount().toFixed(2)}
                   </Typography>
                 </Box>
               )}
-              
-              <Divider sx={{ my: 2 }} />
-              
+
+              <Divider sx={{ my: 2, borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
+
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">Total:</Typography>
+                <Typography variant="h6" sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>Total:</Typography>
                 <Typography variant="h6" color="primary">
-                  ${calculateFinalTotal().toFixed(2)}
+                  ₹{calculateFinalTotal().toFixed(0)}
                 </Typography>
               </Box>
             </CardContent>
@@ -390,7 +402,7 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   const renderShippingForm = () => (
     <Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
         <LocationIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
         Shipping Information
       </Typography>
@@ -497,15 +509,15 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   const renderPaymentForm = () => (
     <Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
         <CreditCardIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
         Payment Information
       </Typography>
       {paymentInfo.cardType && (
         <Box sx={{ mb: 2 }}>
-          <Chip 
-            label={paymentInfo.cardType} 
-            color="primary" 
+          <Chip
+            label={paymentInfo.cardType}
+            color="primary"
             size="small"
             sx={{ mr: 1 }}
           />
@@ -577,8 +589,8 @@ const CheckoutForm = ({ cart, onBack }) => {
           />
         </Grid>
       </Grid>
-      <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+      <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.custom?.surface?.sunken ?? alpha(theme.palette.primary.main, 0.06), borderRadius: 1 }}>
+        <Typography variant="body2" sx={{ color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary }}>
           🔒 Your payment information is secure and encrypted. We use industry-standard SSL encryption to protect your data.
         </Typography>
       </Box>
@@ -587,14 +599,21 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   const renderConfirmation = () => (
     <Box sx={{ textAlign: 'center' }}>
-      <CheckIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
-      <Typography variant="h4" gutterBottom>
+      <Box
+        sx={{
+          animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          '@keyframes scaleIn': { '0%': { transform: 'scale(0)' }, '100%': { transform: 'scale(1)' } },
+        }}
+      >
+        <CheckIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
+      </Box>
+      <Typography variant="h4" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
         Order Placed Successfully!
       </Typography>
       <Typography variant="h6" color="primary" gutterBottom>
         Order ID: {orderId}
       </Typography>
-      <Typography variant="body1" sx={{ mb: 3 }}>
+      <Typography variant="body1" sx={{ mb: 3, color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
         Thank you for your purchase! You will receive a confirmation email shortly.
       </Typography>
       <Box sx={{ mt: 3 }}>
@@ -607,7 +626,7 @@ const CheckoutForm = ({ cart, onBack }) => {
         </Button>
         <Button
           variant="outlined"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
         >
           Continue Shopping
         </Button>
@@ -632,17 +651,31 @@ const CheckoutForm = ({ cart, onBack }) => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}
+      >
         Checkout
       </Typography>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+      <Stepper
+        activeStep={activeStep}
+        sx={{
+          mb: 4,
+          '& .MuiStepIcon-root': { color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.disabled },
+          '& .MuiStepIcon-root.Mui-active': { color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main },
+          '& .MuiStepIcon-root.Mui-completed': { color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main },
+          '& .MuiStepLabel-label': { color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary },
+        }}
+      >
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -650,10 +683,15 @@ const CheckoutForm = ({ cart, onBack }) => {
         ))}
       </Stepper>
 
-      <Card>
+      <Card
+        sx={{
+          border: (t) => `1px solid ${t.palette.custom?.border?.medium ?? t.palette.divider}`,
+          bgcolor: (t) => t.palette.custom?.surface?.main ?? t.palette.background.paper,
+        }}
+      >
         <CardContent>
           {getStepContent(activeStep)}
-          
+
           {activeStep !== 3 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
               <Button

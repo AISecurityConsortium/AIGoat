@@ -1,12 +1,12 @@
 /**
- * Feature Flags Configuration for Red Team Shop Frontend
+ * Feature Flags Configuration for AI Goat Shop Frontend
  * 
  * This file now fetches feature flags dynamically from the backend API
  * to ensure centralized control. Features can be toggled on/off by modifying
  * only the backend configuration file.
  */
 
-import axios from 'axios';
+import { apiClient as axios } from './api';
 
 // Default fallback values (used if API is unavailable)
 const DEFAULT_FEATURE_FLAGS = {

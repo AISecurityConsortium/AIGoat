@@ -1,9 +1,9 @@
+import axios from 'axios';
+
 // API Configuration
 const API_CONFIG = {
-  // Base API URL - can be overridden by environment variables
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
-  
-  // API Endpoints
+
   ENDPOINTS: {
     // Authentication
     LOGIN: '/api/auth/login/',
@@ -37,6 +37,8 @@ const API_CONFIG = {
     
     // Chat
     CHAT: '/api/chat/',
+    DEFENSE_LEVEL: '/api/chat/defense-level',
+    DEFENSE_LEVELS: '/api/chat/defense-levels',
     RAG_CHAT: '/api/rag-chat/',
     RAG_CHAT_HISTORY: '/api/rag-chat-history/',
     RAG_STATS: '/api/rag-stats/',
@@ -60,6 +62,12 @@ const API_CONFIG = {
     
     // Ollama Status
     OLLAMA_STATUS: '/api/ollama/status/',
+
+    // Workshop / Challenges
+    CHALLENGES: '/api/workshop/challenges',
+    CHALLENGE_START: (id) => `/api/workshop/challenges/${id}/start`,
+    CHALLENGE_COMPLETE: (id) => `/api/workshop/challenges/${id}/complete`,
+    LEADERBOARD: '/api/workshop/leaderboard',
   }
 };
 
@@ -76,5 +84,10 @@ export const getApiUrl = (endpoint) => {
 
 // Helper function to get base URL
 export const getBaseUrl = () => API_CONFIG.BASE_URL;
+
+// Pre-configured Axios instance pointing at the backend
+export const apiClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+});
 
 export default API_CONFIG;

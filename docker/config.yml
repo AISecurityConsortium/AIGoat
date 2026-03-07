@@ -1,0 +1,38 @@
+app:
+  name: "AI Goat"
+  debug: true
+  secret_key: "aigoat-dev-secret-change-in-production"
+  allowed_origins: ["http://localhost:3000"]
+  media_dir: "./media"
+
+database:
+  url: "sqlite+aiosqlite:////app/data/aigoat.db"
+
+ollama:
+  base_url: "http://ollama:11434"
+  model: "mistral"
+  timeout: 60
+
+defense:
+  level: 0
+  l1_confidence_threshold: 0.6
+  l2_confidence_threshold: 0.3
+
+rag:
+  enabled: true
+  embedding_model: "all-MiniLM-L6-v2"
+  chroma_path: "/app/data/chroma_db"
+  top_k: 5
+  chunk_size: 512
+  max_context_tokens: 1500
+
+chat:
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  max_tokens: 2048
+
+features:
+  admin_dashboard: true
+  coupon_system: true
+  knowledge_base: true

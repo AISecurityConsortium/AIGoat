@@ -27,7 +27,6 @@ import {
   TableRow,
   Paper,
   InputAdornment,
-  Divider,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -39,7 +38,7 @@ import {
   Error as ErrorIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);

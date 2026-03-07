@@ -1,0 +1,126 @@
+labs:
+  - id: "llm01-1"
+    name: "LLM01 - Prompt Injection Basics"
+    owasp: "LLM01"
+    status: "active"
+    defense_override: 0
+    prompt_file: "prompt_injection"
+    challenge_evaluator: "prompt injection"
+    description: "Learn how direct prompt injection overrides system instructions."
+
+  - id: "llm01-2"
+    name: "LLM01 - Indirect Injection"
+    owasp: "LLM01"
+    status: "active"
+    defense_override: 0
+    prompt_file: "prompt_injection"
+    challenge_evaluator: "context override"
+    description: "Explore how injected context can alter model behavior."
+
+  - id: "llm01-3"
+    name: "LLM01 - Chained Injection"
+    owasp: "LLM01"
+    status: "active"
+    defense_override: 0
+    prompt_file: "prompt_injection"
+    challenge_evaluator: "multi-step injection"
+    description: "Build multi-turn injection chains to bypass defenses."
+
+  - id: "llm02-1"
+    name: "LLM02 - Data Leakage"
+    owasp: "LLM02"
+    status: "active"
+    defense_override: 0
+    prompt_file: "data_leakage"
+    challenge_evaluator: "system prompt extraction"
+    description: "Extract sensitive information the model was not supposed to reveal."
+
+  - id: "llm02-2"
+    name: "LLM02 - Training Data Extraction"
+    owasp: "LLM02"
+    status: "active"
+    defense_override: 0
+    prompt_file: "training_data_extraction"
+    challenge_evaluator: null
+    description: "Probe the model for memorized training data."
+
+  - id: "llm02-3"
+    name: "LLM02 - Context Poisoning"
+    owasp: "LLM02"
+    status: "active"
+    defense_override: 0
+    prompt_file: "rag_exploitation"
+    challenge_evaluator: "context poisoning"
+    description: "Poison the RAG knowledge base to manipulate model responses."
+
+  - id: "llm04-1"
+    name: "LLM04 - Model Denial of Service"
+    owasp: "LLM04"
+    status: "active"
+    defense_override: 0
+    prompt_file: "model_dos"
+    challenge_evaluator: null
+    description: "Craft inputs that cause excessive resource consumption."
+
+  - id: "llm05-1"
+    name: "LLM05 - Insecure Output Handling"
+    owasp: "LLM05"
+    status: "active"
+    defense_override: 0
+    prompt_file: "insecure_output"
+    challenge_evaluator: null
+    description: "Exploit unescaped LLM output to inject HTML/JS (XSS)."
+
+  - id: "llm07-1"
+    name: "LLM07 - System Prompt Extraction"
+    owasp: "LLM07"
+    status: "active"
+    defense_override: 0
+    prompt_file: "system_prompt_exposure"
+    challenge_evaluator: "system prompt extraction"
+    description: "Extract the hidden system prompt from the AI assistant."
+
+  - id: "llm03"
+    name: "LLM03 - Training Data Poisoning"
+    owasp: "LLM03"
+    status: "coming_soon"
+    defense_override: null
+    prompt_file: null
+    challenge_evaluator: null
+    description: "Manipulate training data to introduce persistent biases."
+
+  - id: "llm06"
+    name: "LLM06 - Sensitive Information Disclosure"
+    owasp: "LLM06"
+    status: "coming_soon"
+    defense_override: 0
+    prompt_file: null
+    challenge_evaluator: null
+    description: "Expose PII and secrets through carefully crafted queries."
+
+  - id: "llm08-1"
+    name: "LLM08 - Vector & Retrieval Weaknesses"
+    owasp: "LLM08"
+    status: "active"
+    defense_override: 0
+    prompt_file: "rag_exploitation"
+    challenge_evaluator: "rag manipulation"
+    description: "Exploit RAG knowledge base poisoning and vector retrieval weaknesses."
+
+  - id: "llm09-1"
+    name: "LLM09 - Misinformation"
+    owasp: "LLM09"
+    status: "active"
+    defense_override: 0
+    prompt_file: null
+    challenge_evaluator: null
+    description: "Induce the LLM to generate confident but fabricated information."
+
+  - id: "llm10"
+    name: "LLM10 - Model Theft"
+    owasp: "LLM10"
+    status: "coming_soon"
+    defense_override: null
+    prompt_file: null
+    challenge_evaluator: null
+    description: "Extract model weights or replicate model behavior via API."

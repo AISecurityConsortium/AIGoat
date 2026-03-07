@@ -12,7 +12,6 @@ import {
   Button,
   Box,
   Alert,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -28,29 +27,23 @@ import {
   Select,
   MenuItem,
   Checkbox,
-  LinearProgress,
   Avatar,
-  Divider,
   Pagination,
-  Stack,
-  Badge,
   CircularProgress,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
-  Download as DownloadIcon,
   Person as PersonIcon,
   ShoppingBag as ProductIcon,
   AttachFile as FileIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
   Feedback as FeedbackIcon,
   Analytics as AnalyticsIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 
 const FeedbackManagement = () => {
@@ -80,6 +73,7 @@ const FeedbackManagement = () => {
   useEffect(() => {
     fetchTips();
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, filters]);
 
   const fetchTips = async () => {
@@ -208,26 +202,6 @@ const FeedbackManagement = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
-  };
-
-  const getFileIcon = (extension) => {
-    const iconMap = {
-      '.pdf': '📄',
-      '.doc': '📝',
-      '.docx': '📝',
-      '.txt': '📄',
-      '.jpg': '🖼️',
-      '.jpeg': '🖼️',
-      '.png': '🖼️',
-      '.gif': '🖼️',
-      '.mp4': '🎥',
-      '.avi': '🎥',
-      '.mov': '🎥',
-      '.zip': '📦',
-      '.rar': '📦',
-      '.7z': '📦'
-    };
-    return iconMap[extension] || '📎';
   };
 
   if (loading) {

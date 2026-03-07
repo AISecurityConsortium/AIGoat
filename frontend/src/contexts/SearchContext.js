@@ -21,7 +21,7 @@ export const SearchProvider = ({ children }) => {
   useEffect(() => {
     // Clear search fields when navigating to different pages
     // Keep the search query only when staying on search-related pages
-    const searchRelatedPaths = ['/search', '/chat'];
+    const searchRelatedPaths = ['/search', '/chat', '/home'];
     const isSearchRelated = searchRelatedPaths.some(path => 
       location.pathname.startsWith(path)
     );

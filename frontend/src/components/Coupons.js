@@ -15,27 +15,25 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   IconButton,
   Tooltip,
-  Divider,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import {
   LocalOffer as CouponIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon,
   BarChart as StatsIcon,
   CheckCircle as ValidIcon,
   Cancel as InvalidIcon,
   Schedule as PendingIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([]);
@@ -47,6 +45,7 @@ const Coupons = () => {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [usageStats, setUsageStats] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, couponId: null });
 
   // Form state for creating/editing coupons
   const [formData, setFormData] = useState({
@@ -67,6 +66,7 @@ const Coupons = () => {
 
   useEffect(() => {
     checkUserRole();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -77,6 +77,7 @@ const Coupons = () => {
       }, 100);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   // Add a refresh mechanism to ensure data is loaded
@@ -89,6 +90,7 @@ const Coupons = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const checkUserRole = () => {
@@ -105,14 +107,10 @@ const Coupons = () => {
       const token = localStorage.getItem('token');
       const endpoint = isAdmin ? '/api/admin/coupons/' : '/api/coupons/';
       
-      console.log('Fetching coupons from:', endpoint);
-      
       const response = await axios.get(`${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('Coupons fetched:', response.data);
-      console.log('Number of coupons:', response.data.length);
       setCoupons(response.data || []);
     } catch (error) {
       console.error('Error fetching coupons:', error);
@@ -246,9 +244,7 @@ const Coupons = () => {
         is_active: formData.is_active
       };
       
-      console.log('Sending coupon data:', cleanedData);
-      
-      const response = await axios[method](`${endpoint}`, cleanedData, {
+      await axios[method](`${endpoint}`, cleanedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -256,25 +252,26 @@ const Coupons = () => {
       setDialogOpen(false);
       fetchCoupons();
     } catch (error) {
-      console.error('Error saving coupon:', error);
-      console.error('Error response:', error.response?.data);
       setError(error.response?.data?.error || error.response?.data?.details || 'Failed to save coupon');
     }
   };
 
-  const handleDeleteCoupon = async (couponId) => {
-    if (!window.confirm('Are you sure you want to delete this coupon?')) return;
-    
+  const handleDeleteCoupon = (couponId) => {
+    setConfirmDialog({ open: true, couponId });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { couponId } = confirmDialog;
+    if (!couponId) return;
+    setConfirmDialog({ open: false, couponId: null });
     try {
       const token = localStorage.getItem('token');
-              await axios.delete(`/api/admin/coupons/${couponId}/`, {
+      await axios.delete(`/api/admin/coupons/${couponId}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       setSuccess('Coupon deleted successfully!');
       fetchCoupons();
     } catch (error) {
-      console.error('Error deleting coupon:', error);
       setError('Failed to delete coupon');
     }
   };
@@ -410,7 +407,7 @@ const Coupons = () => {
                   </Box>
                   
                   <Typography variant="h4" color="primary" sx={{ fontWeight: 700, mb: 1 }}>
-                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `$${coupon.discount_value}`}
+                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `₹${coupon.discount_value}`}
                   </Typography>
                   
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -446,7 +443,7 @@ const Coupons = () => {
                     />
                     {coupon.minimum_order_amount > 0 && (
                       <Chip
-                        label={`Min $${coupon.minimum_order_amount}`}
+                        label={`Min ₹${coupon.minimum_order_amount}`}
                         variant="outlined"
                         size="small"
                       />
@@ -640,7 +637,7 @@ const Coupons = () => {
                 <Grid item xs={4}>
                   <Paper sx={{ p: 2, textAlign: 'center' }}>
                     <Typography variant="h4" color="success.main">
-                      ${usageStats.total_discount_given.toFixed(2)}
+                      ₹{usageStats.total_discount_given.toFixed(0)}
                     </Typography>
                     <Typography variant="body2">Total Discount Given</Typography>
                   </Paper>
@@ -663,7 +660,7 @@ const Coupons = () => {
                   <ListItem key={usage.id} divider>
                     <ListItemText
                       primary={`${usage.coupon_code} - ${usage.user_name}`}
-                      secondary={`Order: ${usage.order_id} | Discount: $${usage.discount_amount} | Date: ${new Date(usage.used_at).toLocaleDateString()}`}
+                      secondary={`Order: ${usage.order_id} | Discount: ₹${usage.discount_amount} | Date: ${new Date(usage.used_at).toLocaleDateString()}`}
                     />
                   </ListItem>
                 ))}
@@ -673,6 +670,22 @@ const Coupons = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setStatsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, couponId: null })}>
+        <DialogTitle>Delete Coupon</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this coupon?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog({ open: false, couponId: null })}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

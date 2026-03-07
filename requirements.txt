@@ -1,61 +1,37 @@
-# Red Team Shop - Complete Requirements
-# Core Django and REST Framework
-Django==5.2.5
-djangorestframework==3.16.1
-django-cors-headers==4.7.0
+# AI Goat - FastAPI Backend
 
-# Database and ORM
-sqlparse==0.5.3
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
 
-# HTTP and API
-requests==2.32.4
-httpx==0.28.1
-httpcore==1.0.9
-urllib3==2.5.0
+# Database
+sqlalchemy[asyncio]>=2.0.25
+aiosqlite>=0.19.0
+greenlet>=3.0.0
 
-# AI and Machine Learning
-sentence-transformers==5.1.0
-transformers==4.55.4
-torch==2.8.0
-scikit-learn==1.7.1
-scipy==1.16.1
-numpy==2.3.2
-tokenizers==0.21.4
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0,<4.1.0
 
-# Vector Database
-chromadb==1.0.20
-grpcio==1.74.0
-protobuf==6.32.0
+# HTTP Client
+httpx>=0.26.0
 
-# Image Processing
-Pillow==11.3.0
+# Configuration
+pyyaml>=6.0.1
+pydantic>=2.5.0
 
-# Authentication and Security
-bcrypt==4.3.0
-oauthlib==3.3.1
-requests-oauthlib==2.0.0
+# AI / Embeddings
+sentence-transformers>=2.3.0
+chromadb>=0.4.22
 
-# Utilities
-python-dotenv==1.1.1
-python-dateutil==2.9.0.post0
-PyYAML==6.0.2
-click==8.2.1
-tqdm==4.67.1
-rich==14.1.0
+# NeMo Guardrails
+nemoguardrails>=0.10.0
 
-# Development and Testing
-watchfiles==1.1.0
-uvicorn==0.35.0
-uvloop==0.21.0
-
-# Note: This requirements.txt includes all necessary dependencies for:
-# - Django web framework and REST API
-# - RAG system with sentence transformers and ChromaDB
-# - Image handling and storage
-# - Authentication and security
-# - Development tools and utilities
-# 
-# Installation: pip install -r requirements.txt
-# 
-# Note: The 'ollama' Python package is not included since we use direct HTTP API calls
-# to the Ollama service instead of the Python library.
+# Development & Testing (install with: pip install -r requirements.txt)
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+ruff>=0.4.0
+pyflakes>=2.5.0
+pre-commit>=3.7.0

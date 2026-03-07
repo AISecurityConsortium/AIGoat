@@ -24,7 +24,7 @@ import {
   Memory as MemoryIcon,
   Speed as SpeedIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const OllamaAIServicePage = () => {
   const [status, setStatus] = useState(null);

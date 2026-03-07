@@ -13,11 +13,6 @@ import {
   Alert,
   Divider,
   IconButton,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Paper,
   Avatar,
   Stack,
@@ -25,18 +20,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Skeleton,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
-  Star as StarIcon,
-  Upload as UploadIcon,
   Lightbulb as TipIcon,
   ShoppingCart as CartIcon,
-  ShoppingCart as ShoppingCartIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -60,6 +54,7 @@ const ProductDetail = () => {
     fetchProduct();
     fetchReviews();
     fetchSimilarProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchProduct = async () => {
@@ -228,36 +223,6 @@ const ProductDetail = () => {
     }
   };
 
-  const handleBuyNowSimilar = async (productId, productName) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      // Add the product to cart first
-      await axios.post(
-        '/api/cart/',
-        { product_id: productId, quantity: 1 },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      
-      // Dispatch cart update event
-      window.dispatchEvent(new Event('cartUpdated'));
-      
-      // Navigate to checkout
-      navigate('/cart');
-    } catch (error) {
-      console.error('Error processing buy now:', error);
-      setError('Failed to process purchase');
-    }
-  };
 
   const handleSubmitReview = async () => {
     try {
@@ -341,51 +306,20 @@ const ProductDetail = () => {
     }
   };
 
-  // Function to separate description and specifications
-  const separateDescriptionAndSpecs = (description) => {
-    if (!description) return { description: '', specifications: '' };
-    
-    // Look for common specification indicators
-    const specIndicators = [
-      'SPECIFICATIONS:', 'SPECS:', 'TECHNICAL SPECS:', 'PRODUCT SPECS:',
-      'Features:', 'FEATURES:', 'Details:', 'DETAILS:',
-      'Material:', 'MATERIAL:', 'Size:', 'SIZE:',
-      'Dimensions:', 'DIMENSIONS:', 'Weight:', 'WEIGHT:'
-    ];
-    
-    let desc = description;
-    let specs = '';
-    
-    for (const indicator of specIndicators) {
-      if (description.includes(indicator)) {
-        const parts = description.split(indicator);
-        if (parts.length > 1) {
-          desc = parts[0].trim();
-          specs = indicator + parts.slice(1).join(indicator).trim();
-          break;
-        }
-      }
-    }
-    
-    // If no clear separator found, try to split by double newlines or periods
-    if (!specs && desc) {
-      const sentences = desc.split('. ');
-      if (sentences.length > 4) {
-        // Take first 3-4 sentences as description, rest as specs
-        const descSentences = sentences.slice(0, 4);
-        const specSentences = sentences.slice(4);
-        desc = descSentences.join('. ') + '.';
-        specs = specSentences.join('. ');
-      }
-    }
-    
-    return { description: desc, specifications: specs };
-  };
-
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <Typography>Loading product...</Typography>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="rectangular" height={500} sx={{ borderRadius: 2 }} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Skeleton variant="text" width="80%" height={48} />
+            <Skeleton variant="text" width="40%" height={32} sx={{ mt: 1 }} />
+            <Skeleton variant="text" width="25%" height={40} sx={{ mt: 2 }} />
+            <Skeleton variant="text" width="100%" height={80} sx={{ mt: 3 }} />
+          </Grid>
+        </Grid>
       </Container>
     );
   }
@@ -414,14 +348,35 @@ const ProductDetail = () => {
       <Grid container spacing={4}>
         {/* Product Image */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardMedia
-              component="img"
-              height="500"
-              image={product.image_url}
-              alt={product.name}
-              sx={{ objectFit: 'cover' }}
-            />
+          <Card
+            sx={{
+              overflow: 'hidden',
+              position: 'relative',
+              bgcolor: (t) => t.palette.custom?.surface?.main ?? t.palette.background.paper,
+              border: 1,
+              borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+            }}
+          >
+            <Box sx={{ position: 'relative' }}>
+              <CardMedia
+                component="img"
+                height="500"
+                image={product.image_url}
+                alt={product.name}
+                sx={{ objectFit: 'cover' }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '30%',
+                  background: (t) => `linear-gradient(to top, ${t.palette.background.paper}, transparent)`,
+                  pointerEvents: 'none',
+                }}
+              />
+            </Box>
           </Card>
         </Grid>
 
@@ -439,7 +394,7 @@ const ProductDetail = () => {
           </Box>
           
           <Typography variant="h4" color="primary" gutterBottom>
-            ${product.price}
+            ₹{product.price}
           </Typography>
           
           {/* Stock Status */}
@@ -461,6 +416,103 @@ const ProductDetail = () => {
               </Typography>
             </Alert>
           )}
+
+          {/* Add to Cart Section */}
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.08),
+              border: '1px solid',
+              borderColor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.2),
+              mb: 3,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mr: 2, fontWeight: 600, color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
+                Quantity:
+              </Typography>
+              <IconButton
+                onClick={() => handleQuantityChange(quantity - 1)}
+                disabled={quantity <= 1}
+                sx={{
+                  bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.default,
+                  border: '1px solid',
+                  borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                  '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.hover ?? 'action.hover' },
+                  '&:disabled': { opacity: 0.5 },
+                }}
+              >
+                <RemoveIcon />
+              </IconButton>
+              <Typography variant="h6" sx={{ mx: 2, minWidth: '30px', textAlign: 'center', color: (t) => t.palette.text.primary }}>
+                {quantity}
+              </Typography>
+              <IconButton
+                onClick={() => handleQuantityChange(quantity + 1)}
+                disabled={quantity >= 10}
+                sx={{
+                  bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.default,
+                  border: '1px solid',
+                  borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                  '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.hover ?? 'action.hover' },
+                  '&:disabled': { opacity: 0.5 },
+                }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="medium"
+                startIcon={<AddIcon />}
+                onClick={handleAddToCart}
+                disabled={!product.is_available}
+                sx={{
+                  flex: 1,
+                  minWidth: 140,
+                  fontSize: '0.9rem',
+                  py: 1.25,
+                  bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
+                  '&:hover': { bgcolor: (t) => t.palette.primary.dark },
+                }}
+              >
+                {product.is_available ? 'Add to Cart' : 'Sold Out'}
+              </Button>
+              <Button
+                variant="contained"
+                size="medium"
+                startIcon={<CartIcon />}
+                onClick={handleBuyNow}
+                disabled={!product.is_available}
+                sx={{
+                  flex: 1,
+                  minWidth: 140,
+                  fontSize: '0.9rem',
+                  py: 1.25,
+                  bgcolor: (t) => t.palette.custom?.brand?.accent ?? t.palette.secondary.main,
+                  '&:hover': { bgcolor: (t) => t.palette.secondary.dark },
+                }}
+              >
+                {product.is_available ? 'Buy Now' : 'Sold Out'}
+              </Button>
+              <Button
+                variant="outlined"
+                size="medium"
+                startIcon={<TipIcon />}
+                onClick={() => setTipDialogOpen(true)}
+                sx={{
+                  fontSize: '0.875rem',
+                  py: 1.25,
+                  borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                  color: (t) => t.palette.custom?.text?.accent ?? t.palette.primary.main,
+                }}
+              >
+                Share Tip
+              </Button>
+            </Box>
+          </Box>
           
           {/* Product Description */}
           <Typography variant="body1" paragraph sx={{ mb: 3 }}>
@@ -482,195 +534,119 @@ const ProductDetail = () => {
           {/* Product Specifications */}
           {product.specifications && Object.keys(product.specifications).length > 0 && (
             <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, letterSpacing: '-0.01em', color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
                 Product Specifications
               </Typography>
-              <Box sx={{ 
-                border: '1px solid', 
-                borderColor: 'divider', 
-                borderRadius: 1, 
-                overflow: 'hidden',
-                backgroundColor: 'background.paper'
-              }}>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(100px, 38%) 1fr',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid',
+                  borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+                  bgcolor: (t) => t.palette.custom?.surface?.sunken ?? t.palette.background.default,
+                }}
+              >
                 {Object.entries(product.specifications).map(([key, value]) => (
-                  <Box 
-                    key={key}
-                    sx={{ 
-                      display: 'flex', 
-                      borderBottom: '1px solid',
-                      borderColor: 'divider',
-                      '&:last-child': { borderBottom: 'none' }
-                    }}
-                  >
-                    <Box sx={{ 
-                      flex: '0 0 40%', 
-                      p: 2, 
-                      backgroundColor: 'grey.50',
-                      borderRight: '1px solid',
-                      borderColor: 'divider',
-                      fontWeight: 600,
-                      textTransform: 'capitalize'
-                    }}>
+                  <React.Fragment key={key}>
+                    <Box
+                      sx={{
+                        p: 1.75,
+                        borderBottom: '1px solid',
+                        borderRight: '1px solid',
+                        borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+                        fontWeight: 600,
+                        textTransform: 'capitalize',
+                        color: 'text.secondary',
+                        fontSize: '0.82rem',
+                      }}
+                    >
                       {key.replace(/_/g, ' ')}
                     </Box>
-                    <Box sx={{ flex: 1, p: 2 }}>
-                      <Typography variant="body2">
+                    <Box
+                      sx={{
+                        p: 1.75,
+                        borderBottom: '1px solid',
+                        borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.82rem' }}>
                         {value}
                       </Typography>
                     </Box>
-                  </Box>
+                  </React.Fragment>
                 ))}
               </Box>
             </Box>
           )}
-          
-          {/* Quantity Selector */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" sx={{ mr: 2 }}>
-              Quantity:
-            </Typography>
-            <IconButton
-              onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={quantity <= 1}
-            >
-              <RemoveIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ mx: 2, minWidth: '30px', textAlign: 'center' }}>
-              {quantity}
-            </Typography>
-            <IconButton
-              onClick={() => handleQuantityChange(quantity + 1)}
-              disabled={quantity >= 10}
-            >
-              <AddIcon />
-            </IconButton>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Button
-              variant="contained"
-              size="medium"
-              startIcon={<AddIcon />}
-              onClick={handleAddToCart}
-              disabled={!product.is_available}
-              sx={{ flex: 1, fontSize: '0.875rem', padding: '8px 16px' }}
-            >
-              {product.is_available ? 'Add to Cart' : 'Sold Out'}
-            </Button>
-            <Button
-              variant="contained"
-              size="medium"
-              startIcon={<CartIcon />}
-              onClick={handleBuyNow}
-              disabled={!product.is_available}
-              sx={{ flex: 1, fontSize: '0.875rem', padding: '8px 16px' }}
-            >
-              {product.is_available ? 'Buy Now' : 'Sold Out'}
-            </Button>
-            <Button
-              variant="outlined"
-              size="medium"
-              startIcon={<TipIcon />}
-              onClick={() => setTipDialogOpen(true)}
-              sx={{ fontSize: '0.875rem', padding: '8px 16px' }}
-            >
-              Share Tip
-            </Button>
-          </Box>
         </Grid>
       </Grid>
 
-      {/* Similar Products Section */}
+      {/* Similar Products */}
       {similarProducts.length > 0 && (
         <Box sx={{ mt: 6 }}>
-          <Typography variant="h5" gutterBottom>
-            Similar Products
+          <Typography variant="h5" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
+            You may also like
           </Typography>
-          <Divider sx={{ mb: 3 }} />
-          
-          <Grid container spacing={3}>
-            {similarProducts.map((similarProduct) => (
-              <Grid item xs={12} sm={6} md={3} key={similarProduct.id}>
-                <Card 
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
+          <Divider sx={{ mb: 3, borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
+          <Grid container spacing={2}>
+            {similarProducts.map((sp) => (
+              <Grid item xs={6} sm={3} key={sp.id}>
+                <Card
+                  sx={{
                     cursor: 'pointer',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
+                    bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.paper,
+                    border: '1px solid',
+                    borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+                    borderRadius: '10px',
+                    overflow: 'hidden',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: 4,
-                    }
+                      boxShadow: (t) => `0 8px 24px ${alpha(t.palette.common.black, 0.12)}`,
+                      borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                    },
                   }}
-                  onClick={() => navigate(`/product/${similarProduct.id}`)}
+                  onClick={() => navigate(`/product/${sp.id}`)}
                 >
                   <CardMedia
                     component="img"
-                    height="200"
-                    image={similarProduct.image_url}
-                    alt={similarProduct.name}
+                    height="160"
+                    image={sp.image_url}
+                    alt={sp.name}
                     sx={{ objectFit: 'cover' }}
                   />
-                  <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                    <Typography variant="h6" component="h3" gutterBottom sx={{ 
-                      fontSize: '1rem', 
-                      fontWeight: 600,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography variant="body2" sx={{
+                      fontWeight: 600, fontSize: '0.8rem', lineHeight: 1.3, mb: 0.5,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary,
                     }}>
-                      {similarProduct.name}
+                      {sp.name}
                     </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Rating value={similarProduct.average_rating} precision={0.5} readOnly size="small" />
-                      <Typography variant="caption" sx={{ ml: 0.5 }}>
-                        ({similarProduct.review_count})
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.5 }}>
+                      <Rating value={sp.average_rating} precision={0.5} readOnly size="small" sx={{ fontSize: '0.8rem' }} />
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
+                        ({sp.review_count})
                       </Typography>
                     </Box>
-                    
-                    <Typography variant="h6" color="primary" sx={{ fontWeight: 700, mb: 2 }}>
-                      ${similarProduct.price}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
-                      <Button
-                        variant="contained"
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main }}>
+                        ₹{sp.price}
+                      </Typography>
+                      <IconButton
                         size="small"
-                        startIcon={<CartIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddSimilarToCart(similarProduct.id, similarProduct.name);
-                        }}
-                        sx={{ 
-                          flex: 1,
-                          fontSize: '0.7rem',
-                          padding: '4px 8px',
-                          minHeight: '32px'
+                        onClick={(e) => { e.stopPropagation(); handleAddSimilarToCart(sp.id, sp.name); }}
+                        sx={{
+                          width: 28, height: 28,
+                          bgcolor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.1),
+                          color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
+                          '&:hover': { bgcolor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.2) },
                         }}
                       >
-                        Add to Cart
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<ShoppingCartIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBuyNowSimilar(similarProduct.id, similarProduct.name);
-                        }}
-                        sx={{ 
-                          flex: 1,
-                          fontSize: '0.7rem',
-                          padding: '4px 8px',
-                          minHeight: '32px'
-                        }}
-                      >
-                        Buy Now
-                      </Button>
+                        <CartIcon sx={{ fontSize: '0.85rem' }} />
+                      </IconButton>
                     </Box>
                   </CardContent>
                 </Card>
@@ -682,20 +658,25 @@ const ProductDetail = () => {
 
       {/* Reviews Section */}
       <Box sx={{ mt: 6 }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" gutterBottom sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
           Customer Reviews
         </Typography>
-        
-        <Divider sx={{ mb: 3 }} />
-        
+        <Divider sx={{ mb: 3, borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
         {/* Add Review */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
+            bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.paper,
+            border: '1px solid',
+            borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+          }}
+        >
+          <Typography variant="h6" gutterBottom sx={{ color: (t) => t.palette.text.primary }}>
             Write a Review
           </Typography>
-          
           <Box sx={{ mb: 2 }}>
-            <Typography component="legend">Rating</Typography>
+            <Typography component="legend" sx={{ color: 'text.secondary' }}>Rating</Typography>
             <Rating
               value={newReview.rating}
               onChange={(event, newValue) => {
@@ -703,7 +684,6 @@ const ProductDetail = () => {
               }}
             />
           </Box>
-          
           <TextField
             fullWidth
             multiline
@@ -713,44 +693,66 @@ const ProductDetail = () => {
             onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
             sx={{ mb: 2 }}
           />
-          
           <Button
             variant="contained"
             onClick={handleSubmitReview}
             disabled={!newReview.comment.trim()}
+            sx={{ bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main }}
           >
             Submit Review
           </Button>
         </Paper>
-
         {/* Reviews List */}
         {reviews.length > 0 ? (
           <Stack spacing={2}>
             {reviews.map((review) => (
-              <Paper key={review.id} sx={{ p: 3 }}>
+              <Paper
+                key={review.id}
+                sx={{
+                  p: 3,
+                  border: '1px solid',
+                  borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+                  bgcolor: (t) => t.palette.custom?.surface?.main ?? t.palette.background.paper,
+                  borderRadius: 2,
+                }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ mr: 2 }}>
+                  <Avatar
+                    sx={{
+                      mr: 2,
+                      bgcolor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.2),
+                      color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
+                    }}
+                  >
                     {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'U'}
                   </Avatar>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" fontWeight="bold">
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ color: (t) => t.palette.text.primary }}>
                       {review.user_name || 'Anonymous'}
                     </Typography>
                     <Rating value={review.rating} readOnly size="small" />
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     {new Date(review.created_at).toLocaleDateString()}
                   </Typography>
                 </Box>
-                <Typography variant="body1">
+                <Typography variant="body1" sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
                   {review.comment}
                 </Typography>
               </Paper>
             ))}
           </Stack>
         ) : (
-          <Paper sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body1" color="text.secondary">
+          <Paper
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              border: '1px solid',
+              borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+              bgcolor: (t) => t.palette.custom?.surface?.sunken ?? t.palette.background.default,
+            }}
+          >
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
               No reviews yet. Be the first to review this product!
             </Typography>
           </Paper>
@@ -758,8 +760,20 @@ const ProductDetail = () => {
       </Box>
 
       {/* Product Tip Upload Dialog */}
-      <Dialog open={tipDialogOpen} onClose={() => setTipDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog
+        open={tipDialogOpen}
+        onClose={() => setTipDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: (t) => t.palette.custom?.surface?.main ?? t.palette.background.paper,
+            border: '1px solid',
+            borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TipIcon sx={{ mr: 1 }} />
             Share a Product Tip

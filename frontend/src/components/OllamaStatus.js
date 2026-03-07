@@ -20,7 +20,7 @@ import {
   Info as InfoIcon,
   OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 import { useNavigate } from 'react-router-dom';
 
 const OllamaStatus = () => {

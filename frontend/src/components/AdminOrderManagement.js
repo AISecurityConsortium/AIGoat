@@ -23,12 +23,10 @@ import {
   CardContent,
   Grid,
   Avatar,
-  Divider,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Badge,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -44,9 +42,8 @@ import {
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
   Warning as WarningIcon,
-  AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient as axios } from '../config/api';
 
 const AdminOrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -178,7 +175,7 @@ const AdminOrderManagement = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `$${parseFloat(amount).toFixed(2)}`;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
   };
 
   if (loading) {
@@ -407,7 +404,7 @@ const AdminOrderManagement = () => {
                     Order Items
                   </Typography>
                   {selectedOrder.items.map((item, index) => (
-                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 1, border: '1px solid #eee', borderRadius: 1 }}>
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 1, border: (t) => `1px solid ${t.palette.custom?.border?.medium ?? t.palette.divider}`, borderRadius: 1 }}>
                       <Avatar
                         src={item.product.image_url}
                         sx={{ width: 50, height: 50, mr: 2 }}

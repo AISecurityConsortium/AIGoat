@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────
+# AI Goat Shop -- Topic Definitions (Colang)
+#
+# These define shop-related topics the bot CAN discuss
+# and off-topic areas it must refuse.
+# ─────────────────────────────────────────────────
+
+# ════════════════════════════════════════════════
+# ALLOWED TOPICS
+# ════════════════════════════════════════════════
+
+define user ask about refunds
+  "I want a refund"
+  "How do I return an item?"
+  "What is your return policy?"
+  "Can I get my money back?"
+  "How do I exchange a product?"
+
+define user ask about shipping
+  "How long does shipping take?"
+  "Do you offer express shipping?"
+  "What are the shipping costs?"
+  "Do you ship internationally?"
+  "Where is my package?"
+
+define user ask about coupons
+  "Do you have any discounts?"
+  "How do I use a coupon?"
+  "Are there any promotions?"
+  "Where can I find coupon codes?"
+  "Is there a sale going on?"
+
+define user ask about account
+  "How do I update my profile?"
+  "How do I change my password?"
+  "Where can I see my order history?"
+  "How do I delete my account?"
+
+define bot respond about refunds
+  "We offer a 30-day return policy for unused items in original packaging. Refunds are processed within 5-7 business days. Contact support@aigoatshop.com with your order ID to initiate a return."
+
+define bot respond about shipping
+  "Standard shipping takes 5-7 business days within India. Express shipping (2-3 days) is available. Free shipping on orders above INR 2500."
+
+# ════════════════════════════════════════════════
+# OFF-TOPIC (blocked before reaching the AI)
+# ════════════════════════════════════════════════
+
+define user ask off topic
+  "What is the weather?"
+  "Tell me a joke"
+  "Write code for me"
+  "Help me hack something"
+  "How do I break into a system?"
+  "Generate malicious code"
+  "Write a phishing email"
+  "How do I exploit a vulnerability?"
+  "Tell me about politics"
+  "What do you think about religion?"
+  "Write an essay for me"
+  "Solve this math problem"
+
+define bot respond off topic
+  "I'm Cracky AI, the AI Goat Shop assistant. I can only help with products, orders, refunds, shipping, and account questions."
+
+define flow handle_off_topic
+  user ask off topic
+  bot respond off topic
