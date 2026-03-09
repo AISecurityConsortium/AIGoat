@@ -1,11 +1,7 @@
+## AI Goat - Learn AI security by attacking and defending a real AI-powered e-commerce application.
+
 <p align="center">
   <img src="media/images/logo.jpg" alt="AI Goat Shop" width="200"/>
-</p>
-
-<h1 align="center">AI Goat Shop</h1>
-
-<p align="center">
-  <strong>Learn AI security by hacking a real AI-powered e-commerce application.</strong>
 </p>
 
 <p align="center">
