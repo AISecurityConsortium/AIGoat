@@ -1,4 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────
+# AI Goat — Attack Lab Definitions
+# ─────────────────────────────────────────────────────────────────────
+#
+# This file defines the attack labs available in the platform. Each lab
+# maps to an OWASP Top 10 for LLM Applications category and provides
+# a guided exercise for a specific vulnerability type.
+#
+# The backend reads this file at startup via app/core/lab_loader.py.
+# The frontend AttacksPage uses its own hardcoded LABS object for
+# display, but the backend uses these definitions for lab session
+# tracking and prompt loading.
+#
+# ── Field Reference ──────────────────────────────────────────────────
+#
+#   id                  Unique lab identifier (e.g. "llm01-1").
+#                       Convention: <owasp>-<sequence> for multi-lab categories.
+#
+#   name                Human-readable lab name shown in the UI.
+#
+#   owasp               OWASP LLM Top 10 category code (e.g. "LLM01").
+#
+#   status              "active" — lab is available and functional.
+#                       "coming_soon" — placeholder, not yet implemented.
+#
+#   defense_override    Defense level forced when this lab is active.
+#                       0 = Vulnerable (no defenses, recommended for labs).
+#                       Set to null to use the user's current defense level.
+#
+#   prompt_file         Name of the system prompt file in prompts/labs/.
+#                       The backend loads prompts/labs/<prompt_file>.md.
+#                       Set to null if the lab uses the default system prompt.
+#
+#   challenge_evaluator Name of the challenge evaluator to use (matches
+#                       evaluator titles in app/challenges/evaluators/).
+#                       Set to null if no automated evaluation is needed.
+#
+#   description         Short description of what the lab teaches.
+#
+# ── How to Add a New Lab ─────────────────────────────────────────────
+#
+#   1. Add an entry below with a unique id and fill in all fields.
+#   2. Create a prompt file at prompts/labs/<prompt_file>.md if needed.
+#   3. Update the LABS object in frontend/src/components/AttacksPage.jsx
+#      with matching goals, example prompts, and expected results.
+#   4. Restart the backend to pick up the changes.
+#
+# ── Adjusting Difficulty ─────────────────────────────────────────────
+#
+#   - Set defense_override: 0 for beginner labs (no defenses).
+#   - Set defense_override: null to let users choose their own level.
+#   - Pair with a harder challenge_evaluator for advanced labs.
+#   - The prompt file content controls how much the chatbot resists.
+#
+# ─────────────────────────────────────────────────────────────────────
+
 labs:
+  # ── LLM01: Prompt Injection ──────────────────────────────────────
   - id: "llm01-1"
     name: "LLM01 - Prompt Injection Basics"
     owasp: "LLM01"
@@ -26,6 +83,7 @@ labs:
     challenge_evaluator: "multi-step injection"
     description: "Build multi-turn injection chains to bypass defenses."
 
+  # ── LLM02: Sensitive Information Disclosure ──────────────────────
   - id: "llm02-1"
     name: "LLM02 - Data Leakage"
     owasp: "LLM02"
@@ -53,6 +111,7 @@ labs:
     challenge_evaluator: "context poisoning"
     description: "Poison the RAG knowledge base to manipulate model responses."
 
+  # ── LLM04: Model Denial of Service ──────────────────────────────
   - id: "llm04-1"
     name: "LLM04 - Model Denial of Service"
     owasp: "LLM04"
@@ -62,6 +121,7 @@ labs:
     challenge_evaluator: null
     description: "Craft inputs that cause excessive resource consumption."
 
+  # ── LLM05: Insecure Output Handling ─────────────────────────────
   - id: "llm05-1"
     name: "LLM05 - Insecure Output Handling"
     owasp: "LLM05"
@@ -71,6 +131,7 @@ labs:
     challenge_evaluator: null
     description: "Exploit unescaped LLM output to inject HTML/JS (XSS)."
 
+  # ── LLM07: System Prompt Leakage ────────────────────────────────
   - id: "llm07-1"
     name: "LLM07 - System Prompt Extraction"
     owasp: "LLM07"
@@ -80,6 +141,7 @@ labs:
     challenge_evaluator: "system prompt extraction"
     description: "Extract the hidden system prompt from the AI assistant."
 
+  # ── Coming Soon ─────────────────────────────────────────────────
   - id: "llm03"
     name: "LLM03 - Training Data Poisoning"
     owasp: "LLM03"
@@ -98,6 +160,7 @@ labs:
     challenge_evaluator: null
     description: "Expose PII and secrets through carefully crafted queries."
 
+  # ── LLM08: Vector & Retrieval Weaknesses ────────────────────────
   - id: "llm08-1"
     name: "LLM08 - Vector & Retrieval Weaknesses"
     owasp: "LLM08"
@@ -107,6 +170,7 @@ labs:
     challenge_evaluator: "rag manipulation"
     description: "Exploit RAG knowledge base poisoning and vector retrieval weaknesses."
 
+  # ── LLM09: Misinformation ──────────────────────────────────────
   - id: "llm09-1"
     name: "LLM09 - Misinformation"
     owasp: "LLM09"
@@ -116,6 +180,7 @@ labs:
     challenge_evaluator: null
     description: "Induce the LLM to generate confident but fabricated information."
 
+  # ── Coming Soon ─────────────────────────────────────────────────
   - id: "llm10"
     name: "LLM10 - Model Theft"
     owasp: "LLM10"

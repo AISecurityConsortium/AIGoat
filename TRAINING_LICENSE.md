@@ -8,6 +8,7 @@ free and accessible for learners and researchers.
 
 The following directories contain training content:
 
+- `app/challenges/` — dynamic flag generation engine and exploit evaluators (attack pattern detection, success thresholds, multi-turn analysis logic)
 - `prompts/` — system prompts for defense levels, labs, and challenges
 - `docs/` — workshop guides, challenge walkthroughs, and documentation
 - `media/` — images, logos, and visual training assets
@@ -38,11 +39,14 @@ need prior written permission from the maintainers. This includes:
 
 ## How to get permission
 
-Contact the maintainers through the project's GitHub repository:
+Reach out to the maintainers directly.
 
-**https://github.com/AISecurityConsortium/AIGoat**
+The current project maintainers are:
 
-Open an issue or reach out directly. We're happy to work with organizations
+- **Farooq Mohammad** — [LinkedIn](https://www.linkedin.com/in/farooqmohammad/)
+- **Nalinikanth M (Nal)** — [LinkedIn](https://www.linkedin.com/in/nalinikanth-m/)
+
+Reach out directly. We're happy to work with organizations
 that want to use AI Goat for training — we just ask that you get in touch first.
 
 ## Platform code is separate

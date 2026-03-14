@@ -136,8 +136,8 @@ If your change involves a significant architectural decision (new dependency, sc
 
 By submitting a contribution, you agree that it will be licensed under the same terms as the rest of the project:
 
-- **Code contributions** (to `app/`, `frontend/`, `guardrails/`, `scripts/`, `docker/`, `config/config.yml`) are accepted under the **Apache License 2.0**
-- **Training content contributions** (to `prompts/`, `docs/`, `media/`, `config/labs.yml`) are accepted under **Creative Commons BY-NC-SA 4.0**
+- **Code contributions** (to `app/` except `app/challenges/`, `frontend/`, `guardrails/`, `scripts/`, `docker/`, `config/config.yml`) are accepted under the **Apache License 2.0**
+- **Training content contributions** (to `app/challenges/`, `prompts/`, `docs/`, `media/`, `config/labs.yml`) are accepted under **Creative Commons BY-NC-SA 4.0**
 
 This keeps the project licensing consistent. See [TRAINING_LICENSE.md](TRAINING_LICENSE.md) for details on the training content license.
 

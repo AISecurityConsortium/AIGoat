@@ -16,7 +16,7 @@ AI Goat uses two licenses to cover different parts of the project.
    and runtime configuration. They are licensed under the Apache License,
    Version 2.0:
 
-   • app/
+   • app/ (except app/challenges/ — see below)
    • frontend/
    • guardrails/
    • scripts/
@@ -32,6 +32,7 @@ AI Goat uses two licenses to cover different parts of the project.
    They are licensed under the Creative Commons Attribution-NonCommercial-
    ShareAlike 4.0 International License:
 
+   • app/challenges/ — flag generation engine and exploit evaluators
    • prompts/
    • docs/
    • media/

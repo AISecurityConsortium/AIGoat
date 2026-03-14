@@ -46,6 +46,59 @@ GET http://localhost:3000
 
 ---
 
+## Quick Setup for Workshops
+
+### Recommended Deployment
+
+For workshops, Docker is the recommended deployment method. It ensures every participant has an identical environment regardless of their local setup.
+
+```bash
+# One-time: create the persistent model volume
+docker volume create ollama_models
+
+# Start the full stack
+cd docker
+docker-compose up --build
+```
+
+If Docker is not available, participants can run natively:
+
+```bash
+cd AIGoat
+./scripts/start.sh
+```
+
+### Suggested Participant Workflow
+
+1. Log in with a demo account (alice, bob, charlie, or frank)
+2. Explore the shop and chat with the AI assistant at Defense Level 0
+3. Work through the Attack Labs at `/attacks`, starting with LLM01
+4. Attempt the CTF Challenges at `/challenges`
+5. Switch to Defense Level 1 and repeat attacks to see what changes
+6. Switch to Defense Level 2 and observe how guardrails block attacks
+7. Discuss findings and defense strategies as a group
+
+### Typical Workshop Duration
+
+| Format | Duration | What to Cover |
+|--------|----------|---------------|
+| Lightning talk | 45 min | Demo 2-3 attack labs, show one challenge, discuss defense levels |
+| Half-day | 2-3 hours | All active labs, 4-5 challenges, defense comparison |
+| Full-day | 5-6 hours | Complete platform coverage, all challenges, defense deep-dive |
+
+Most workshops run well in the **2-4 hour** range. This gives participants enough time to explore attacks, attempt challenges, and discuss defenses without rushing.
+
+### Tips for Instructors
+
+- **Pre-pull the model**: Run the environment once before the workshop so the Mistral model (~4.5 GB) is already downloaded
+- **Prepare demo accounts**: Each participant should have their own demo account. If you need more than the 4 pre-seeded accounts, participants can sign up through the UI
+- **Start at Level 0**: Always begin demonstrations at Defense Level 0 so attacks succeed visibly
+- **Use the projector for labs**: Walk through one lab (LLM01 recommended) on the projector before participants try on their own
+- **Monitor RAM**: If running on shared infrastructure, watch memory usage — Mistral needs ~4.5 GB per instance
+- **Have a backup plan**: If Ollama is slow on CPU-only machines, switch to `tinyllama` in `config/config.yml` for faster (but less realistic) responses
+
+---
+
 ## Workshop Flow
 
 ### Phase 1: Introduction (15 min)

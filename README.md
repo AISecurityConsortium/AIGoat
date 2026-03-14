@@ -452,7 +452,7 @@ AI Goat uses **two licenses** to keep the platform open while protecting trainin
 
 The application code is open source under the [Apache License 2.0](LICENSE). This includes:
 
-- `app/` — backend (FastAPI, Python)
+- `app/` — backend (FastAPI, Python), except `app/challenges/`
 - `frontend/` — frontend (React, Material-UI)
 - `guardrails/` — NeMo Guardrails configuration
 - `scripts/` — startup and utility scripts
@@ -465,6 +465,7 @@ Anyone can use, modify, and distribute the platform code — including for comme
 
 The educational material is licensed under [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). This includes:
 
+- `app/challenges/` — flag generation engine and exploit evaluators
 - `prompts/` — system prompts for defense levels, labs, and challenges
 - `docs/` — workshop guides and challenge walkthroughs
 - `media/` — images, logos, and training assets
@@ -484,10 +485,6 @@ The educational material is licensed under [Creative Commons BY-NC-SA 4.0](https
 - Certification programs built from AI Goat content
 
 See [TRAINING_LICENSE.md](TRAINING_LICENSE.md) for details on commercial usage.
-
-### Trademark Notice
-
-AI Goat name and branding are trademarks of AISecurityConsortium. Commercial use of the brand requires permission.
 
 ---
 
