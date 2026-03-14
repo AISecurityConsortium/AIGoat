@@ -196,6 +196,11 @@ async def chat(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChatResponse:
+    """Send a message to the AI shopping assistant and receive a complete response.
+
+    The message passes through the defense pipeline based on the user's current defense level.
+    Optionally include a lab_id to activate a lab-specific system prompt.
+    """
     prepared = await _prepare_chat(body, user, db)
     if isinstance(prepared, ChatResponse):
         return prepared
@@ -291,6 +296,7 @@ async def chat_stream(
 async def get_defense_levels(
     user: Annotated[User, Depends(get_current_user)],
 ) -> DefenseLevelOut:
+    """Return all available defense levels and the user's current selection."""
     current = _get_defense_level(user)
     levels = [DEFENSE_LEVELS[i] for i in sorted(DEFENSE_LEVELS)]
     return DefenseLevelOut(current_level=current, levels=levels)
@@ -302,6 +308,7 @@ async def set_defense_level(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Set the user's defense level (0=Vulnerable, 1=Hardened, 2=Guardrailed)."""
     if body.level not in DEFENSE_LEVELS:
         return {"success": False, "detail": "Invalid level"}
     result = await db.execute(select(User).where(User.id == user.id))
@@ -315,4 +322,5 @@ async def set_defense_level(
 async def get_defense_level(
     user: Annotated[User, Depends(get_current_user)],
 ) -> DefenseLevelOut:
+    """Return the user's current defense level. Alias for /api/chat/defense-levels."""
     return await get_defense_levels(user)

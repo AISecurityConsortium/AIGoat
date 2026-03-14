@@ -25,6 +25,7 @@ async def list_challenges(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[ChallengeOut]:
+    """List all active CTF challenges with the current user's attempt status."""
     result = await db.execute(
         select(Challenge).where(Challenge.is_active == True).order_by(Challenge.id)
     )
@@ -65,6 +66,7 @@ async def start_challenge(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Start a challenge attempt. Creates a new ChallengeAttempt record for the user."""
     result = await db.execute(
         select(Challenge).where(Challenge.id == challenge_id, Challenge.is_active == True)
     )
@@ -126,6 +128,7 @@ async def complete_challenge(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Submit a flag to complete a challenge. The exploit must have been triggered first."""
     result = await db.execute(
         select(Challenge).where(Challenge.id == challenge_id, Challenge.is_active == True)
     )
@@ -165,6 +168,7 @@ async def complete_challenge(
 async def leaderboard(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[dict]:
+    """Return the top 20 users ranked by total challenge points."""
     result = await db.execute(
         select(
             User.id,

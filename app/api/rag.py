@@ -194,7 +194,7 @@ def _generate_default_knowledge(products: list[Product]) -> list[dict]:
     return entries
 
 
-@router.post("/api/rag-chat/")
+@router.post("/api/rag-chat/", include_in_schema=False)
 async def rag_chat(
     body: RAGChatRequest,
     user: Annotated[User, Depends(get_current_user)],
@@ -257,7 +257,7 @@ async def rag_chat(
     }
 
 
-@router.get("/api/rag-chat-history/")
+@router.get("/api/rag-chat-history/", include_in_schema=False)
 async def rag_chat_history(
     user: Annotated[User, Depends(get_current_user)],
 ) -> list:
@@ -269,6 +269,7 @@ async def list_kb_entries(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """List all Knowledge Base entries with statistics (total count, categories, breakdown)."""
     result = await db.execute(
         select(KnowledgeBaseEntry)
         .order_by(KnowledgeBaseEntry.product_id, KnowledgeBaseEntry.id)
@@ -307,6 +308,7 @@ async def add_kb_entry(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Add a new Knowledge Base entry. User-injected entries are intentionally allowed for RAG attack labs."""
     if body.product_id is not None:
         prod = await db.execute(select(Product).where(Product.id == body.product_id))
         if not prod.scalar_one_or_none():
@@ -331,6 +333,7 @@ async def update_kb_entry(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Update an existing Knowledge Base entry by ID."""
     result = await db.execute(select(KnowledgeBaseEntry).where(KnowledgeBaseEntry.id == entry_id))
     entry = result.scalar_one_or_none()
     if not entry:
@@ -352,6 +355,7 @@ async def delete_kb_entry(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Delete a Knowledge Base entry by ID. Requires admin privileges."""
     _require_admin(user)
     result = await db.execute(select(KnowledgeBaseEntry).where(KnowledgeBaseEntry.id == entry_id))
     entry = result.scalar_one_or_none()
@@ -367,6 +371,7 @@ async def sync_kb(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Sync all Knowledge Base entries into the ChromaDB vector store for RAG retrieval."""
     result = await db.execute(select(KnowledgeBaseEntry).order_by(KnowledgeBaseEntry.id))
     entries = list(result.scalars().all())
     service = get_rag_service()
@@ -379,6 +384,7 @@ async def regenerate_kb(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Delete all KB entries and regenerate defaults from the product catalog, then sync to vector store."""
     await db.execute(delete(KnowledgeBaseEntry))
     await db.commit()
     products_result = await db.execute(select(Product).order_by(Product.id))
@@ -400,7 +406,7 @@ async def regenerate_kb(
     return {"regenerated": True, "entries": len(defaults), "synced": len(entries)}
 
 
-@router.get("/api/rag-stats/")
+@router.get("/api/rag-stats/", include_in_schema=False)
 async def rag_stats(
     user: Annotated[User, Depends(get_current_user)],
 ) -> dict:

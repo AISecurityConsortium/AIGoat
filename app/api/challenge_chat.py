@@ -95,6 +95,11 @@ async def challenge_chat(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ChallengeChatResponse:
+    """Send a message within a challenge's dedicated chat.
+
+    Uses a challenge-specific system prompt, evaluates the response for exploit
+    success, and returns a dynamic flag when the exploit is confirmed.
+    """
     challenge_result = await db.execute(
         select(Challenge).where(Challenge.id == challenge_id)
     )

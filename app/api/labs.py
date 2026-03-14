@@ -29,6 +29,7 @@ async def list_labs(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[dict]:
+    """List all labs from config/labs.yml with the current user's session progress."""
     result = await db.execute(
         select(LabSession).where(LabSession.user_id == user.id)
     )
@@ -56,6 +57,7 @@ async def reset_lab(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Reset a lab session for the current user, clearing completion status."""
     lab_def = get_lab_dict(lab_id)
     if not lab_def:
         raise HTTPException(status_code=404, detail="Lab not found")

@@ -16,6 +16,7 @@ router = APIRouter(prefix="", tags=["system"])
 
 @router.get("/api/feature-flags/")
 async def get_feature_flags() -> dict:
+    """Return current feature flags for the frontend UI."""
     settings = get_settings()
     return {
         "rag_system": settings.features.knowledge_base,
@@ -38,6 +39,7 @@ async def get_feature_flags() -> dict:
 
 @router.get("/api/ollama/status/")
 async def ollama_status() -> dict:
+    """Check whether the Ollama LLM service is reachable and which model is configured."""
     settings = get_settings()
     url = f"{settings.ollama.base_url.rstrip('/')}/api/tags"
     try:
@@ -56,7 +58,7 @@ async def ollama_status() -> dict:
     }
 
 
-@router.post("/api/ollama/status/")
+@router.post("/api/ollama/status/", include_in_schema=False)
 async def reset_ollama_context() -> dict:
     return {
         "success": True,
@@ -69,6 +71,7 @@ async def search_products(
     q: str = Query("", alias="q"),
     db: Annotated[AsyncSession, Depends(get_db)] = None,
 ) -> list[dict]:
+    """Search products by name or description. Returns up to 20 matches."""
     if not q.strip():
         return []
     pattern = f"%{q}%"

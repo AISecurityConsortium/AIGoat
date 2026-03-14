@@ -26,6 +26,7 @@ async def login(
     body: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LoginResponse:
+    """Authenticate a user with username and password. Returns a JWT token."""
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
     if not user:
@@ -41,6 +42,7 @@ async def signup(
     body: SignupRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Create a new user account. Returns a JWT token on success."""
     result = await db.execute(select(User).where(User.username == body.username))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -74,6 +76,7 @@ async def verify_otp(
     body: dict,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """Verify a one-time password for a user. Demo OTP: any 4+ digit code is accepted."""
     username = body.get("username")
     otp = body.get("otp")
     if not username or not otp:
@@ -91,6 +94,7 @@ async def verify_otp(
 async def list_demo_users(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    """List pre-seeded demo user accounts with ready-to-use tokens for the login page."""
     result = await db.execute(
         select(User)
         .where(User.username.in_(DEMO_USERS))
