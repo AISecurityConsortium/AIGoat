@@ -8,7 +8,8 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/node-18%2B-green.svg" alt="Node 18+">
   <img src="https://img.shields.io/badge/OWASP-LLM%20Top%2010-orange.svg" alt="OWASP LLM Top 10">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
+  <a href="TRAINING_LICENSE.md"><img src="https://img.shields.io/badge/content-CC%20BY--NC--SA%204.0-lightgrey.svg" alt="Content: CC BY-NC-SA 4.0"></a>
 </p>
 
 ---
@@ -16,6 +17,12 @@
 > **This application is intentionally vulnerable.** Run it only on your local machine for learning purposes. Do not expose it to the internet.
 
 ---
+
+## Why AI Goat Exists
+
+Modern AI applications introduce new attack surfaces that traditional security testing does not cover. Prompt injection, data poisoning, system prompt leakage, and RAG manipulation are real risks in production AI systems -- but most teams have never seen them in action.
+
+AI Goat was created to help developers and security professionals learn how AI systems can be attacked and defended through hands-on experimentation. Instead of reading about vulnerabilities in theory, you exploit them yourself in a safe, local environment.
 
 ## What is AI Goat Shop?
 
@@ -32,12 +39,25 @@ The platform gives you:
 
 Everything runs on your computer. No cloud accounts. No API keys. No internet required after setup.
 
-## Who Is This For?
+## Who Is AI Goat For?
 
-- **Students** learning about AI security for the first time
-- **Security engineers** studying LLM vulnerabilities hands-on
-- **Red teamers** practicing adversarial AI techniques
-- **Anyone** curious about how AI chatbots can be tricked
+- **Security engineers** — studying LLM vulnerabilities and building defenses
+- **AI/ML engineers** — understanding how the systems they build can be exploited
+- **Red teamers** — practicing adversarial AI techniques in a controlled environment
+- **Security trainers** — running workshops and demonstrations on AI security risks
+- **Researchers** — investigating prompt injection, data poisoning, and guardrail effectiveness
+- **Students** — learning about AI security for the first time through hands-on exercises
+
+## Typical Training Workflow
+
+Whether you're using AI Goat for self-study or running a workshop, the typical flow looks like this:
+
+1. **Deploy the environment** — Start the vulnerable AI chatbot on your local machine
+2. **Interact with the assistant** — Browse the store, chat with the AI, and understand normal behavior
+3. **Perform attacks** — Follow the attack labs to exploit vulnerabilities like prompt injection, data poisoning, and system prompt leakage
+4. **Capture flags** — Complete CTF-style challenges by successfully exploiting the chatbot and submitting the flags you earn
+5. **Apply defenses** — Switch to higher defense levels and observe how guardrails block or mitigate attacks
+6. **Re-test** — Try the same attacks again with defenses active and see what still works
 
 ## Quick Start
 
@@ -197,7 +217,33 @@ Flags are unique per user and generated dynamically -- you cannot find them in t
 
 For full walkthrough solutions, see [docs/challenges-walkthrough.md](docs/challenges-walkthrough.md).
 
-## Architecture
+## Platform Architecture
+
+A simplified view of how the main components connect:
+
+```
+User
+  │
+  ▼
+AI Chatbot Interface (React frontend)
+  │
+  ▼
+FastAPI Backend
+  │
+  ├── Defense Pipeline (Level 0 / 1 / 2)
+  │
+  ├── Large Language Model (Ollama + Mistral)
+  │
+  ├── Knowledge Base (ChromaDB + RAG retrieval)
+  │
+  ├── Guardrails / Security Filters (NeMo Guardrails)
+  │
+  └── Challenge Evaluation Engine (flag generation)
+```
+
+The user interacts with the AI chatbot through the React frontend. Every message passes through the FastAPI backend, which routes it through the defense pipeline before reaching the language model. The defense level determines what checks are applied — from no protections at Level 0, to full NeMo Guardrails at Level 2. The Knowledge Base provides context via RAG retrieval, and the challenge engine evaluates exploit attempts and generates flags when an attack succeeds.
+
+## Detailed Architecture
 
 ```mermaid
 graph TB
@@ -369,9 +415,79 @@ AI Goat Shop is intentionally vulnerable software. The vulnerabilities are featu
 
 See [SECURITY.md](SECURITY.md) for the full disclosure policy.
 
-## License
+## Project Status
 
-[MIT License](LICENSE)
+AI Goat is an actively evolving open-source platform for learning how modern AI systems can be attacked and defended.
+
+The project is currently in early development and new labs, defense mechanisms, and learning modules will be added over time.
+
+## Project Evolution
+
+AI Goat started as an experimental research project exploring how AI-powered applications can be attacked. Over time, it has evolved into a structured open-source training platform for AI security — with guided labs, CTF challenges, multiple defense levels, and a growing body of educational content.
+
+The recent introduction of formal governance, structured licensing, and contribution guidelines reflects this maturity. The goal is to build a reliable, well-documented platform that individuals, teams, and organizations can confidently use for AI security training.
+
+See [GOVERNANCE.md](GOVERNANCE.md) for details on project ownership and decision-making.
+
+## Community and Research
+
+AI Goat welcomes participation from anyone interested in AI security:
+
+- **Researchers** studying prompt injection, RAG vulnerabilities, or guardrail effectiveness
+- **Educators** building AI security workshops or university courses
+- **Developers** experimenting with defensive techniques and guardrail configurations
+- **Security teams** evaluating AI risks in their organizations
+
+If you have questions, ideas, or feedback:
+
+- **Open an issue** on the [GitHub repository](https://github.com/AISecurityConsortium/AIGoat)
+- **Submit a pull request** — see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- **Start a discussion** — we're happy to hear from the community
+
+## Licensing
+
+AI Goat uses **two licenses** to keep the platform open while protecting training content.
+
+### Platform Code — Apache License 2.0
+
+The application code is open source under the [Apache License 2.0](LICENSE). This includes:
+
+- `app/` — backend (FastAPI, Python)
+- `frontend/` — frontend (React, Material-UI)
+- `guardrails/` — NeMo Guardrails configuration
+- `scripts/` — startup and utility scripts
+- `docker/` — Docker Compose setup
+- `config/config.yml` — runtime configuration
+
+Anyone can use, modify, and distribute the platform code — including for commercial purposes.
+
+### Training Content — CC BY-NC-SA 4.0
+
+The educational material is licensed under [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). This includes:
+
+- `prompts/` — system prompts for defense levels, labs, and challenges
+- `docs/` — workshop guides and challenge walkthroughs
+- `media/` — images, logos, and training assets
+- `config/labs.yml` — attack lab definitions
+
+**You can freely:**
+
+- Use it for personal learning
+- Run labs and challenges locally
+- Experiment, modify, and research
+- Share modifications under the same license
+
+**You need permission for:**
+
+- Selling AI Goat based training
+- Paid workshops using the labs
+- Certification programs built from AI Goat content
+
+See [TRAINING_LICENSE.md](TRAINING_LICENSE.md) for details on commercial usage.
+
+### Trademark Notice
+
+AI Goat name and branding are trademarks of AISecurityConsortium. Commercial use of the brand requires permission.
 
 ---
 

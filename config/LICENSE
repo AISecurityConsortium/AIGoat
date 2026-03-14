@@ -1,0 +1,31 @@
+Licensing for the config/ directory
+====================================
+
+This directory contains two files with different licenses:
+
+1. config.yml — Apache License 2.0
+
+   Runtime application configuration (database paths, Ollama settings,
+   defense level defaults, RAG parameters). This is infrastructure
+   configuration and is licensed under the same Apache License 2.0 as the
+   rest of the platform code.
+
+   See the root LICENSE file for the full Apache 2.0 text.
+
+2. labs.yml — Creative Commons BY-NC-SA 4.0
+
+   Attack lab definitions, scenario descriptions, and educational content.
+   This is training material and is licensed under the Creative Commons
+   Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+   You may use labs.yml for personal learning, academic research, and
+   non-commercial purposes. Commercial use — including paid courses,
+   workshops, or certification programs — requires permission from the
+   maintainers.
+
+   Full license text:
+   https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+For commercial licensing inquiries, see TRAINING_LICENSE.md in the
+project root or contact the maintainers via:
+https://github.com/AISecurityConsortium/AIGoat

@@ -1,6 +1,27 @@
 # Contributing to AI Goat
 
-Thank you for considering a contribution to AI Goat. This guide explains how to set up the project locally, run tests, and submit a clean pull request.
+Thank you for considering a contribution to AI Goat. This guide explains how to contribute, set up the project locally, run tests, and submit a clean pull request.
+
+## How to Contribute
+
+There are many ways to help improve AI Goat:
+
+- **Improve the platform** — Fix bugs, optimize performance, or add new features to the backend or frontend
+- **Add defensive techniques** — Contribute new guardrails, detection methods, or hardening strategies
+- **Report bugs** — Found something broken? Open an issue with reproduction steps
+- **Suggest new lab ideas** — Have an idea for a new attack scenario or OWASP mapping? We'd love to hear it
+- **Improve documentation** — Clarify instructions, fix typos, or expand explanations
+- **Add educational examples** — Contribute new walkthroughs, workshop exercises, or training scenarios
+
+## Contribution Scope
+
+Contributions can span different areas of the project:
+
+- **Code improvements** — Backend (Python/FastAPI), frontend (React/MUI), infrastructure (Docker, scripts)
+- **Documentation improvements** — README, workshop guides, challenge walkthroughs, inline code docs
+- **Educational content** — New lab prompts, challenge ideas, defensive technique examples
+
+Each area has its own licensing (see [Licensing of Contributions](#licensing-of-contributions) below).
 
 ## Prerequisites
 
@@ -84,15 +105,22 @@ When you run `pre-commit install`, the following hooks run automatically on ever
 
 If a hook fails, the commit is blocked. Fix the issue and re-stage your changes.
 
+## Pull Request Process
+
+1. **Fork the repository** and clone it locally
+2. **Create a feature branch** from `main` (`feature/your-change` or `fix/your-fix`)
+3. **Make your changes** and verify they pass all tests and linting (see above)
+4. **Submit a pull request** against `main` with a clear description of what you changed and why
+5. **Maintainers review** — expect feedback or approval within a reasonable timeframe
+
 ## Pull Request Guidelines
 
-1. **Branch from `main`** -- Create a feature branch (`feature/your-change` or `fix/your-fix`).
-2. **Keep PRs focused** -- One logical change per PR. Split large changes into stacked PRs.
-3. **Write tests** -- New backend endpoints need corresponding tests in `tests/`. Bug fixes should include a regression test.
-4. **Update prompts carefully** -- Changes to files in `prompts/` affect the AI behavior. Test with all three defense levels.
-5. **Don't break existing APIs** -- Frontend components depend on specific response shapes. If you change a backend endpoint, update the corresponding frontend code.
-6. **No secrets** -- Never commit API keys, tokens, or credentials. Configuration goes in `config/config.yml`.
-7. **No emojis in code** -- Keep code comments professional. No GPT-style phrasing.
+1. **Keep PRs focused** -- One logical change per PR. Split large changes into stacked PRs.
+2. **Write tests** -- New backend endpoints need corresponding tests in `tests/`. Bug fixes should include a regression test.
+3. **Update prompts carefully** -- Changes to files in `prompts/` affect the AI behavior. Test with all three defense levels.
+4. **Don't break existing APIs** -- Frontend components depend on specific response shapes. If you change a backend endpoint, update the corresponding frontend code.
+5. **No secrets** -- Never commit API keys, tokens, or credentials. Configuration goes in `config/config.yml`.
+6. **No emojis in code** -- Keep code comments professional. No GPT-style phrasing.
 
 ## Code Style
 
@@ -104,6 +132,15 @@ If a hook fails, the commit is blocked. Fix the issue and re-stage your changes.
 
 If your change involves a significant architectural decision (new dependency, schema change, new API surface), open an issue first to discuss the approach.
 
+## Licensing of Contributions
+
+By submitting a contribution, you agree that it will be licensed under the same terms as the rest of the project:
+
+- **Code contributions** (to `app/`, `frontend/`, `guardrails/`, `scripts/`, `docker/`, `config/config.yml`) are accepted under the **Apache License 2.0**
+- **Training content contributions** (to `prompts/`, `docs/`, `media/`, `config/labs.yml`) are accepted under **Creative Commons BY-NC-SA 4.0**
+
+This keeps the project licensing consistent. See [TRAINING_LICENSE.md](TRAINING_LICENSE.md) for details on the training content license.
+
 ## Questions?
 
-Open a GitHub issue or reach out to the maintainers.
+Open a GitHub issue or reach out to the maintainers. See [GOVERNANCE.md](GOVERNANCE.md) for information about the project maintainers and decision-making process.

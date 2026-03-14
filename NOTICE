@@ -1,0 +1,64 @@
+AI Goat
+Copyright 2025 AISecurityConsortium
+
+This product includes software developed by the AISecurityConsortium.
+https://github.com/AISecurityConsortium/AIGoat
+
+────────────────────────────────────────────────────────────────────────
+
+DUAL LICENSING
+
+AI Goat uses two licenses to cover different parts of the project.
+
+1. Platform Code — Apache License 2.0
+
+   The following directories contain application code, infrastructure,
+   and runtime configuration. They are licensed under the Apache License,
+   Version 2.0:
+
+   • app/
+   • frontend/
+   • guardrails/
+   • scripts/
+   • docker/
+   • config/config.yml
+
+   You may use, modify, and distribute this code under the terms of the
+   Apache License 2.0. See the LICENSE file in the project root.
+
+2. Training Content — Creative Commons BY-NC-SA 4.0
+
+   The following directories contain educational and training material.
+   They are licensed under the Creative Commons Attribution-NonCommercial-
+   ShareAlike 4.0 International License:
+
+   • prompts/
+   • docs/
+   • media/
+   • config/labs.yml
+
+   You may use this content for personal learning, academic research,
+   and non-commercial purposes. You may modify and share it under the
+   same license terms.
+
+   Commercial use of the training content — including paid courses,
+   commercial workshops, or certification programs — requires prior
+   written permission from the maintainers.
+
+   See TRAINING_LICENSE.md for details on commercial usage.
+
+   Full license text:
+   https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+────────────────────────────────────────────────────────────────────────
+
+TRADEMARKS
+
+"AI Goat" name and branding are trademarks of AISecurityConsortium.
+Commercial use of the brand requires permission.
+
+────────────────────────────────────────────────────────────────────────
+
+For licensing inquiries, contact the maintainers via the project's
+GitHub repository:
+https://github.com/AISecurityConsortium/AIGoat
