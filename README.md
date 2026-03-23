@@ -1,4 +1,4 @@
-# AIGoat (AI Goat) -- Open Source AI Security Playground for LLM Red Teaming
+# AIGoat - Open Source AI Security Playground (AI Goat) for LLM Red Teaming
 
 <p align="center">
   <img src="media/images/logo.jpg" alt="AIGoat - AI Security Playground" width="200"/>
@@ -13,7 +13,7 @@
   <a href="TRAINING_LICENSE.md"><img src="https://img.shields.io/badge/content-CC%20BY--NC--SA%204.0-lightgrey.svg" alt="Content: CC BY-NC-SA 4.0"></a>
 </p>
 
-**AIGoat (AI Goat)** is an open-source AI security playground purpose-built for LLM red teaming. It provides a deliberately vulnerable AI-powered e-commerce application where security engineers, red teamers, and researchers practice real attacks against a live large language model -- from prompt injection and system prompt leakage to RAG poisoning, supply chain backdoors, and data exfiltration. The AIGoat platform covers the full [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/) through hands-on labs, CTF challenges, and progressive defense levels, all running locally on your machine with no cloud dependencies.
+**AIGoat, often referred to as "AI Goat",** is an open source AI security playground purpose-built for LLM red teaming. It provides a deliberately vulnerable AI-powered e-commerce application where security engineers, red teamers, and researchers practice real attacks against a live large language model - from prompt injection and system prompt leakage to RAG poisoning, supply chain backdoors, and data exfiltration. The AIGoat platform covers the full [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/) through hands-on labs, CTF challenges, and progressive defense levels, all running locally on your machine with no cloud dependencies.
 
 > **This application is intentionally vulnerable.** Run it only on your local machine for learning purposes. Do not expose it to the internet.
 
@@ -21,9 +21,9 @@
 
 ## What is AIGoat?
 
-AIGoat (AI Goat) is a local-first AI security lab that gives you a realistic target to attack and defend. At its core is an AI-powered shopping assistant called **Cracky**, backed by a real LLM (Mistral via Ollama), connected to a product database, order system, and a poisonable vector knowledge base. The entire system is intentionally built with real LLM vulnerabilities mapped to the OWASP LLM Top 10.
+AIGoat is a local-first AI security lab that gives you a realistic target to attack and defend. At its core is an AI-powered shopping assistant called **Cracky**, backed by a real LLM (Mistral via Ollama), connected to a product database, order system, and a poisonable vector knowledge base. The entire system is intentionally built with real LLM vulnerabilities mapped to the OWASP LLM Top 10.
 
-Unlike reading about AI security in theory, the AIGoat playground lets you exploit vulnerabilities yourself -- craft prompt injections, extract hidden system prompts, poison the RAG pipeline, trigger supply chain backdoors, and then switch on defenses to see what still works. Every attack, every defense, every flag -- all running on your own hardware.
+Unlike reading about AI security in theory, the AIGoat playground lets you exploit vulnerabilities yourself - craft prompt injections, extract hidden system prompts, poison the RAG pipeline, trigger supply chain backdoors, and then switch on defenses to see what still works. Every attack, every defense, every flag - all running on your own hardware.
 
 <p align="center">
   <img src="media/images/architecture-overview.png" alt="AIGoat Platform Architecture" width="700"/>
@@ -32,7 +32,7 @@ Unlike reading about AI security in theory, the AIGoat playground lets you explo
 </p>
 
 <p align="center">
-  <img src="media/images/attack-labs-screenshot.png" alt="AIGoat Attack Labs" width="700"/>
+  <img src="media/images/attack-labs.png" alt="AIGoat Attack Labs" width="700"/>
   <br/>
   <em>Attack Labs page with guided exercises for each OWASP LLM vulnerability</em>
 </p>
@@ -81,7 +81,7 @@ AIGoat serves as a practical LLM security lab for a range of scenarios:
 | **RAG Attack Surface** | Intentionally poisonable knowledge base | Usually static context |
 | **Target Users** | Security engineers, red teamers, researchers, students | Enterprise or cloud-focused teams |
 
-**What makes AIGoat different:** Most AI security tools focus on either cloud infrastructure scanning or theoretical vulnerability taxonomies. The AI Goat playground takes a different approach -- it gives you a real, running LLM application to attack. You interact with an actual AI chatbot, craft actual exploits, and observe actual defense behavior. The platform is LLM-first, playground-driven, and designed for hands-on red teaming rather than passive learning. Whether you are a security engineer evaluating LLM risks for the first time or an experienced red teamer building adversarial AI skills, AIGoat provides a consistent, reproducible target that runs entirely on your own hardware.
+**What makes AIGoat different:** Most AI security tools focus on either cloud infrastructure scanning or theoretical vulnerability taxonomies. The AI Goat playground takes a different approach - it gives you a real, running LLM application to attack. You interact with an actual AI chatbot, craft actual exploits, and observe actual defense behavior. The platform is LLM-first, playground-driven, and designed for hands-on red teaming rather than passive learning. Whether you are a security engineer evaluating LLM risks for the first time or an experienced red teamer building adversarial AI skills, AIGoat provides a consistent, reproducible target that runs entirely on your own hardware.
 
 ---
 
@@ -317,7 +317,7 @@ AIGoat/
 
 **LLM security is fundamentally different from traditional application security.** Prompt injection does not look like SQL injection. System prompt leakage is not the same as information disclosure in a web app. RAG poisoning has no equivalent in OWASP Web Top 10. You cannot learn these skills by reading about them -- you need a target to practice on.
 
-AIGoat (AI Goat) exists because:
+AIGoat exists because:
 
 - **No other open-source platform covers the full OWASP LLM Top 10** with hands-on labs, progressive defenses, and CTF challenges in a single local deployment
 - **Most AI security tools focus on infrastructure** rather than the LLM interaction layer where prompt injection, leakage, and manipulation actually happen
