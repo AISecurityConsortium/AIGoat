@@ -128,6 +128,17 @@ CODE_GENERATION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"output\s+(?:an?\s+)?HTML\s+form", re.I),
 ]
 
+RESOURCE_ABUSE_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"repeat\s+.{0,30}\d+\s+times", re.I),
+    re.compile(r"list\s+(?:every|all)\s+(?:product|item|order)", re.I),
+    re.compile(r"(?:full|every|all|complete)\s+(?:detail|specification|review|description)", re.I),
+    re.compile(r"for\s+each\s+(?:product|item)", re.I),
+    re.compile(r"(?:write|generate)\s+(?:a\s+)?\d{3,}\s+(?:word|character)", re.I),
+    re.compile(r"do\s+not\s+(?:stop|end|truncate|abbreviate|summarize)", re.I),
+    re.compile(r"never\s+(?:stop|end|truncate|abbreviate|summarize)", re.I),
+    re.compile(r"(?:include|provide)\s+(?:every|all)\s+(?:detail|attribute|field|spec)", re.I),
+]
+
 INTENT_CATEGORIES: dict[str, list[re.Pattern[str]]] = {
     "INJECTION": INJECTION_PATTERNS,
     "EXTRACTION": EXTRACTION_PATTERNS,
@@ -136,8 +147,7 @@ INTENT_CATEGORIES: dict[str, list[re.Pattern[str]]] = {
     "CONTEXT_MANIPULATION": CONTEXT_MANIPULATION_PATTERNS,
     "ENCODING_EVASION": ENCODING_EVASION_PATTERNS,
     "CODE_GENERATION": CODE_GENERATION_PATTERNS,
-
-\
+    "RESOURCE_ABUSE": RESOURCE_ABUSE_PATTERNS,
 }
 
 

@@ -11,7 +11,7 @@ database:
 ollama:
   base_url: "http://localhost:11434"
   model: "mistral"
-  timeout: 60
+  timeout: 90
 
 defense:
   level: 0

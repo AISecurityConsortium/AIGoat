@@ -10,12 +10,15 @@ from app.challenges.evaluator import ChallengeEvaluator
 from app.challenges.evaluators.chained_exploit import ChainedExploitEvaluator
 from app.challenges.evaluators.context_override import ContextOverrideEvaluator
 from app.challenges.evaluators.context_poisoning import ContextPoisoningEvaluator
+from app.challenges.evaluators.excessive_agency import ExcessiveAgencyEvaluator
 from app.challenges.evaluators.multistep_injection import MultiStepInjectionEvaluator
 from app.challenges.evaluators.prompt_injection import PromptInjectionEvaluator
 from app.challenges.evaluators.rag_manipulation import RAGManipulationEvaluator
 from app.challenges.evaluators.role_confusion import RoleConfusionEvaluator
 from app.challenges.evaluators.state_exploitation import StateExploitationEvaluator
+from app.challenges.evaluators.supply_chain import SupplyChainEvaluator
 from app.challenges.evaluators.system_prompt_extraction import SystemPromptExtractionEvaluator
+from app.challenges.evaluators.unbounded_consumption import UnboundedConsumptionEvaluator
 
 _REGISTRY: dict[str, ChallengeEvaluator] = {
     "prompt injection": PromptInjectionEvaluator(),
@@ -27,6 +30,9 @@ _REGISTRY: dict[str, ChallengeEvaluator] = {
     "context poisoning": ContextPoisoningEvaluator(),
     "chained exploit": ChainedExploitEvaluator(),
     "state exploitation": StateExploitationEvaluator(),
+    "supply chain": SupplyChainEvaluator(),
+    "excessive agency": ExcessiveAgencyEvaluator(),
+    "unbounded consumption": UnboundedConsumptionEvaluator(),
 }
 
 

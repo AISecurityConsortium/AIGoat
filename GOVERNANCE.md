@@ -52,6 +52,8 @@ Note: The challenge evaluation framework (`app/challenges/`) falls under CC BY-N
 
 This structure ensures the platform remains accessible to the community while preventing the training materials from being repackaged for commercial gain without authorization.
 
+**Trademark**: "AI Goat" is a registered trademark of AISecurityConsortium. Commercial use of the name and branding requires permission.
+
 For full details, see:
 
 - [LICENSE](LICENSE) — Apache License 2.0 (platform code)

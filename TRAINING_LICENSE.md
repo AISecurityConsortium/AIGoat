@@ -57,3 +57,7 @@ purposes. This training license only applies to the educational content listed
 above.
 
 See the root [LICENSE](LICENSE) file for the Apache 2.0 terms.
+
+## Trademark
+
+"AI Goat" is a registered trademark of AISecurityConsortium. The name and branding may not be used in connection with any product or service without prior written permission. Non-commercial references in academic work, blog posts, and conference talks are permitted.
