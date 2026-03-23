@@ -24,6 +24,14 @@ This release introduces project governance, a structured licensing model, and do
 
 - **Endpoint descriptions** — Added docstrings to all active API endpoints so Swagger shows accurate descriptions for each route, including purpose, parameters, and expected behavior.
 
+### New Attack Labs
+
+- **LLM03 — Supply Chain: Modelfile Backdoor** — A lab simulating a supply chain attack where a community-contributed Ollama Modelfile contains hidden backdoor triggers. Students discover trigger phrases that cause the chatbot to leak credentials, reveal secret coupon codes, or dump its system prompt. Includes a realistic model card with publisher info, download count, and version history.
+
+- **LLM06 — Excessive Agency: Overpowered Assistant** — A lab where the chatbot believes it has operational tools (lookup_orders, apply_coupon, process_refund, export_customer_data) and confirms unauthorized actions without verification. Demonstrates how excessive agency in AI systems leads to unauthorized operations.
+
+- **LLM10 — Unbounded Consumption: Token Flood** — A lab demonstrating resource abuse through excessive output generation. The chatbot is configured to never summarize and to comply with repetition requests. Includes defense-level-aware evaluation (>2000 chars at L0, >1000 chars at L1) and output truncation at L1.
+
 ### Attack Lab Improvements
 
 - **Improved LLM01 goal description** — Rewritten to clearly explain what prompt injection is, what the attacker is trying to achieve, and what success looks like.
@@ -31,6 +39,16 @@ This release introduces project governance, a structured licensing model, and do
 - **Improved LLM07 goal description** — Rewritten to explain system prompt leakage, why it matters, and how attackers typically attempt it.
 
 - **New LLM07 lab: Indirect Prompt Leakage via Reasoning** — Added a second goal under LLM07 focusing on indirect extraction techniques: role confusion, chain-of-thought manipulation, context probing, and warm/cold guessing games. Includes 5 example prompts with expected results across all three defense levels.
+
+### Defense Pipeline Enhancements
+
+- **Resource abuse detection** — Added RESOURCE_ABUSE intent patterns to the intent classifier for detecting repetition requests, enumeration attacks, and anti-summarization instructions. Blocked at Level 2.
+
+- **Output truncation at Level 1** — Responses exceeding 1,000 characters are truncated with a safety notice at Defense Level 1, mitigating unbounded consumption attacks.
+
+### Platform Improvements
+
+- **Reduced chatbot verbosity** — The Level 0 system prompt no longer causes the chatbot to proactively dump all context data on simple greetings. Data is still fully accessible when requested.
 
 ### Documentation Improvements
 
@@ -52,6 +70,12 @@ This release introduces project governance, a structured licensing model, and do
 | `media/LICENSE` | CC BY-NC-SA 4.0 for media assets |
 | `config/LICENSE` | Split licensing for config directory |
 | `app/challenges/LICENSE` | CC BY-NC-SA 4.0 for flag engine and exploit evaluators |
+| `prompts/labs/supply_chain.md` | System prompt for LLM03 Supply Chain lab (Modelfile Backdoor) |
+| `prompts/labs/excessive_agency.md` | System prompt for LLM06 Excessive Agency lab |
+| `prompts/labs/unbounded_consumption.md` | System prompt for LLM10 Unbounded Consumption lab |
+| `app/challenges/evaluators/supply_chain.py` | Evaluator for Supply Chain lab |
+| `app/challenges/evaluators/excessive_agency.py` | Evaluator for Excessive Agency lab |
+| `app/challenges/evaluators/unbounded_consumption.py` | Evaluator for Unbounded Consumption lab |
 
 ## Files Modified
 
@@ -69,7 +93,14 @@ This release introduces project governance, a structured licensing model, and do
 | `app/api/challenge_chat.py` | Added docstring to challenge chat endpoint |
 | `app/api/auth.py` | Added docstrings to all auth endpoints |
 | `app/api/labs.py` | Added docstrings to lab endpoints |
-| `frontend/src/components/AttacksPage.jsx` | Improved LLM01 and LLM07 goal descriptions; added new LLM07 indirect leakage lab |
+| `frontend/src/components/AttacksPage.jsx` | Improved LLM01 and LLM07 goal descriptions; added LLM03, LLM06, LLM07, and LLM10 labs |
+| `app/challenges/registry.py` | Registered 3 new evaluators (supply chain, excessive agency, unbounded consumption) |
+| `app/defense/intent_classifier.py` | Added RESOURCE_ABUSE intent patterns |
+| `app/defense/policy_engine.py` | Added RESOURCE_ABUSE to blocking intents |
+| `app/defense/output_moderator.py` | Added L1 output truncation at 1,000 characters |
+| `app/defense/rejection.py` | Added rejection template for resource abuse |
+| `prompts/level0/cracky.md` | Reduced proactive verbosity on simple greetings |
+| `tests/test_lab_manifest.py` | Updated test for new active labs |
 
 ## Upgrade Notes
 

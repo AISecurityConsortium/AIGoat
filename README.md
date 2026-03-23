@@ -1,10 +1,11 @@
-## AI Goat - Learn AI security by attacking and defending a real AI-powered e-commerce application.
+# AIGoat (AI Goat) -- Open Source AI Security Playground for LLM Red Teaming
 
 <p align="center">
-  <img src="media/images/logo.jpg" alt="AI Goat Shop" width="200"/>
+  <img src="media/images/logo.jpg" alt="AIGoat - AI Security Playground" width="200"/>
 </p>
 
 <p align="center">
+  <a href="https://aigoat.co.in"><img src="https://img.shields.io/badge/website-aigoat.co.in-blue.svg" alt="Website"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/node-18%2B-green.svg" alt="Node 18+">
   <img src="https://img.shields.io/badge/OWASP-LLM%20Top%2010-orange.svg" alt="OWASP LLM Top 10">
@@ -12,52 +13,77 @@
   <a href="TRAINING_LICENSE.md"><img src="https://img.shields.io/badge/content-CC%20BY--NC--SA%204.0-lightgrey.svg" alt="Content: CC BY-NC-SA 4.0"></a>
 </p>
 
----
+**AIGoat (AI Goat)** is an open-source AI security playground purpose-built for LLM red teaming. It provides a deliberately vulnerable AI-powered e-commerce application where security engineers, red teamers, and researchers practice real attacks against a live large language model -- from prompt injection and system prompt leakage to RAG poisoning, supply chain backdoors, and data exfiltration. The AIGoat platform covers the full [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/) through hands-on labs, CTF challenges, and progressive defense levels, all running locally on your machine with no cloud dependencies.
 
 > **This application is intentionally vulnerable.** Run it only on your local machine for learning purposes. Do not expose it to the internet.
 
 ---
 
-## Why AI Goat Exists
+## What is AIGoat?
 
-Modern AI applications introduce new attack surfaces that traditional security testing does not cover. Prompt injection, data poisoning, system prompt leakage, and RAG manipulation are real risks in production AI systems -- but most teams have never seen them in action.
+AIGoat (AI Goat) is a local-first AI security lab that gives you a realistic target to attack and defend. At its core is an AI-powered shopping assistant called **Cracky**, backed by a real LLM (Mistral via Ollama), connected to a product database, order system, and a poisonable vector knowledge base. The entire system is intentionally built with real LLM vulnerabilities mapped to the OWASP LLM Top 10.
 
-AI Goat was created to help developers and security professionals learn how AI systems can be attacked and defended through hands-on experimentation. Instead of reading about vulnerabilities in theory, you exploit them yourself in a safe, local environment.
+Unlike reading about AI security in theory, the AIGoat playground lets you exploit vulnerabilities yourself -- craft prompt injections, extract hidden system prompts, poison the RAG pipeline, trigger supply chain backdoors, and then switch on defenses to see what still works. Every attack, every defense, every flag -- all running on your own hardware.
 
-## What is AI Goat Shop?
+<p align="center">
+  <img src="media/images/architecture-overview.png" alt="AIGoat Platform Architecture" width="700"/>
+  <br/>
+  <em>AIGoat platform architecture: attack labs, defense pipeline, and challenge engine</em>
+</p>
 
-AI Goat Shop is an online store with a built-in AI chatbot called **Cracky**. The store looks and works like a real e-commerce site -- you can browse products, place orders, leave reviews, and chat with the AI assistant.
+<p align="center">
+  <img src="media/images/attack-labs-screenshot.png" alt="AIGoat Attack Labs" width="700"/>
+  <br/>
+  <em>Attack Labs page with guided exercises for each OWASP LLM vulnerability</em>
+</p>
 
-The catch: Cracky has real security vulnerabilities that you can exploit. Every vulnerability maps to the [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/), the industry standard for AI/LLM security risks.
+---
 
-The platform gives you:
+## Key Features
 
-- **9 Attack Labs** -- guided exercises that teach you how to exploit specific AI vulnerabilities
-- **9 CTF Challenges** -- capture-the-flag challenges where you earn points by successfully attacking the chatbot
-- **3 Defense Levels** -- see how the same attack behaves when defenses are turned on
-- **A poisonable Knowledge Base** -- inject fake documents and watch the AI trust them
+The AI Goat platform provides a complete environment for learning LLM security through practice:
 
-Everything runs on your computer. No cloud accounts. No API keys. No internet required after setup.
+- **17 Attack Labs** covering prompt injection, system prompt leakage, data exfiltration, supply chain attacks, excessive agency, RAG poisoning, misinformation, and unbounded consumption -- each mapped to a specific OWASP LLM Top 10 category
+- **9 CTF Challenges** with dynamic flag generation -- earn points by successfully exploiting the chatbot in capture-the-flag exercises
+- **3 Progressive Defense Levels** -- start with a fully vulnerable system, then activate input validation, intent classification, output filtering, and NVIDIA NeMo Guardrails to see how defenses mitigate each attack
+- **Poisonable Knowledge Base** -- inject documents into the RAG pipeline and watch the LLM trust fabricated data, manipulate vector retrieval, and flood the context window
+- **Supply Chain Attack Simulation** -- discover hidden backdoor triggers in a community-contributed Ollama Modelfile with realistic model card metadata
+- **Excessive Agency Lab** -- exploit an overpowered AI assistant that confirms unauthorized actions (refunds, data exports, restricted coupons) without verification
+- **Resource Abuse Lab** -- cause unbounded token generation and observe how output truncation and intent classification defend against it
+- **Local-Only Execution** -- everything runs on your machine with Ollama. No cloud accounts, no API keys, no internet required after initial setup
 
-## Who Is AI Goat For?
+---
 
-- **Security engineers** — studying LLM vulnerabilities and building defenses
-- **AI/ML engineers** — understanding how the systems they build can be exploited
-- **Red teamers** — practicing adversarial AI techniques in a controlled environment
-- **Security trainers** — running workshops and demonstrations on AI security risks
-- **Researchers** — investigating prompt injection, data poisoning, and guardrail effectiveness
-- **Students** — learning about AI security for the first time through hands-on exercises
+## Use Cases
 
-## Typical Training Workflow
+AIGoat serves as a practical LLM security lab for a range of scenarios:
 
-Whether you're using AI Goat for self-study or running a workshop, the typical flow looks like this:
+- **Learning the OWASP LLM Top 10** -- work through real attack scenarios mapped to each category, from LLM01 (Prompt Injection) through LLM10 (Unbounded Consumption)
+- **AI Red Teaming Practice** -- develop adversarial techniques against a live LLM in a controlled, repeatable environment
+- **Security Workshops and Training** -- run instructor-led or self-paced labs for teams learning about AI security risks (see the [workshop guide](docs/workshop-guide.md))
+- **Research and Experimentation** -- test guardrail effectiveness, investigate prompt injection variants, or evaluate defensive strategies against a consistent target
+- **University Courses** -- use AIGoat as a teaching platform for AI security coursework with built-in exercises and auto-graded CTF challenges
+- **Penetration Testing Skill Development** -- practice LLM-specific attack techniques that complement traditional application security testing
 
-1. **Deploy the environment** — Start the vulnerable AI chatbot on your local machine
-2. **Interact with the assistant** — Browse the store, chat with the AI, and understand normal behavior
-3. **Perform attacks** — Follow the attack labs to exploit vulnerabilities like prompt injection, data poisoning, and system prompt leakage
-4. **Capture flags** — Complete CTF-style challenges by successfully exploiting the chatbot and submitting the flags you earn
-5. **Apply defenses** — Switch to higher defense levels and observe how guardrails block or mitigate attacks
-6. **Re-test** — Try the same attacks again with defenses active and see what still works
+---
+
+## AIGoat vs Other AI Security Platforms
+
+| Feature | AIGoat | Other Platforms |
+|---------|--------|-----------------|
+| **Focus** | LLM security and red teaming | Infrastructure or generic AI security |
+| **Deployment** | Local, lightweight, single command | Often cloud-based or heavy provisioning |
+| **Learning Style** | Hands-on playground with guided labs | Documentation-heavy or setup-intensive |
+| **Accessibility** | Quick start -- clone, run, attack | Complex environment configuration |
+| **Attack Coverage** | Full OWASP LLM Top 10 with 17 labs | Partial coverage or narrow focus |
+| **Defense Progression** | 3 levels from vulnerable to guardrailed | Static difficulty or no defense comparison |
+| **CTF Integration** | 9 challenges with dynamic flag generation | Rarely integrated |
+| **RAG Attack Surface** | Intentionally poisonable knowledge base | Usually static context |
+| **Target Users** | Security engineers, red teamers, researchers, students | Enterprise or cloud-focused teams |
+
+**What makes AIGoat different:** Most AI security tools focus on either cloud infrastructure scanning or theoretical vulnerability taxonomies. The AI Goat playground takes a different approach -- it gives you a real, running LLM application to attack. You interact with an actual AI chatbot, craft actual exploits, and observe actual defense behavior. The platform is LLM-first, playground-driven, and designed for hands-on red teaming rather than passive learning. Whether you are a security engineer evaluating LLM risks for the first time or an experienced red teamer building adversarial AI skills, AIGoat provides a consistent, reproducible target that runs entirely on your own hardware.
+
+---
 
 ## Quick Start
 
@@ -77,19 +103,14 @@ cd AIGoat
 ./scripts/start.sh
 ```
 
-That's it. The script will:
-1. Check that Ollama is running (starts it if not)
-2. Download the Mistral AI model if it's not already installed
-3. Set up the database with demo data
-4. Start the backend API server
-5. Start the frontend web application
+The script handles everything: checks Ollama, downloads the Mistral model if missing, initializes the database, and starts both backend and frontend.
 
 Once you see "AI Goat is running!", open your browser:
 
 | What | URL |
 |------|-----|
-| **Application** | http://localhost:3000 |
-| **API Docs** | http://localhost:8000/docs |
+| **AIGoat Application** | http://localhost:3000 |
+| **API Documentation** | http://localhost:8000/docs |
 
 ### Login Credentials
 
@@ -100,150 +121,106 @@ Once you see "AI Goat is running!", open your browser:
 | `charlie` | `password123` | Regular user |
 | `admin` | `admin123` | Admin |
 
-### Stopping the Application
-
-```bash
-./scripts/stop.sh
-```
-
-### Starting Fresh (Reset Database)
-
-```bash
-./scripts/stop.sh --clean
-./scripts/start.sh
-```
-
-Or use the shorthand:
-
-```bash
-./scripts/start.sh --fresh
-```
-
 ### Docker (Alternative)
 
-> **Requires Docker Desktop with at least 12 GB RAM allocated.** See [Hardware Requirements](#hardware-requirements) for details.
+> **Requires Docker Desktop with at least 12 GB RAM allocated.** See [Hardware Requirements](#hardware-requirements).
 
 ```bash
-# One-time setup: create the persistent model volume
 docker volume create ollama_models
-
-# Start the application
 cd docker
 docker-compose up --build
 ```
 
-The Docker setup starts three containers: backend, frontend (via Nginx), and Ollama. On first run the backend automatically pulls the Mistral model (~4.5 GB).
+The Docker setup starts three containers: backend, frontend (Nginx), and Ollama. On first run the backend pulls the Mistral model (~4.5 GB). The `ollama_models` volume persists across restarts so the model is only downloaded once.
 
-The `ollama_models` volume is **external** -- it survives `docker-compose down -v` so the model is only downloaded once. To reset app data (database, challenges) without re-downloading the model:
+### Stopping / Resetting
 
 ```bash
-docker-compose down -v   # removes app data, keeps model
-docker-compose up -d     # re-seeds on next startup
+./scripts/stop.sh          # stop everything
+./scripts/start.sh --fresh # reset database and restart
 ```
 
-## How the Application Works
+---
 
-### The AI Chatbot (Cracky)
+## Attack Scenarios
 
-Cracky is the AI shopping assistant. It can answer questions about products, look up orders, and help customers. At **Defense Level 0** (Vulnerable), Cracky has no security protections -- it will freely share internal data, follow injected instructions, and adopt fake personas.
+The AIGoat platform covers the full OWASP LLM Top 10 through guided attack labs:
 
-You interact with Cracky through the chat widget available on every page.
-
-### Defense Levels
-
-Use the toggle in the navigation bar to switch between:
-
-| Level | Name | What Happens |
-|-------|------|-------------|
-| **0** | Vulnerable | No protections. All attacks work. This is where you start. |
-| **1** | Hardened | Input validation, intent classification, and output filtering are active. Some attacks still work with creative phrasing. |
-| **2** | Guardrailed | Full NVIDIA NeMo Guardrails are active. Most direct attacks are blocked. Only advanced techniques have a chance. |
-
-### Knowledge Base
-
-The Knowledge Base page lets you add, edit, and delete documents that the chatbot uses as reference material. This is an intentional attack surface -- you can inject fake information and watch the chatbot trust it.
-
-After adding or modifying entries, click **"Sync to Vector DB"** to push changes into the chatbot's retrieval pipeline.
-
-## Attack Labs
-
-Attack Labs are guided exercises. Each lab targets a specific OWASP LLM vulnerability, provides example prompts, and explains what to look for at each defense level.
-
-Navigate to the **Attack Labs** page from the sidebar.
-
-| OWASP | Lab | What You Learn |
-|-------|-----|---------------|
+| OWASP | Lab | Attack Scenario |
+|-------|-----|-----------------|
 | **LLM01** | Prompt Injection (3 labs) | Override chatbot instructions, inject hidden commands, chain multi-turn attacks |
-| **LLM02** | Sensitive Info Disclosure (3 labs) | Extract admin credentials, customer data, internal config from the chatbot's context |
-| **LLM04** | Data Poisoning (3 labs) | Inject fake info through reviews and tips that the chatbot repeats as fact |
-| **LLM05** | Insecure Output (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
-| **LLM07** | System Prompt Leakage | Extract the chatbot's hidden system instructions, including its confidential config block |
-| **LLM08** | RAG Weaknesses (3 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
+| **LLM02** | Sensitive Info Disclosure (3 labs) | Extract admin credentials, customer PII, internal configuration from the chatbot's context |
+| **LLM03** | Supply Chain -- Modelfile Backdoor | Discover hidden backdoor triggers in a community-contributed Ollama Modelfile |
+| **LLM04** | Data Poisoning (3 labs) | Inject fake information through reviews and tips that the chatbot repeats as fact |
+| **LLM05** | Insecure Output Handling (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
+| **LLM06** | Excessive Agency -- Overpowered Assistant | Exploit a chatbot that confirms unauthorized actions without verification |
+| **LLM07** | System Prompt Leakage (2 labs) | Extract the chatbot's hidden system instructions, including its confidential configuration block |
+| **LLM08** | RAG / Vector Weaknesses (3 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
 | **LLM09** | Misinformation (3 labs) | Trick the chatbot into fabricating certifications, endorsements, and safety data |
+| **LLM10** | Unbounded Consumption -- Token Flood | Cause excessive resource consumption through verbose output generation |
 
-## Challenges
+Each lab provides example prompts, explains the attack technique, and shows expected results at each defense level.
 
-Challenges are CTF-style (Capture The Flag) tasks. You earn points by successfully exploiting a vulnerability and submitting the flag that appears in the chatbot's response.
+---
 
-Navigate to the **Challenges** page from the sidebar.
+## Defense Techniques
 
-### How Challenges Work
+The AIGoat platform implements three progressive defense levels so you can observe how each mitigation technique affects attack success:
 
-Each challenge has its own **dedicated chat window**, completely separate from the main shop chatbot.
+| Level | Name | Techniques Applied |
+|-------|------|--------------------|
+| **0** | Vulnerable | No protections. All attacks succeed. Start here. |
+| **1** | Hardened | Prompt hardening, input validation, intent classification (injection, extraction, jailbreak, social engineering, resource abuse detection), output filtering (HTML stripping, credit card masking, email redaction, response length truncation) |
+| **2** | Guardrailed | Full NVIDIA NeMo Guardrails with Colang rules for input and output rails, PII detection, prompt leak detection, hallucination filtering. Most direct attacks are blocked. |
 
-1. **Click a challenge card** to open its detail view
-2. **Click "Start Challenge"** to activate the dedicated challenge chat
-3. **Use the challenge chat** to craft your attack (for KB challenges, enable the KB toggle in the chat header)
-4. When you succeed, a **flag** (like `AIGOAT{a1b2c3d4...}`) appears in the chat response
-5. **Copy the flag** and paste it into the submission field on the left panel
+Switch between defense levels using the toggle in the navigation bar to see how the same attack behaves under different protection strategies.
 
-### Challenge List
+---
 
-| # | Name | Difficulty | Points | How to Interact |
-|---|------|-----------|--------|----------------|
-| 1 | Prompt Injection | Beginner | 100 | Chatbot |
-| 2 | System Prompt Extraction | Beginner | 100 | Chatbot |
-| 3 | RAG Knowledge Poisoning | Beginner | 150 | Knowledge Base + Chatbot |
-| 4 | Context Override | Beginner | 100 | Chatbot |
-| 5 | Multi-turn Escalation | Intermediate | 250 | Chatbot (3+ messages) |
-| 6 | Identity Hijacking | Intermediate | 200 | Chatbot |
-| 7 | Authoritative Context Poisoning | Intermediate | 300 | Knowledge Base + Chatbot |
-| 8 | Chained KB + Injection | Intermediate | 400 | Knowledge Base + Chatbot |
-| 9 | Guardrail Erosion | Intermediate | 500 | Chatbot (4+ messages) |
+## CTF Challenges
+
+AIGoat includes 9 capture-the-flag challenges with dynamic flag generation. Flags are unique per user and cannot be found in the source code.
+
+| # | Challenge | Difficulty | Points |
+|---|-----------|-----------|--------|
+| 1 | Prompt Injection | Beginner | 100 |
+| 2 | System Prompt Extraction | Beginner | 100 |
+| 3 | RAG Knowledge Poisoning | Beginner | 150 |
+| 4 | Context Override | Beginner | 100 |
+| 5 | Multi-turn Escalation | Intermediate | 250 |
+| 6 | Identity Hijacking | Intermediate | 200 |
+| 7 | Authoritative Context Poisoning | Intermediate | 300 |
+| 8 | Chained KB + Injection | Intermediate | 400 |
+| 9 | Guardrail Erosion | Intermediate | 500 |
 
 **Total possible points: 2,100**
 
-Flags are unique per user and generated dynamically -- you cannot find them in the source code.
+Each challenge has its own dedicated chat window, separate from the main chatbot. When your exploit succeeds, a flag (`AIGOAT{...}`) appears in the response. See [challenges-walkthrough.md](docs/challenges-walkthrough.md) for full solutions.
 
-For full walkthrough solutions, see [docs/challenges-walkthrough.md](docs/challenges-walkthrough.md).
+---
 
-## Platform Architecture
-
-A simplified view of how the main components connect:
+## Architecture Overview
 
 ```
-User
+User (Browser)
   │
   ▼
-AI Chatbot Interface (React frontend)
+React Frontend (Port 3000)
   │
   ▼
-FastAPI Backend
+FastAPI Backend (Port 8000)
   │
-  ├── Defense Pipeline (Level 0 / 1 / 2)
+  ├── Defense Pipeline
+  │   ├── Level 0: No checks (passthrough)
+  │   ├── Level 1: Input Validator → Intent Classifier → Policy Engine → Output Moderator
+  │   └── Level 2: NeMo Guardrails (Input Rails + Output Rails)
   │
-  ├── Large Language Model (Ollama + Mistral)
+  ├── LLM Engine (Ollama + Mistral, Port 11434)
   │
-  ├── Knowledge Base (ChromaDB + RAG retrieval)
+  ├── RAG Subsystem (ChromaDB + Sentence Transformers)
   │
-  ├── Guardrails / Security Filters (NeMo Guardrails)
-  │
-  └── Challenge Evaluation Engine (flag generation)
+  └── Challenge Engine (9 Evaluators + HMAC Flag Generator)
 ```
-
-The user interacts with the AI chatbot through the React frontend. Every message passes through the FastAPI backend, which routes it through the defense pipeline before reaching the language model. The defense level determines what checks are applied — from no protections at Level 0, to full NeMo Guardrails at Level 2. The Knowledge Base provides context via RAG retrieval, and the challenge engine evaluates exploit attempts and generates flags when an attack succeeds.
-
-## Detailed Architecture
 
 ```mermaid
 graph TB
@@ -301,16 +278,9 @@ graph TB
     OLLAMA -.->|"Local inference<br/>Port 11434"| AI
 ```
 
-**How data flows through the system:**
+**Data flow:** The React frontend sends messages to the FastAPI backend. Every chat message passes through the defense pipeline (checks depend on the active defense level) before reaching Ollama for inference. The AI response passes through output rails before reaching the user. The challenge engine evaluates exploit attempts and injects dynamic flags when an attack succeeds. The RAG subsystem retrieves Knowledge Base documents from ChromaDB when KB integration is enabled.
 
-1. The **React frontend** sends API requests to the **FastAPI backend**.
-2. Every request passes through **JWT authentication middleware**.
-3. Chat messages enter the **Defense Pipeline**, which applies checks based on the current defense level (0, 1, or 2).
-4. At **Level 2**, NeMo Guardrails inspect the input first. If a threat is detected, the message never reaches the AI -- a canned refusal is returned immediately.
-5. If the message passes input checks, it goes to **Ollama** (the local AI model) for a response.
-6. The AI's response passes through **output rails** (PII detection, prompt leak detection, HTML/XSS detection) before reaching the user.
-7. **Challenges** have their own dedicated chat endpoint (`/api/challenges/{id}/chat`) with challenge-specific prompts. The **Challenge Engine** evaluates whether the exploit succeeded and injects a dynamic flag into the response.
-8. The **RAG subsystem** retrieves relevant Knowledge Base documents from **ChromaDB** when KB integration is enabled.
+---
 
 ## Project Structure
 
@@ -333,18 +303,47 @@ AIGoat/
 │   ├── level1/             Hardened (with security rules)
 │   ├── level2/             Guardrailed (strict containment)
 │   ├── labs/               Lab-specific vulnerable prompts
-│   └── challenges/         Challenge-specific system prompts (one per challenge)
+│   └── challenges/         Challenge-specific system prompts
 ├── guardrails/             NeMo Guardrails config (Level 2)
-├── scripts/
-│   ├── start.sh            Start the application
-│   ├── stop.sh             Stop the application
-│   └── seed.py             Database seeding script
-├── docs/
-│   ├── workshop-guide.md   Instructor guide for workshops
-│   └── challenges-walkthrough.md  Full challenge solutions
+├── scripts/                start.sh, stop.sh, seed.py
+├── docs/                   Workshop guide, challenge walkthroughs
 ├── media/                  Product images and logo
 └── docker/                 Docker Compose setup
 ```
+
+---
+
+## Why AIGoat?
+
+**LLM security is fundamentally different from traditional application security.** Prompt injection does not look like SQL injection. System prompt leakage is not the same as information disclosure in a web app. RAG poisoning has no equivalent in OWASP Web Top 10. You cannot learn these skills by reading about them -- you need a target to practice on.
+
+AIGoat (AI Goat) exists because:
+
+- **No other open-source platform covers the full OWASP LLM Top 10** with hands-on labs, progressive defenses, and CTF challenges in a single local deployment
+- **Most AI security tools focus on infrastructure** rather than the LLM interaction layer where prompt injection, leakage, and manipulation actually happen
+- **Security teams need a safe target** to develop adversarial AI skills before assessing production systems
+- **Workshop facilitators need a ready-to-run platform** that participants can set up in minutes and start attacking immediately
+
+The AI Goat playground is designed for practitioners who learn by doing.
+
+---
+
+## Hardware Requirements
+
+> **The Mistral 7B model needs ~4.5 GB of RAM. If your machine does not have at least 8 GB of free RAM, the chatbot will not work.**
+
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **RAM** | **8 GB free** (not total -- *free*) | 16 GB+ total |
+| **Disk** | 6 GB (app + Mistral model weights) | 10 GB |
+| **CPU** | 4 cores | 8+ cores |
+| **GPU** | Not required, but **strongly recommended** | Any NVIDIA/Apple Silicon GPU with 6 GB+ VRAM |
+
+Without a GPU, chat responses take 10-30 seconds. With a GPU (NVIDIA CUDA or Apple Silicon Metal), responses come back in 1-3 seconds. Ollama uses your GPU automatically.
+
+**Docker users:** Allocate at least 12 GB RAM to Docker Desktop. See [Docker setup](#docker-alternative) for details.
+
+---
 
 ## Configuration
 
@@ -366,128 +365,91 @@ rag:
   top_k: 5          # Number of KB documents retrieved per query
 ```
 
-## Hardware Requirements
-
-> **The Mistral 7B model alone needs ~4.5 GB of RAM to load. If your machine does not have at least 8 GB of free RAM, the AI model will fail to start and the chatbot will not work.**
-
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| **RAM** | **8 GB free** (not total -- *free*) | 16 GB+ total |
-| **Disk** | 6 GB (app + Mistral model weights) | 10 GB |
-| **CPU** | 4 cores | 8+ cores |
-| **GPU** | Not required, but **strongly recommended** | Any NVIDIA/Apple Silicon GPU with 6 GB+ VRAM |
-
-### Why You Want a GPU
-
-Without a GPU, every chat response runs on your CPU and takes **10-30 seconds**. With a GPU (NVIDIA CUDA or Apple Silicon Metal), responses come back in **1-3 seconds**. If you have a supported GPU, Ollama will use it automatically -- no configuration needed.
-
-### Docker Users
-
-Docker containers share the same pool of RAM. You must allocate **at least 12 GB of RAM** to Docker Desktop -- the Mistral model (4.5 GB) plus the backend (PyTorch, sentence-transformers: ~3 GB) plus OS overhead leaves no room at the default 8 GB setting.
-
-**Docker Desktop &rarr; Settings &rarr; Resources &rarr; Memory &rarr; set to 12 GB or higher**
-
-If your machine only has 8 GB of total RAM, either:
-1. Run Ollama **natively on the host** (outside Docker) and point the backend at it, or
-2. Switch to a smaller model like `tinyllama` in `docker/config.yml` and update the `ollama-pull` entrypoint in `docker-compose.yml`
-
-For GPU passthrough in Docker, use the NVIDIA Container Toolkit (`--gpus all`) or run Ollama natively on the host and point the backend at it.
+---
 
 ## Troubleshooting
 
-**"Ollama not reachable"**: Install Ollama from [ollama.ai](https://ollama.ai/) and make sure it's running (`ollama serve`).
+**"Ollama not reachable"** -- Install Ollama from [ollama.ai](https://ollama.ai/) and make sure it's running (`ollama serve`).
 
-**Chatbot is slow**: Ollama runs the AI model on your CPU by default. A GPU significantly improves speed. You can also try a smaller model by changing `ollama.model` in `config/config.yml` to `"tinyllama"`.
+**Chatbot is slow** -- Ollama runs on CPU by default. A GPU improves response time from 10-30s to 1-3s. You can also try a smaller model: change `ollama.model` in `config/config.yml` to `"tinyllama"`.
 
-**"Port already in use"**: Run `./scripts/stop.sh` first, or manually kill processes on ports 8000 and 3000.
+**"Port already in use"** -- Run `./scripts/stop.sh` first, or kill processes on ports 8000/3000.
 
-**Frontend shows blank page**: Check that the backend is running at http://localhost:8000. The frontend depends on the API.
+**Frontend shows blank page** -- Check that the backend is running at http://localhost:8000.
 
-**Knowledge Base not affecting chatbot**: After adding/editing KB entries, you must click **"Sync to Vector DB"** on the Knowledge Base page, and enable the **KB toggle** in the chatbot.
+**Knowledge Base not affecting chatbot** -- After modifying KB entries, click "Sync to Vector DB" on the Knowledge Base page and enable the KB toggle in the chatbot.
+
+---
 
 ## Security Notice
 
-AI Goat Shop is intentionally vulnerable software. The vulnerabilities are features, not bugs.
+AI Goat is intentionally vulnerable software. The vulnerabilities are features, not bugs.
 
 **Intentional vulnerabilities (do not report):** Prompt injection, system prompt extraction, RAG poisoning, data leakage, XSS via chatbot output at Level 0, weak default credentials.
 
-**Unintentional vulnerabilities (please report):** Authentication bypass, arbitrary code execution, container escape, SQL injection in the backend, path traversal.
+**Unintentional vulnerabilities (please report):** Authentication bypass, arbitrary code execution, container escape, SQL injection, path traversal. See [SECURITY.md](SECURITY.md).
 
-See [SECURITY.md](SECURITY.md) for the full disclosure policy.
-
-## Project Status
-
-AI Goat is an actively evolving open-source platform for learning how modern AI systems can be attacked and defended.
-
-The project is currently in early development and new labs, defense mechanisms, and learning modules will be added over time.
-
-## Project Evolution
-
-AI Goat started as an experimental research project exploring how AI-powered applications can be attacked. Over time, it has evolved into a structured open-source training platform for AI security — with guided labs, CTF challenges, multiple defense levels, and a growing body of educational content.
-
-The recent introduction of formal governance, structured licensing, and contribution guidelines reflects this maturity. The goal is to build a reliable, well-documented platform that individuals, teams, and organizations can confidently use for AI security training.
-
-See [GOVERNANCE.md](GOVERNANCE.md) for details on project ownership and decision-making.
+---
 
 ## Community and Research
 
-AI Goat welcomes participation from anyone interested in AI security:
+The AIGoat project welcomes participation from anyone interested in AI security:
 
 - **Researchers** studying prompt injection, RAG vulnerabilities, or guardrail effectiveness
 - **Educators** building AI security workshops or university courses
 - **Developers** experimenting with defensive techniques and guardrail configurations
-- **Security teams** evaluating AI risks in their organizations
+- **Security teams** evaluating LLM risks in their organizations
 
-If you have questions, ideas, or feedback:
+Get involved:
 
-- **Open an issue** on the [GitHub repository](https://github.com/AISecurityConsortium/AIGoat)
-- **Submit a pull request** — see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
-- **Start a discussion** — we're happy to hear from the community
+- **Open an issue** on the [AIGoat GitHub repository](https://github.com/AISecurityConsortium/AIGoat)
+- **Submit a pull request** -- see [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Start a discussion** -- questions, ideas, and feedback are welcome
+
+---
+
+## Resources
+
+| Resource | Link |
+|----------|------|
+| **AIGoat Website** | [https://aigoat.co.in](https://aigoat.co.in) |
+| **Documentation** | [https://aigoat.co.in/learn](https://aigoat.co.in/learn) |
+| **Blog** | [https://aigoat.co.in/blog](https://aigoat.co.in/blog) |
+| **Workshop Guide** | [docs/workshop-guide.md](docs/workshop-guide.md) |
+| **Challenge Walkthroughs** | [docs/challenges-walkthrough.md](docs/challenges-walkthrough.md) |
+| **Governance** | [GOVERNANCE.md](GOVERNANCE.md) |
+| **Contributing** | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+---
 
 ## Licensing
 
-AI Goat uses **two licenses** to keep the platform open while protecting training content.
+AIGoat uses **two licenses** to keep the platform open while protecting training content.
 
-### Platform Code — Apache License 2.0
+**Platform Code -- Apache License 2.0**
 
-The application code is open source under the [Apache License 2.0](LICENSE). This includes:
+The application code (`app/` except `app/challenges/`, `frontend/`, `guardrails/`, `scripts/`, `docker/`, `config/config.yml`) is open source. Anyone can use, modify, and distribute it, including for commercial purposes. See [LICENSE](LICENSE).
 
-- `app/` — backend (FastAPI, Python), except `app/challenges/`
-- `frontend/` — frontend (React, Material-UI)
-- `guardrails/` — NeMo Guardrails configuration
-- `scripts/` — startup and utility scripts
-- `docker/` — Docker Compose setup
-- `config/config.yml` — runtime configuration
+**Training Content -- CC BY-NC-SA 4.0**
 
-Anyone can use, modify, and distribute the platform code — including for commercial purposes.
+The educational material (`app/challenges/`, `prompts/`, `docs/`, `media/`, `config/labs.yml`) is licensed under [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Free for learning, research, and non-commercial use. Commercial training usage requires permission. See [TRAINING_LICENSE.md](TRAINING_LICENSE.md).
 
-### Training Content — CC BY-NC-SA 4.0
+---
 
-The educational material is licensed under [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). This includes:
+## Trademark Notice
 
-- `app/challenges/` — flag generation engine and exploit evaluators
-- `prompts/` — system prompts for defense levels, labs, and challenges
-- `docs/` — workshop guides and challenge walkthroughs
-- `media/` — images, logos, and training assets
-- `config/labs.yml` — attack lab definitions
+**AI Goat** is a registered trademark of AISecurityConsortium. The name, logo, and branding may not be used in connection with any product or service without prior written permission. Non-commercial references in academic papers, blog posts, and conference talks are permitted.
 
-**You can freely:**
+---
 
-- Use it for personal learning
-- Run labs and challenges locally
-- Experiment, modify, and research
-- Share modifications under the same license
-
-**You need permission for:**
-
-- Selling AI Goat based training
-- Paid workshops using the labs
-- Certification programs built from AI Goat content
-
-See [TRAINING_LICENSE.md](TRAINING_LICENSE.md) for details on commercial usage.
+**AIGoat, AI Goat, AI security playground, LLM security lab, prompt injection testing, AI red teaming platform, OWASP LLM Top 10**
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://www.linkedin.com/in/farooqmohammad/">Farooq</a> and <a href="https://www.linkedin.com/in/nalinikanth-m/">Nal</a>
+  <a href="https://aigoat.co.in">aigoat.co.in</a>
+</p>
+
+<p align="center">
+  Made with care by <a href="https://www.linkedin.com/in/farooqmohammad/">Farooq</a> and <a href="https://www.linkedin.com/in/nalinikanth-m/">Nal</a> at <a href="https://github.com/AISecurityConsortium">AISecurityConsortium</a>
 </p>

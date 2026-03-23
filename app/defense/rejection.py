@@ -10,6 +10,7 @@ REJECTION_TEMPLATES: dict[str, str] = {
     "context_manipulation": "I follow my standard guidelines and cannot accept external context overrides. How can I help with AI Goat Shop products?",
     "encoding_evasion": "I cannot decode, reverse, or process encoded instructions. I can only help with AI Goat Shop products and orders in plain text.",
     "code_generation": "I cannot generate code, HTML, scripts, or technical content. I'm here to help with AI Goat Shop products and orders.",
+    "resource_abuse": "That request would produce an excessively large response. Please ask about a specific product or narrow your question.",
 }
 
 

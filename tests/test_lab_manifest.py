@@ -98,9 +98,11 @@ class TestGetAllLabs:
         assert "llm01-1" in ids
         assert "llm07-1" in ids
 
-    def test_coming_soon_labs_present(self):
+    def test_new_labs_active(self):
         statuses = {lab.id: lab.status for lab in get_all_labs()}
-        assert statuses.get("llm03") == "coming_soon"
+        assert statuses.get("llm03-1") == "active"
+        assert statuses.get("llm06-1") == "active"
+        assert statuses.get("llm10-1") == "active"
 
     def test_no_duplicate_ids(self):
         ids = [lab.id for lab in get_all_labs()]

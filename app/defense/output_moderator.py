@@ -19,6 +19,9 @@ SYSTEM_PROMPT_FRAGMENTS = [
 ]
 
 
+MAX_OUTPUT_LENGTH_L1 = 1000
+
+
 class OutputModerator:
     def moderate(self, response: str, level: int) -> str:
         if level == 0:
@@ -30,6 +33,8 @@ class OutputModerator:
             result = HTML_TAG_PATTERN.sub("", result)
             result = CREDIT_CARD_PATTERN.sub("****", result)
             result = EMAIL_PATTERN.sub("***@***.***", result)
+            if len(result) > MAX_OUTPUT_LENGTH_L1:
+                result = result[:MAX_OUTPUT_LENGTH_L1] + "\n\n[Response truncated for safety.]"
 
         if level >= 2:
             result = CODE_BLOCK_PATTERN.sub("", result)
