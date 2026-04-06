@@ -441,12 +441,12 @@ async def admin_create_coupon(
         discount_type=body.get("discount_type", "percentage"),
         discount_value=float(body.get("discount_value", 0)),
         minimum_order_amount=float(body.get("minimum_order_amount", 0)),
-        maximum_discount=float(body["maximum_discount"]) if body.get("maximum_discount") is not None else None,
+        maximum_discount=float(body.get("maximum_discount")) if body.get("maximum_discount") is not None else None,
         usage_limit=int(body.get("usage_limit", 1)),
         usage_limit_per_user=int(body.get("usage_limit_per_user", 1)),
         target_audience=body.get("target_audience", "all"),
-        valid_from=datetime.fromisoformat(body["valid_from"].replace("Z", "+00:00")) if body.get("valid_from") else now,
-        valid_until=datetime.fromisoformat(body["valid_until"].replace("Z", "+00:00")) if body.get("valid_until") else now,
+        valid_from=datetime.fromisoformat(body.get("valid_from", "").replace("Z", "+00:00")) if body.get("valid_from") else now,
+        valid_until=datetime.fromisoformat(body.get("valid_until", "").replace("Z", "+00:00")) if body.get("valid_until") else now,
         is_active=body.get("is_active", True),
     )
     db.add(coupon)
