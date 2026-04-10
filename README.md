@@ -105,6 +105,9 @@ cd AIGoat
 
 The script handles everything: checks Ollama, downloads the Mistral model if missing, initializes the database, and starts both backend and frontend.
 
+### Google Colab
+Follow the instructions provided at https://github.com/AISecurityConsortium/AIGoat/blob/main/colab_notebooks/AIGoat_Colab.md
+
 Once you see "AI Goat is running!", open your browser:
 
 | What | URL |
