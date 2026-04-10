@@ -3,7 +3,7 @@
 Follow these steps to get the AIGoat Colab notebook up and running:
 
 1.  **Download the Notebook:**
-    *   Download the `AIGoat_Colab.ipynb` file directly from its GitHub location: `https://github.com/satishpatnayak/AIGoat/blob/main/colab_notebooks/AIGoat_Colab.ipynb`
+    *   Download the `AIGoat_Colab.ipynb` file directly from its GitHub location: `https://github.com/AISecurityConsortium/AIGoat/blob/main/colab_notebooks/AIGoat_Colab.ipynb`
 
 2.  **Access Google Colab:**
     *   Log in to your Google account and navigate to the Google Colab platform: `https://colab.research.google.com/`.
