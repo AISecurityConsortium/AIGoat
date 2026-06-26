@@ -32,6 +32,7 @@ class OllamaConfig(BaseModel):
     base_url: str = "http://localhost:11434"
     model: str = "mistral"
     timeout: int = 60
+    think: bool | None = None
 
     @field_validator("base_url")
     @classmethod
@@ -99,6 +100,12 @@ def load_config(path: str | Path | None = None) -> Settings:
     ollama_url = os.environ.get("OLLAMA_BASE_URL")
     if ollama_url:
         settings.ollama.base_url = ollama_url
+    ollama_model = os.environ.get("OLLAMA_MODEL")
+    if ollama_model:
+        settings.ollama.model = ollama_model
+    ollama_think = os.environ.get("OLLAMA_THINK")
+    if ollama_think is not None:
+        settings.ollama.think = ollama_think.lower() in ("1", "true", "yes")
     return settings
 
 

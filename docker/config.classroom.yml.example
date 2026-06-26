@@ -12,7 +12,8 @@ database:
 
 ollama:
   base_url: "http://host.docker.internal:11434"
-  model: "tinyllama"
+  model: "qwen3.5:4b"
+  think: false
   timeout: 300
 
 defense:

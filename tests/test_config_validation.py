@@ -38,6 +38,10 @@ class TestOllamaConfig:
         cfg = OllamaConfig(base_url="https://ollama.example.com")
         assert cfg.base_url == "https://ollama.example.com"
 
+    def test_think_false_accepted(self):
+        cfg = OllamaConfig(think=False)
+        assert cfg.think is False
+
 
 class TestRagConfig:
     def test_zero_max_context_tokens_rejected(self):

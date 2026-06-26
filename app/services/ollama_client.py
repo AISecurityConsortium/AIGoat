@@ -23,14 +23,20 @@ class OllamaClient:
         base_url: str,
         model: str,
         timeout: int = 60,
+        think: bool | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.think = think
         self._http = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=httpx.Timeout(timeout, connect=10.0),
         )
+
+    def _apply_think(self, payload: dict[str, Any]) -> None:
+        if self.think is not None:
+            payload["think"] = self.think
 
     async def check_health(self) -> bool:
         try:
@@ -55,6 +61,7 @@ class OllamaClient:
             payload["system"] = system
         if options:
             payload["options"] = options
+        self._apply_think(payload)
         try:
             r = await self._http.post("/api/generate", json=payload)
             r.raise_for_status()
@@ -78,6 +85,7 @@ class OllamaClient:
             payload["system"] = system
         if options:
             payload["options"] = options
+        self._apply_think(payload)
         try:
             async with self._http.stream(
                 "POST", "/api/generate", json=payload
@@ -110,6 +118,7 @@ class OllamaClient:
             payload["system"] = system
         if options:
             payload["options"] = options
+        self._apply_think(payload)
         try:
             r = await self._http.post("/api/chat", json=payload)
             r.raise_for_status()
@@ -128,6 +137,7 @@ def get_ollama_client() -> OllamaClient:
             base_url=settings.ollama.base_url,
             model=settings.ollama.model,
             timeout=settings.ollama.timeout,
+            think=settings.ollama.think,
         )
     return _ollama_client
 
