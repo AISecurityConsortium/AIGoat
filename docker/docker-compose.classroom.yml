@@ -1,0 +1,29 @@
+# Classroom override: bind published ports to localhost only and use classroom config.
+# Ollama runs on the instructor host (e.g. Windows Ollama at ~/.ollama/models), not in Docker.
+# Usage (from docker/):
+#   docker compose -f docker-compose.yml -f docker-compose.classroom.yml up -d backend
+
+services:
+  ollama:
+    profiles:
+      - docker-ollama
+
+  backend:
+    ports: !override
+      - "127.0.0.1:8000:8000"
+    volumes: !override
+      - ./config.classroom.yml:/app/config/config.yml
+      - ../prompts:/app/prompts
+      - ../media:/app/media
+      - ../guardrails:/app/guardrails
+      - db_data:/app/data
+    depends_on: !override {}
+    environment:
+      - CONFIG_PATH=/app/config/config.yml
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    ports: !override
+      - "127.0.0.1:3000:3000"

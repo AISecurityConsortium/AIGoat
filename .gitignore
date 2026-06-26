@@ -18,6 +18,18 @@ aigoat.db-journal
 .env
 .env.*
 !.env.example
+.env.classroom
+.classroom.env
+docker/config.classroom.yml
+
+# Classroom deployment (local secrets and runtime)
+.classroom-runtime/
+frontend/vercel.json
+*.bak.classroom-*
+
+# Vercel local project data
+frontend/.vercel/
+.vercel/
 
 # ChromaDB
 chroma_db/
