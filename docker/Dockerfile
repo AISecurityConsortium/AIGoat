@@ -9,8 +9,11 @@ COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY prompts/ ./prompts/
+COPY skills/ ./skills/
 COPY guardrails/ ./guardrails/
 COPY media/ ./media/
+COPY alembic.ini ./alembic.ini
+COPY alembic/ ./alembic/
 COPY docker/docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x docker-entrypoint.sh

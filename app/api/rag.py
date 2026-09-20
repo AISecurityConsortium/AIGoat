@@ -2,23 +2,20 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.exceptions import ForbiddenError
-from app.defense.nemo_guardrails import get_guardrails_service
-from app.defense.pipeline import defense_pipeline
+from app.core.dependencies import require_admin as _require_admin
 from app.models import KnowledgeBaseEntry, Product, User
 from app.rag.service import get_rag_service
-
-
-def _require_admin(user: User) -> None:
-    if not user.is_staff:
-        raise ForbiddenError("Access denied. Admin privileges required.")
+from app.schemas.rag import RagTraceIn
+from app.surfaces import ensure_registered
+from app.surfaces.base import SurfaceRequest
+from app.surfaces.registry import get_surface
 
 router = APIRouter(prefix="", tags=["rag"])
 
@@ -35,6 +32,11 @@ class KBEntryCreate(BaseModel):
     title: str
     content: str
     category: str = "general"
+    trust_tier: str | None = None
+    owner_id: int | None = None
+    version: int = 1
+    is_latest: bool = True
+    valid_until: str | None = None
 
 
 class KBEntryUpdate(BaseModel):
@@ -194,66 +196,90 @@ def _generate_default_knowledge(products: list[Product]) -> list[dict]:
     return entries
 
 
+def _parse_valid_until(value: str | None):
+    if not value:
+        return None
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _entry_api(entry: KnowledgeBaseEntry) -> dict:
+    indexed = None
+    if isinstance(entry.metadata_json, dict):
+        indexed = entry.metadata_json.get("indexed_at")
+    return {
+        "id": entry.id,
+        "product_id": entry.product_id,
+        "title": entry.title,
+        "content": entry.content,
+        "category": entry.category,
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        "is_user_injected": bool(entry.is_user_injected),
+        "trust_tier": entry.trust_tier or "user",
+        "owner_id": entry.owner_id,
+        "version": int(entry.version or 1),
+        "is_latest": bool(entry.is_latest),
+        "valid_until": entry.valid_until.isoformat() if entry.valid_until else None,
+        "content_hash": entry.content_hash,
+        "chunk_count": int(entry.chunk_index or 0),
+        "indexed_at": indexed,
+        "embedding_id": entry.embedding_id,
+    }
+
+
+def _candidate_api(cand: dict) -> dict:
+    return {
+        "chunk_id": cand.get("chunk_id"),
+        "entry_id": cand.get("entry_id"),
+        "title": cand.get("title") or "",
+        "content": cand.get("content") or "",
+        "dense_score": cand.get("dense_score"),
+        "bm25_score": cand.get("bm25_score"),
+        "rrf_score": cand.get("rrf_score"),
+        "rerank_score": cand.get("rerank_score"),
+        "is_user_injected": bool(cand.get("is_user_injected")),
+        "trust_tier": cand.get("trust_tier") or "user",
+        "included_in_context": bool(cand.get("included_in_context", True)),
+        "truncated_by_budget": bool(cand.get("truncated_by_budget")),
+        "excluded_by_control": cand.get("excluded_by_control"),
+    }
+
+
 @router.post("/api/rag-chat/", include_in_schema=False)
 async def rag_chat(
     body: RAGChatRequest,
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     query_text = body.query or body.message
     if not query_text:
         raise HTTPException(status_code=422, detail="Either 'query' or 'message' field is required")
 
-    level = user.defense_level
-
-    if level >= 1:
-        pipeline_result = await defense_pipeline.process_input(
-            query_text, level, user_id=user.id
-        )
-        if not pipeline_result.allowed:
-            return {
-                "response": pipeline_result.message,
-                "reply": pipeline_result.message,
-                "context_used": [],
-                "suggestions": [],
+    ensure_registered()
+    executed = await get_surface("rag.kb").execute(
+        SurfaceRequest(
+            user=user,
+            db=db,
+            input={
+                "message": query_text,
                 "use_kb": body.use_kb,
-                "injection_detected": True,
-            }
-        query_text = pipeline_result.message
-
-    if level >= 2:
-        nemo = get_guardrails_service()
-        if nemo.available:
-            nemo_result = await nemo.check_input(query_text)
-            if not nemo_result.allowed:
-                return {
-                    "response": nemo_result.message,
-                    "reply": nemo_result.message,
-                    "context_used": [],
-                    "suggestions": [],
-                    "use_kb": body.use_kb,
-                    "injection_detected": True,
-                }
-
-    service = get_rag_service()
-    result = await service.process_query(query_text, user, use_kb=body.use_kb)
-
-    reply = result.get("reply", "")
-    if level >= 1:
-        reply = await defense_pipeline.moderate_output(reply, level)
-    if level >= 2:
-        nemo = get_guardrails_service()
-        if nemo.available:
-            nemo_out = await nemo.check_output(reply)
-            if not nemo_out.allowed:
-                reply = nemo_out.message
-
+            },
+        )
+    )
+    result = executed.result
+    reply = result.get("reply") or result.get("response") or ""
     return {
         "response": reply,
         "reply": reply,
-        "context_used": result.get("contexts", []),
+        "context_used": result.get("context_used") or [],
         "suggestions": [],
         "use_kb": result.get("use_kb", body.use_kb),
         "injection_detected": result.get("injection_detected", False),
+        "citations": result.get("citations") or [],
     }
 
 
@@ -275,17 +301,7 @@ async def list_kb_entries(
         .order_by(KnowledgeBaseEntry.product_id, KnowledgeBaseEntry.id)
     )
     entries = result.scalars().all()
-    docs = [
-        {
-            "id": e.id,
-            "product_id": e.product_id,
-            "title": e.title,
-            "content": e.content,
-            "category": e.category,
-            "created_at": e.created_at.isoformat() if hasattr(e, "created_at") and e.created_at else None,
-        }
-        for e in entries
-    ]
+    docs = [_entry_api(e) for e in entries]
     unique_products = len({e.product_id for e in entries})
     unique_categories = len({e.category for e in entries})
     category_breakdown = {}
@@ -319,6 +335,11 @@ async def add_kb_entry(
         content=body.content,
         category=body.category,
         is_user_injected=True,
+        trust_tier=body.trust_tier or "user",
+        owner_id=body.owner_id if body.owner_id is not None else user.id,
+        version=body.version,
+        is_latest=body.is_latest,
+        valid_until=_parse_valid_until(body.valid_until),
     )
     db.add(entry)
     await db.commit()
@@ -370,13 +391,16 @@ async def delete_kb_entry(
 async def sync_kb(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    rebuild: bool = Query(False),
 ) -> dict:
     """Sync all Knowledge Base entries into the ChromaDB vector store for RAG retrieval."""
     result = await db.execute(select(KnowledgeBaseEntry).order_by(KnowledgeBaseEntry.id))
     entries = list(result.scalars().all())
     service = get_rag_service()
-    await service._retrieval.sync_async(entries)
-    return {"synced": len(entries), "synced_count": len(entries)}
+    await service._retrieval.sync_async(entries, rebuild=rebuild)
+    await db.commit()
+    service.mark_synced()
+    return {"synced": len(entries), "synced_count": len(entries), "rebuild": rebuild}
 
 
 @router.put("/api/knowledge-base/")
@@ -396,19 +420,58 @@ async def regenerate_kb(
             title=gen["title"],
             content=gen["content"],
             category=gen["category"],
+            is_user_injected=False,
+            trust_tier="system",
+            owner_id=None,
         )
         db.add(entry)
     await db.commit()
     result = await db.execute(select(KnowledgeBaseEntry).order_by(KnowledgeBaseEntry.id))
     entries = list(result.scalars().all())
     service = get_rag_service()
-    await service._retrieval.sync_async(entries)
+    await service._retrieval.sync_async(entries, rebuild=True)
+    await db.commit()
+    service.mark_synced()
     return {"regenerated": True, "entries": len(defaults), "synced": len(entries)}
 
 
 @router.get("/api/rag-stats/", include_in_schema=False)
 async def rag_stats(
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
+    ids_result = await db.execute(select(KnowledgeBaseEntry.embedding_id))
+    embed_ids = list(ids_result.scalars().all())
+    db_documents = len(embed_ids)
+    unsynced = sum(1 for value in embed_ids if not value)
     service = get_rag_service()
-    return service.get_stats()
+    stats = service.get_stats(db_documents=db_documents)
+    indexed = stats["indexed_chunks"]
+    stats["in_sync"] = unsynced == 0 and (db_documents == 0 or indexed > 0)
+    return stats
+
+
+@router.post("/api/knowledge-base/trace")
+async def kb_trace(
+    body: RagTraceIn,
+    user: Annotated[User, Depends(get_current_user)],
+) -> dict:
+    """Run retrieval only. No generation. Used by the trace inspector."""
+    level = body.defense_level if body.defense_level is not None else user.defense_level
+    service = get_rag_service()
+    trace = await service.retrieve_trace(
+        body.query,
+        user_id=user.id,
+        level=level,
+        top_k=body.top_k,
+        hybrid=body.hybrid,
+    )
+    return {
+        "query": trace["query"],
+        "rewritten_query": trace["rewritten_query"],
+        "top_k": trace["top_k"],
+        "candidates": [_candidate_api(c) for c in trace["candidates"]],
+        "token_budget": trace["token_budget"],
+        "controls_applied": trace["controls_applied"],
+        "citations": trace.get("citations") or [],
+    }

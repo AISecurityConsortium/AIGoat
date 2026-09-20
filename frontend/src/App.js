@@ -23,8 +23,10 @@ import Coupons from './components/Coupons';
 import InventoryManagement from './components/InventoryManagement';
 import OllamaAIServicePage from './components/OllamaAIServicePage';
 import OwaspTop10Page from './components/OwaspTop10Page';
+import RiskDetailPage from './components/RiskDetailPage';
 import AttacksPage from './components/AttacksPage';
 import ChallengePage from './components/ChallengePage';
+import LabWorkspace from './components/LabWorkspace';
 import { SearchProvider } from './contexts/SearchContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { DefenseProvider } from './contexts/DefenseContext';
@@ -209,9 +211,30 @@ function AppContent() {
                 } />
 
                 <Route path="/owasp-top-10" element={<OwaspTop10Page />} />
+                <Route path="/owasp-top-10/:frameworkId/:riskCode" element={<RiskDetailPage />} />
                 <Route path="/attacks" element={
                   <ProtectedRoute>
                     <AttacksPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/labs/:labId" element={
+                  <ProtectedRoute>
+                    <LabWorkspace />
+                  </ProtectedRoute>
+                } />
+                <Route path="/agent" element={
+                  <ProtectedRoute>
+                    <LabWorkspace />
+                  </ProtectedRoute>
+                } />
+                <Route path="/mcp" element={
+                  <ProtectedRoute>
+                    <LabWorkspace />
+                  </ProtectedRoute>
+                } />
+                <Route path="/skills" element={
+                  <ProtectedRoute>
+                    <LabWorkspace />
                   </ProtectedRoute>
                 } />
                 <Route path="/challenges" element={

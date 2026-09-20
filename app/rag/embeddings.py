@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from app.core.config import get_settings
 
@@ -9,15 +9,21 @@ if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
 
-_embedding_service: "EmbeddingService | None" = None
+class EmbeddingClient(Protocol):
+    def embed_text(self, text: str) -> list[float]: ...
+    def embed_batch(self, texts: list[str]) -> list[list[float]]: ...
+
+
+_embedding_service: EmbeddingService | None = None
+_embedding_override: EmbeddingClient | None = None
 
 
 class EmbeddingService:
     def __init__(self, model_name: str | None = None) -> None:
         self._model_name = model_name or get_settings().rag.embedding_model
-        self._model: "SentenceTransformer | None" = None
+        self._model: SentenceTransformer | None = None
 
-    def _load_model(self) -> "SentenceTransformer":
+    def _load_model(self) -> SentenceTransformer:
         if self._model is None:
             from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer(self._model_name)
@@ -39,8 +45,20 @@ class EmbeddingService:
         return await asyncio.to_thread(self.embed_batch, texts)
 
 
-def get_embedding_service() -> EmbeddingService:
+def set_embedding_override(client: EmbeddingClient | None) -> None:
+    """Tests only. Swap the MiniLM model for a hash embedder."""
+    global _embedding_override
+    _embedding_override = client
+
+
+def clear_embedding_override() -> None:
+    set_embedding_override(None)
+
+
+def get_embedding_service() -> EmbeddingClient:
     global _embedding_service
+    if _embedding_override is not None:
+        return _embedding_override
     if _embedding_service is None:
         _embedding_service = EmbeddingService()
     return _embedding_service

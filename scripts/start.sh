@@ -61,8 +61,9 @@ info "Checking Ollama..."
 if command -v ollama >/dev/null 2>&1; then
     if ! pgrep -x "ollama" >/dev/null 2>&1 && ! curl -sf http://localhost:11434/api/tags >/dev/null 2>&1; then
         info "Starting Ollama in the background..."
-        ollama serve > "$PROJECT_ROOT/logs/ollama.log" 2>&1 &
+        nohup ollama serve > "$PROJECT_ROOT/logs/ollama.log" 2>&1 &
         echo $! > "$PID_DIR/ollama.pid"
+        disown $! 2>/dev/null || true
         sleep 3
     fi
 
@@ -100,25 +101,49 @@ fi
 # ── Step 2: Python virtual environment ─────────────────────────
 cd "$PROJECT_ROOT"
 
+PYTHON_311="$(command -v python3.11 || true)"
+if [ -z "$PYTHON_311" ] && [ -x "${HOME}/.local/bin/python3.11" ]; then
+    PYTHON_311="${HOME}/.local/bin/python3.11"
+fi
+
 if [ ! -d "venv" ]; then
-    info "Creating Python virtual environment..."
-    python3 -m venv venv
+    if [ -z "$PYTHON_311" ]; then
+        fail "Python 3.11 is required (CI pin / pyproject target-version). Install 3.11 and re-run. Do not bump target-version."
+    fi
+    info "Creating Python virtual environment with $PYTHON_311..."
+    "$PYTHON_311" -m venv venv
     ok "Virtual environment created"
 fi
 
 source venv/bin/activate
 
+VENV_PY=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+if [ "$VENV_PY" != "3.11" ]; then
+    fail "venv is Python $VENV_PY; AIGoat pins 3.11 to match CI. Recreate with: rm -rf venv && ./scripts/start.sh"
+fi
+
 info "Checking Python dependencies..."
-pip install -q -r requirements.txt 2>/dev/null
+python3 -m pip install -q -r requirements.txt 2>/dev/null
 ok "Python dependencies ready"
 
 # ── Step 3: Database initialization ────────────────────────────
-info "Initializing database..."
-python3 -c "
-import asyncio
-from app.core.database import init_db
-asyncio.run(init_db())
-" 2>/dev/null
+info "Applying database migrations..."
+if [ -f "$DB_FILE" ]; then
+    NEEDS_STAMP=$(python3 -c "
+import sqlite3
+try:
+    c = sqlite3.connect('$DB_FILE')
+    row = c.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'\").fetchone()
+    print('no' if row else 'yes')
+except Exception:
+    print('no')
+")
+    if [ "$NEEDS_STAMP" = "yes" ]; then
+        info "Pre-Alembic database detected — stamping baseline (does not wipe data)"
+        python3 -m alembic stamp head
+    fi
+fi
+python3 -m alembic upgrade head
 ok "Database schema ready"
 
 # ── Step 4: Seed data (idempotent) ─────────────────────────────
@@ -156,13 +181,14 @@ if lsof -ti:"$BACKEND_PORT" >/dev/null 2>&1; then
     warn "Port $BACKEND_PORT is already in use -- skipping backend start"
 else
     info "Starting backend on port $BACKEND_PORT..."
-    python3 -m uvicorn app.main:app \
+    nohup python3 -m uvicorn app.main:app \
         --host 0.0.0.0 \
         --port "$BACKEND_PORT" \
         --log-level info \
         > "$PROJECT_ROOT/logs/backend.log" 2>&1 &
     BACKEND_PID=$!
     echo "$BACKEND_PID" > "$PID_DIR/backend.pid"
+    disown "$BACKEND_PID" 2>/dev/null || true
     sleep 2
 
     if kill -0 "$BACKEND_PID" 2>/dev/null; then
@@ -185,10 +211,11 @@ else
         ok "Frontend dependencies installed"
     fi
 
-    PORT="$FRONTEND_PORT" BROWSER=none npm start \
+    PORT="$FRONTEND_PORT" BROWSER=none nohup npm start \
         > "$PROJECT_ROOT/logs/frontend.log" 2>&1 &
     FRONTEND_PID=$!
     echo "$FRONTEND_PID" > "$PID_DIR/frontend.pid"
+    disown "$FRONTEND_PID" 2>/dev/null || true
     cd "$PROJECT_ROOT"
     sleep 3
 

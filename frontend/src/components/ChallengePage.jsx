@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const DIFF = {
   beginner:     { label: 'Beginner',     order: 0, hue: 'secondary' },
@@ -141,6 +142,8 @@ const ChallengeChat = ({ challengeId, started }) => {
 const ChallengePage = () => {
   const theme = useTheme();
   const dark = theme.palette.mode === 'dark';
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -171,8 +174,23 @@ const ChallengePage = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (!challenges.length) return;
+    const raw = searchParams.get('id');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id)) return;
+    const ch = challenges.find((item) => item.id === id);
+    if (ch) setActive((prev) => (prev && prev.id === ch.id ? prev : ch));
+  }, [challenges, searchParams]);
+
   const open = ch => { setActive(ch); setFlagInput(''); setFeedback(null); setHintsOpen(false); };
-  const back = () => { setActive(null); setFeedback(null); load(); };
+  const back = () => {
+    setActive(null);
+    setFeedback(null);
+    load();
+    if (searchParams.get('id')) navigate('/challenges', { replace: true });
+  };
 
   const start = async () => {
     if (!active) return;

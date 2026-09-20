@@ -14,7 +14,8 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.core.dependencies import require_admin as _require_admin
+from app.core.exceptions import NotFoundError, ValidationError
 from app.models import (
     Coupon,
     CouponUsage,
@@ -25,11 +26,6 @@ from app.models import (
 )
 
 router = APIRouter(prefix="", tags=["admin"])
-
-
-def _require_admin(user: User) -> None:
-    if not user.is_staff:
-        raise ForbiddenError("Access denied. Admin privileges required.")
 
 
 # ---------------------------------------------------------------------------

@@ -239,6 +239,9 @@ const Header = () => {
         <>
           <StyledNavLink to="/attacks">Attack Labs</StyledNavLink>
           <StyledNavLink to="/challenges">Challenges</StyledNavLink>
+          <StyledNavLink to="/agent">Agent</StyledNavLink>
+          <StyledNavLink to="/mcp">MCP</StyledNavLink>
+          <StyledNavLink to="/skills">Skills</StyledNavLink>
           {ragSystemEnabled && !ragLoading && (
             <StyledNavLink to="/knowledge-base">Knowledge Base</StyledNavLink>
           )}
@@ -585,6 +588,9 @@ const Header = () => {
           <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
           <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
           <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
+          <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
+          <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
+          <MobileNavItem to="/skills" icon={<AIIcon />} label="Skills" />
         </MobileSection>
       )}
 

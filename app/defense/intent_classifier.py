@@ -167,6 +167,18 @@ def _match_patterns(message: str, patterns: list[re.Pattern[str]]) -> tuple[int,
     return len(matched), matched
 
 
+# Matches needed for full confidence. Confidence is deliberately NOT normalised
+# by category size: dividing by len(patterns) meant that adding patterns to
+# improve detection made the classifier less sensitive, and with 28 INJECTION
+# patterns a real attack scored ~0.036 against an L1 threshold of 0.6 -- so the
+# policy engine could never block anything at either level.
+#
+# With this scale: one match scores 0.33 (blocked at L2's 0.3, allowed at L1's
+# 0.6), two score 0.67 (blocked at both). That split is intentional and is what
+# makes Level 1 and Level 2 behave differently.
+CONFIDENCE_FULL_MATCH_COUNT = 3
+
+
 class IntentClassifier:
     def classify(self, message: str) -> IntentResult:
         best_label = "BENIGN"
@@ -175,8 +187,7 @@ class IntentClassifier:
 
         for label, patterns in INTENT_CATEGORIES.items():
             count, matched = _match_patterns(message, patterns)
-            total = len(patterns)
-            confidence = min(1.0, count / total) if total > 0 else 0.0
+            confidence = min(1.0, count / CONFIDENCE_FULL_MATCH_COUNT)
             if confidence > best_confidence:
                 best_confidence = confidence
                 best_label = label

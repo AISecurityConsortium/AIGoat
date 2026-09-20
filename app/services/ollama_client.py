@@ -16,6 +16,20 @@ logger = logging.getLogger(__name__)
 
 _ollama_client: "OllamaClient | None" = None
 
+# Testing seam. Never set from config, env, or a request — only from tests.
+_client_override: Any = None
+
+
+def set_client_override(client: Any) -> None:
+    """Replace the client returned by get_ollama_client(). Tests only."""
+    global _client_override
+    _client_override = client
+
+
+def clear_client_override() -> None:
+    global _client_override
+    _client_override = None
+
 
 class OllamaClient:
     def __init__(
@@ -95,14 +109,16 @@ class OllamaClient:
         except Exception as e:
             logger.error("Ollama stream failed: %s", e)
 
-    async def chat(
+    def _chat_payload(
         self,
         messages: list[dict[str, str]],
         system: str = "",
         options: dict[str, Any] | None = None,
-    ) -> str:
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+    ) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": messages,
             "stream": False,
         }
@@ -110,17 +126,64 @@ class OllamaClient:
             payload["system"] = system
         if options:
             payload["options"] = options
+        if tools:
+            payload["tools"] = tools
+        return payload
+
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        system: str = "",
+        options: dict[str, Any] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+    ) -> str:
+        turn = await self.chat_turn(
+            messages, system=system, options=options, tools=tools, model=model
+        )
+        return turn.content
+
+    async def chat_turn(
+        self,
+        messages: list[dict[str, str]],
+        system: str = "",
+        options: dict[str, Any] | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+    ):
+        from app.services.llm_protocol import ChatTurn
+
+        payload = self._chat_payload(messages, system, options, tools, model)
         try:
             r = await self._http.post("/api/chat", json=payload)
             r.raise_for_status()
-            msg = r.json().get("message", {})
-            return msg.get("content", "")
+            msg = r.json().get("message", {}) or {}
+            content = msg.get("content") or ""
+            tool_calls: list[dict[str, Any]] = []
+            for raw in msg.get("tool_calls") or []:
+                fn = raw.get("function") if isinstance(raw, dict) else None
+                if not isinstance(fn, dict):
+                    fn = raw if isinstance(raw, dict) else {}
+                args = fn.get("arguments") or {}
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except json.JSONDecodeError:
+                        args = {}
+                if not isinstance(args, dict):
+                    args = {}
+                name = fn.get("name") or raw.get("name")
+                if name:
+                    tool_calls.append({"name": str(name), "arguments": args})
+            return ChatTurn(content=content, tool_calls=tool_calls)
         except Exception as e:
             logger.error("Ollama chat failed: %s", e)
-            return ""
+            return ChatTurn(content="", tool_calls=[])
 
 
 def get_ollama_client() -> OllamaClient:
+    if _client_override is not None:
+        return _client_override
     global _ollama_client
     if _ollama_client is None:
         settings = get_settings()

@@ -61,7 +61,7 @@ const THINKING_PHRASES = [
 const ChatBot = () => {
   const { chatInput, setChatInput } = useSearch();
   const { isChatOpen, openChat } = useChat();
-  const { defenseLevel, levelDetails } = useDefense();
+  const { defenseLevel, levelDetails, levelChosenThisSession } = useDefense();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -195,6 +195,11 @@ const ChatBot = () => {
       const chatBody = { message: chatInput, use_kb: kbEnabled };
       if (activeLabId) {
         chatBody.lab_id = activeLabId;
+      }
+      // Send the level only once the learner has chosen one this session, so a
+      // lab's recommended starting level still applies on first use.
+      if (levelChosenThisSession) {
+        chatBody.defense_level = defenseLevel;
       }
       const resp = await fetch(getApiUrl('/api/chat/stream'), {
         method: 'POST',
@@ -396,6 +401,28 @@ const ChatBot = () => {
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontWeight: isUserMessage ? 500 : 400 }}>
                   {message.text}
                 </Typography>
+              )}
+              {isBotMessage && message.citations && message.citations.length > 0 && (
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {message.citations.map((cite, idx) => (
+                    <Box
+                      key={`${cite.chunk_id || idx}`}
+                      sx={{
+                        borderLeft: '2px solid',
+                        borderColor: cite.verified === false ? 'warning.main' : 'divider',
+                        pl: 1,
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                        {cite.verified === false ? 'Unverified citation: ' : ''}
+                        {cite.title || cite.chunk_id}
+                      </Typography>
+                      <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace' }}>
+                        {cite.quote}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               )}
               <Typography
                 variant="caption"

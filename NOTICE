@@ -37,6 +37,8 @@ AI Goat uses two licenses to cover different parts of the project.
    • docs/
    • media/
    • config/labs.yml
+   • config/labs/
+   • config/frameworks/
 
    You may use this content for personal learning, academic research,
    and non-commercial purposes. You may modify and share it under the

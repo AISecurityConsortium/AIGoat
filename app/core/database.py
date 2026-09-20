@@ -35,6 +35,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
+    """Create missing tables from SQLAlchemy metadata.
+
+    Kept for tests (`tests/conftest.py` builds an in-memory schema with
+    ``create_all``) and for Alembic-less fresh bootstraps. Production schema
+    changes go through ``alembic upgrade head``; do not add columns here and
+    expect existing databases to pick them up.
+    """
     import app.models as _models  # noqa: F401 — register models with Base.metadata
     assert _models
     async with engine.begin() as conn:

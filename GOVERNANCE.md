@@ -46,7 +46,7 @@ For larger changes (new features, architectural shifts, new lab categories), ope
 AI Goat uses a dual licensing model to keep the platform open while protecting training materials:
 
 - **Platform code** (backend, frontend, infrastructure, scripts) is licensed under **Apache License 2.0**. Anyone can use, modify, and distribute the code, including for commercial purposes.
-- **Training content** (challenge evaluators, prompts, labs, walkthroughs, workshop materials) is licensed under **Creative Commons BY-NC-SA 4.0**. This content is free for learning, research, and non-commercial use. Commercial training usage requires permission from the maintainers.
+- **Training content** (challenge evaluators, prompts, labs, framework/risk YAML, walkthroughs, workshop materials) is licensed under **Creative Commons BY-NC-SA 4.0**. This content is free for learning, research, and non-commercial use. Commercial training usage requires permission from the maintainers. Framework identifiers and official titles are used as labels only; descriptive prose in `config/frameworks/` is AIGoat-authored.
 
 Note: The challenge evaluation framework (`app/challenges/`) falls under CC BY-NC-SA 4.0 because the evaluators encode specific attack patterns, detection thresholds, and success criteria that represent the training methodology — not generic application logic.
 

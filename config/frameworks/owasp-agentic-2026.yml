@@ -1,0 +1,99 @@
+id: "owasp-agentic-2026"
+name: "OWASP Top 10 for Agentic Applications"
+version: "2026"
+status: "stable"
+published: "2025-12-09"
+publisher: "OWASP GenAI Security Project"
+url: "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/"
+source_license: "CC-BY-SA-4.0"
+attribution: >
+  OWASP GenAI Security Project. (2026). OWASP Top 10 for Agentic Applications
+  (Version 2026). OWASP Foundation.
+  https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
+prose_origin: "aigoat-original"
+supersedes: null
+maturity_note: null
+risks:
+  - code: "ASI01"
+    title: "Agent Goal Hijack"
+    summary: "A crafted input can replace the agent's stated objective so later tool use serves the attacker instead of the user."
+    description: "Once a model plans and acts, changing its goal is more damaging than changing a single reply. AIGoat shows how a poisoned document or chat turn rewrites the plan, then scores on the downstream action the broker was asked to take."
+    attack_surfaces: ["rag.kb", "agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM03"
+  - code: "ASI02"
+    title: "Tool Misuse and Exploitation"
+    summary: "An agent with real tools can be steered into calling them in ways the product never intended."
+    description: "The failure is not malformed JSON; it is a legitimate tool invoked with attacker-chosen arguments. Labs grade the action the broker accepted, then contrast an allowlist and an Intent Gate that treat planner output as untrusted."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM03"
+  - code: "ASI03"
+    title: "Identity and Privilege Abuse"
+    summary: "Delegated credentials and over-broad roles let an agent act as the wrong principal."
+    description: "This is application identity, not model magic. A lab-scoped weak delegation shows how a session token, agent card, or tool scope is reused beyond its intended caller, without turning the platform into a real auth bypass."
+    attack_surfaces: ["agent.runner", "api.raw"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM02"
+      - "owasp-llm-2026:LLM03"
+  - code: "ASI04"
+    title: "Agentic Supply Chain Vulnerabilities"
+    summary: "Poisoned tool descriptors, typosquatted servers, and untrusted skill packs enter the agent the same way a dependency enters an app."
+    description: "The agent does not need to be jailbroken if the catalogue it loads is already hostile. AIGoat uses local fake registries and decoy packages so learners can see a bad descriptor before any network call is made."
+    attack_surfaces: ["mcp.client", "skill.runtime"]
+    related:
+      - "owasp-llm-2026:LLM04"
+  - code: "ASI05"
+    title: "Unexpected Code Execution (RCE)"
+    summary: "Planner output that is treated as code can reach an execution sink the product never meant to expose."
+    description: "AIGoat never runs attacker-controlled OS commands. A fake executor parses, logs, and refuses the dangerous string so the lesson is reaching that sink, not obtaining a shell on the workshop host."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM10"
+  - code: "ASI06"
+    title: "Memory & Context Poisoning"
+    summary: "Persisted notes and retrieved chunks become the next session's trusted history."
+    description: "Autonomy is not required; a stored snippet is enough. Learners plant content that later turns are retrieved as fact, then compare an ACL-aware store against a shared corpus with no owner field."
+    attack_surfaces: ["rag.kb", "agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM05"
+      - "owasp-llm-2026:LLM09"
+  - code: "ASI07"
+    title: "Insecure Inter-Agent Communication"
+    summary: "Messages between agents that lack origin checks can be replayed, spoofed, or silently rewritten."
+    description: "The teachable failures are missing nonces, unsigned agent cards, and trusting a peer because it used the same bus. Covert channels are documented; replay and spoofing are exercised with deterministic fixtures."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM02"
+      - "owasp-llm-2026:LLM03"
+  - code: "ASI08"
+    title: "Cascading Failures"
+    summary: "One bad tool result can fan out through a planner into many downstream calls before anyone notices."
+    description: "AIGoat stages a scripted three-agent fan-out with counters and a circuit breaker. Learners watch blast radius grow, then flip the breaker. Real unbounded concurrency is out of budget on a 7B local stack."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM03"
+      - "owasp-llm-2026:LLM05"
+  - code: "ASI09"
+    title: "Human-Agent Trust Exploitation"
+    summary: "A persuasive rationale can talk a human into approving an action they would reject if they saw the raw request."
+    description: "The exploited component is the approval dialog, not the model. Labs show a plausible summary next to the actual tool arguments so learners practice reading the request, not the story about it."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM01"
+      - "owasp-llm-2026:LLM03"
+      - "owasp-llm-2026:LLM07"
+      - "owasp-llm-2026:LLM10"
+  - code: "ASI10"
+    title: "Rogue Agents"
+    summary: "After a successful injection, persisted goals keep acting even when the original chat is over."
+    description: "Genuine long-horizon drift is documented rather than faked. What is staged is a stored post-injection policy that later turns still honour, so learners can see leftover agency as a state problem."
+    attack_surfaces: ["agent.runner"]
+    related:
+      - "owasp-llm-2026:LLM02"
+      - "owasp-llm-2026:LLM07"

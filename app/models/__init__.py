@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.models.agent import AgentRun, AgentStepRow, PendingApproval
 from app.models.cart import Cart, CartItem
 from app.models.challenge import Challenge, ChallengeAttempt
 from app.models.chat_history import ChatMessage
@@ -17,4 +18,5 @@ __all__ = [
     "Order", "OrderItem", "Payment", "Coupon", "CouponUsage", "Review",
     "Challenge", "ChallengeAttempt", "ChatMessage", "KnowledgeBaseEntry",
     "LabSession", "DefenseTelemetry",
+    "AgentRun", "AgentStepRow", "PendingApproval",
 ]

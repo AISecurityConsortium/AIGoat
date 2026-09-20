@@ -2,7 +2,7 @@ app:
   name: "AI Goat"
   debug: true
   secret_key: "aigoat-dev-secret-change-in-production"
-  allowed_origins: ["http://localhost:3000"]
+  allowed_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
   media_dir: "./media"
 
 database:
@@ -11,12 +11,14 @@ database:
 ollama:
   base_url: "http://localhost:11434"
   model: "mistral"
+  agent_model: null
   timeout: 90
 
 defense:
   level: 0
   l1_confidence_threshold: 0.6
   l2_confidence_threshold: 0.3
+  profiles_path: "./config/defense_profiles.yml"
 
 rag:
   enabled: true
@@ -25,6 +27,10 @@ rag:
   top_k: 5
   chunk_size: 512
   max_context_tokens: 1500
+  hybrid: false
+  rrf_k: 60
+  reranker: null
+  provenance: true
 
 chat:
   temperature: 0.7
@@ -36,3 +42,22 @@ features:
   admin_dashboard: true
   coupon_system: true
   knowledge_base: true
+
+taxonomy:
+  frameworks_path: "./config/frameworks"
+  labs_path: "./config/labs"
+
+surfaces:
+  enabled: ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client", "skill.runtime"]
+
+agent:
+  max_steps: 8
+  require_approval_at_level: 2
+
+mcp:
+  registry_path: "./config/mcp_servers.yml"
+  spawn_timeout: 15
+  max_concurrent: 2
+
+skills:
+  packs_path: "./skills"

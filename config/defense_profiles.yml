@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────────────
+# AI Goat — Defense profiles
+# ─────────────────────────────────────────────────────────────────────
+#
+# Runtime configuration (Apache 2.0), not training content. Describes
+# which DefenseControl ids run on each (surface, level) and what that
+# level is committed to verifying. There is no external standard
+# (AISVS was rejected); the `intent` string is the contract.
+#
+# Loaded at startup by app/defense/profiles.py. A typo in a control id
+# stops the backend — it must not silently disable a defense.
+#
+# ── Field Reference ──────────────────────────────────────────────────
+#
+#   profiles.<surface>.<level>.intent
+#       Required, non-empty, including Level 0. One or more sentences
+#       stating what this level actually does on this surface.
+#
+#   profiles.<surface>.<level>.controls
+#       Ordered list of control ids registered in app/defense/controls.
+#       Level 0 MUST be empty on every surface (intentional vulnerability).
+#       Do not name ids for surfaces that are not built yet.
+#
+# ── How to Add a Control to a Level ────────────────────────────────
+#
+#   1. Implement DefenseControl, set a non-empty `verifies`, register
+#      it from app/defense/controls/__init__.py.
+#   2. Append the id to the relevant (surface, level) `controls` list
+#      below. L2 must keep every L1 control family (prefix before '.').
+#   3. Restart the backend. No pipeline.py change is required.
+#
+# ─────────────────────────────────────────────────────────────────────
+
+profiles:
+  chat.cracky:
+    0:
+      intent: >
+        No defenses. Input reaches the model unmodified and output is returned
+        verbatim, including HTML. This is the attack surface every lab starts from.
+      controls: []
+    1:
+      intent: >
+        Literal injection phrases are stripped and over-long input refused;
+        multi-signal intent classification gates the request; output is stripped
+        of HTML, has card numbers and emails masked, and is truncated past
+        1000 characters.
+      controls: ["input.validate", "intent.classify", "output.moderate"]
+    2:
+      intent: >
+        Everything Level 1 does, with a lower classification threshold so a single
+        strong signal blocks, plus NeMo rails on input and a stricter output pass
+        that removes code blocks and URLs and refuses anything resembling a
+        system-prompt fragment.
+      controls: ["input.validate", "intent.classify", "rails.nemo", "output.moderate"]
+
+  rag.kb:
+    0:
+      intent: >
+        No retrieval-time controls. Any chunk the index returns, including other
+        users' documents and instruction-stuffed pages, is placed in the prompt.
+      controls: []
+    1:
+      intent: >
+        Retrieved chunks carry provenance the learner can inspect, and model
+        output is moderated. Retrieval is not yet authorization-aware.
+      controls: ["retrieval.provenance", "output.moderate"]
+    2:
+      intent: >
+        Provenance and output moderation remain, plus authorization-aware
+        filtering of other users' chunks and a scan that drops retrieved
+        instruction-override payloads.
+      controls:
+        - "retrieval.provenance"
+        - "retrieval.acl"
+        - "retrieval.injection_scan"
+        - "output.moderate"
+
+  agent.runner:
+    0:
+      intent: >
+        No tool broker controls. The shop agent invokes whatever tool the model
+        requests, including refunds, without an allowlist or human approval.
+        This is the attack surface every agentic lab starts from.
+      controls: []
+    1:
+      intent: >
+        Tool names are checked against the lab's declared allowlist and final
+        model text is moderated. A listed refund tool still runs; approval is
+        not required at this level.
+      controls: ["tool.allowlist", "output.moderate"]
+    2:
+      intent: >
+        Everything Level 1 does, plus tools marked requires_approval pause the
+        run until the calling user approves or denies the exact action.
+      controls: ["tool.allowlist", "tool.approval", "output.moderate"]
+
+  mcp.client:
+    0:
+      intent: >
+        No MCP-client controls run. tools/list returns descriptions verbatim,
+        including injected instructions, and every advertised tool can be called.
+      controls: []
+    1:
+      intent: >
+        Tool descriptions that a lab has pinned are restored if a later
+        tools/list drifts (rug-pull). Output moderation still runs on tool results.
+      controls: ["mcp.tool_pin", "output.moderate"]
+    2:
+      intent: >
+        Everything Level 1 does, plus descriptions that carry instruction-override
+        phrasing are redacted before they are shown as model-facing text.
+      controls: ["mcp.tool_pin", "mcp.description_scan", "output.moderate"]
+
+  skill.runtime:
+    0:
+      intent: >
+        SKILL.md is parsed and overlaid with no skill-load controls. allowed-tools
+        is recorded and not enforced. Bundled scripts are listed and never executed.
+      controls: []
+    1:
+      intent: >
+        granted tools are restricted to the SKILL.md allowed-tools list. Output
+        moderation still runs on later model text. Bundled scripts are never executed.
+      controls: ["skill.allowlist", "output.moderate"]
+    2:
+      intent: >
+        Everything Level 1 does, plus a content-hash pin that denies drifted SKILL.md
+        bodies and a naive sink-word scanner. Prose that names a shop tool is not a
+        sink. Bundled scripts are still never executed.
+      controls: ["skill.allowlist", "skill.hash_pin", "skill.scan", "output.moderate"]
+
+  api.raw:
+    0:
+      intent: >
+        Surface is not built yet. Direct API calls have no extra controls at
+        Level 0.
+      controls: []
+    1:
+      intent: >
+        Surface is not built yet. No raw-API controls are registered.
+      controls: []
+    2:
+      intent: >
+        Surface is not built yet. No raw-API controls are registered.
+      controls: []

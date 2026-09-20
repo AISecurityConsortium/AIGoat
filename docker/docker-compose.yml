@@ -46,6 +46,7 @@ services:
     volumes:
       - ./config.yml:/app/config/config.yml
       - ../prompts:/app/prompts
+      - ../skills:/app/skills
       - ../media:/app/media
       - ../guardrails:/app/guardrails
       - db_data:/app/data

@@ -147,20 +147,21 @@ The Docker setup starts three containers: backend, frontend (Nginx), and Ollama.
 
 ## Attack Scenarios
 
-The AIGoat platform covers the full OWASP LLM Top 10 through guided attack labs:
+The AIGoat platform covers the full OWASP LLM Top 10 through guided attack labs.
+Labs are mapped to both the 2025 and 2026 editions.
 
 | OWASP | Lab | Attack Scenario |
 |-------|-----|-----------------|
-| **LLM01** | Prompt Injection (3 labs) | Override chatbot instructions, inject hidden commands, chain multi-turn attacks |
-| **LLM02** | Sensitive Info Disclosure (3 labs) | Extract admin credentials, customer PII, internal configuration from the chatbot's context |
-| **LLM03** | Supply Chain -- Modelfile Backdoor | Discover hidden backdoor triggers in a community-contributed Ollama Modelfile |
-| **LLM04** | Data Poisoning (3 labs) | Inject fake information through reviews and tips that the chatbot repeats as fact |
-| **LLM05** | Insecure Output Handling (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
-| **LLM06** | Excessive Agency -- Overpowered Assistant | Exploit a chatbot that confirms unauthorized actions without verification |
-| **LLM07** | System Prompt Leakage (2 labs) | Extract the chatbot's hidden system instructions, including its confidential configuration block |
-| **LLM08** | RAG / Vector Weaknesses (3 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
-| **LLM09** | Misinformation (3 labs) | Trick the chatbot into fabricating certifications, endorsements, and safety data |
-| **LLM10** | Unbounded Consumption -- Token Flood | Cause excessive resource consumption through verbose output generation |
+| **LLM01:2026** | Prompt Injection (3 labs) | Override chatbot instructions, inject hidden commands, chain multi-turn attacks |
+| **LLM02:2026** | Sensitive Info Disclosure (3 labs) | Extract admin credentials, customer PII, internal configuration from the chatbot's context |
+| **LLM04:2026** | Supply Chain -- Modelfile Backdoor | Discover hidden backdoor triggers in a community-contributed Ollama Modelfile |
+| **LLM05:2026** | Data Poisoning (3 labs) | Inject fake information through reviews and tips that the chatbot repeats as fact |
+| **LLM10:2026** | Insecure Output Handling (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
+| **LLM03:2026** | Excessive Agency -- Overpowered Assistant | Exploit a chatbot that confirms unauthorized actions without verification |
+| **LLM08:2026** | System Prompt Leakage (2 labs) | Extract the chatbot's hidden system instructions, including its confidential configuration block |
+| **LLM09:2026** | RAG / Vector Weaknesses (3 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
+| **LLM07:2026** | Misinformation (3 labs) | Trick the chatbot into fabricating certifications, endorsements, and safety data |
+| **LLM06:2026** | Unbounded Consumption -- Token Flood | Cause excessive resource consumption through verbose output generation |
 
 Each lab provides example prompts, explains the attack technique, and shows expected results at each defense level.
 

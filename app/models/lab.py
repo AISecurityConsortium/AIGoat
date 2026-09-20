@@ -23,3 +23,5 @@ class LabSession(Base):
     )
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reset_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    surface: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    session_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)

@@ -394,6 +394,8 @@ async def seed_knowledge_base(session: AsyncSession, products: list[Product]) ->
             title=gen["title"],
             content=gen["content"],
             category=gen["category"],
+            is_user_injected=False,
+            trust_tier="system",
         )
         session.add(entry)
     await session.commit()

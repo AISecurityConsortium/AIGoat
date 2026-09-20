@@ -8,7 +8,16 @@ details. ``generate_stream`` yields tokens as ``str`` via
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
+
+
+@dataclass
+class ChatTurn:
+    """One chat completion, optionally with native tool calls."""
+
+    content: str
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
 
 
 @runtime_checkable

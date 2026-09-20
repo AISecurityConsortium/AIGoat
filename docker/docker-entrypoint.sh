@@ -67,12 +67,24 @@ else:
 fi
 
 # ── Step 2: Database initialization ───────────────────────────
-info "Initializing database..."
-python -c "
-import asyncio
-from app.core.database import init_db
-asyncio.run(init_db())
-"
+info "Applying database migrations..."
+DB_FILE="${DB_FILE:-/app/data/aigoat.db}"
+if [ -f "$DB_FILE" ]; then
+    NEEDS_STAMP=$(python -c "
+import sqlite3
+try:
+    c = sqlite3.connect('$DB_FILE')
+    row = c.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'\").fetchone()
+    print('no' if row else 'yes')
+except Exception:
+    print('no')
+")
+    if [ "$NEEDS_STAMP" = "yes" ]; then
+        info "Pre-Alembic database detected — stamping baseline (does not wipe data)"
+        python -m alembic stamp head
+    fi
+fi
+python -m alembic upgrade head
 ok "Database schema ready"
 
 # ── Step 3: Seed data (idempotent) ────────────────────────────

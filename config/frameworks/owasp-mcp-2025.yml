@@ -1,0 +1,96 @@
+id: "owasp-mcp-2025"
+name: "OWASP MCP Top 10"
+version: "2025"
+status: "beta"
+published: null
+publisher: "OWASP"
+url: "https://owasp.org/www-project-mcp-top-10/"
+source_license: "CC-BY-NC-SA-4.0"
+attribution: >
+  OWASP Foundation. OWASP MCP Top 10 (Phase 3 beta).
+  https://owasp.org/www-project-mcp-top-10/
+prose_origin: "aigoat-original"
+supersedes: null
+maturity_note: "This list is a Phase 3 beta. Identifiers may change before its final release."
+risks:
+  - code: "MCP01"
+    title: "Token Mismanagement & Secret Exposure"
+    summary: "Tokens and secrets that ride in MCP traffic or tool results can leak into logs, transcripts, and model context."
+    description: "Labs use decoy credentials only. Learners watch a token appear in a tool result or descriptor, then compare a redacting client against a client that concatenates everything into the prompt."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI03"
+  - code: "MCP02"
+    title: "Privilege Escalation via Scope Creep"
+    summary: "A server that grows extra tools or a client that never checks scope can act far beyond the original grant."
+    description: "stdio MCP has no built-in auth model; that absence is the lesson. Learners start with a narrow catalogue and watch a later handshake advertise a more powerful tool with the same name."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI03"
+      - "owasp-mcp-2025:MCP07"
+  - code: "MCP03"
+    title: "Tool Poisoning"
+    summary: "Hostile text inside a tool name or description is rendered as instructions the model will follow."
+    description: "Descriptions are shown verbatim so the attack is visible. This entry, Intent Flow Subversion, and Context Injection are three views of the same indirect-injection mechanism, mapped here as display metadata only."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI02"
+      - "owasp-agentic-2026:ASI04"
+      - "owasp-mcp-2025:MCP06"
+      - "owasp-mcp-2025:MCP10"
+  - code: "MCP04"
+    title: "Software Supply Chain Attacks & Dependency Tampering"
+    summary: "A typosquatted or substituted MCP server can impersonate a trusted tool host."
+    description: "AIGoat uses a local fake registry. Learners pick a lookalike server name, inspect the advertised tools, and see that the client had no signed identity for the process it spawned."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI04"
+      - "owasp-mcp-2025:MCP09"
+  - code: "MCP05"
+    title: "Command Injection & Execution"
+    summary: "Tool arguments that reach a shell or eval sink would turn a teaching lab into platform RCE, so this entry is documentation-only."
+    description: "AIGoat will not wire MCP tool handlers to an OS command interpreter. The page explains the sink, shows a refused fake executor, and points learners at Improper Output Handling and Unexpected Code Execution instead."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI05"
+      - "owasp-llm-2026:LLM10"
+  - code: "MCP06"
+    title: "Intent Flow Subversion"
+    summary: "Payloads hidden in resources or tool text can divert the client's next planned call."
+    description: "The same poisoned description that looks like Tool Poisoning also rewrites what the model intends to do next. Labs keep the JSON-RPC transcript visible so learners can point at the exact field that flipped the plan."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI01"
+      - "owasp-mcp-2025:MCP03"
+  - code: "MCP07"
+    title: "Insufficient Authentication & Authorization"
+    summary: "If the client never authenticates the server or the user, every advertised tool is available to whoever can speak stdio."
+    description: "This overlaps Scope Creep on authorization. The lab contrast is a client that checks a lab-scoped capability token against one that accepts any tools/list result as gospel."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI03"
+      - "owasp-mcp-2025:MCP02"
+  - code: "MCP08"
+    title: "Lack of Audit and Telemetry"
+    summary: "Without a JSON-RPC transcript, neither the learner nor a defender can say which tool ran or why."
+    description: "This is a blue-team exercise, not an attack. Learners enable the transcript viewer, reconstruct a session, and see how a missing log makes rug-pulls and secret leaks undiagnosable."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI08"
+      - "owasp-agentic-2026:ASI10"
+  - code: "MCP09"
+    title: "Shadow MCP Servers"
+    summary: "A server the user never chose can still be spawned if the client resolves names from an untrusted list."
+    description: "This entry has no Agentic-list equivalent, which is why AIGoat cites it directly. The lab plants a second local process with a similar name and asks the learner to notice it in the catalogue."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-mcp-2025:MCP04"
+  - code: "MCP10"
+    title: "Context Injection & Over-Sharing"
+    summary: "Resources and sampling results dumped wholesale into context give the model more than the task needs, including attacker text."
+    description: "Over-sharing is the confused-deputy cousin of Tool Poisoning: the client concatenates every resource into the next prompt. Learners compare a filtered fetch against a dump-everything client."
+    attack_surfaces: ["mcp.client"]
+    related:
+      - "owasp-agentic-2026:ASI06"
+      - "owasp-agentic-2026:ASI03"
+      - "owasp-mcp-2025:MCP03"

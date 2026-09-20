@@ -73,6 +73,21 @@ class ToolRegistry:
             for t in self._tools.values()
         ]
 
+    def ollama_tools(self) -> list[dict[str, Any]]:
+        from app.agent.schema import as_json_schema
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": as_json_schema(t.parameter_schema),
+                },
+            }
+            for t in self._tools.values()
+        ]
+
     async def invoke(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         tool = self._tools.get(name)
         if tool is None:

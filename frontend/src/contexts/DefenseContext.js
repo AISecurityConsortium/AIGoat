@@ -16,6 +16,10 @@ export const DefenseProvider = ({ children }) => {
     return stored !== null ? parseInt(stored, 10) : 0;
   });
   const [loading, setLoading] = useState(false);
+  // True once the learner picks a level in this browser session. Until then a
+  // lab's recommended starting level applies. Deliberately not persisted: an
+  // explicit choice should last the session, not forever.
+  const [levelChosenThisSession, setLevelChosenThisSession] = useState(false);
 
   const levelDetails = LEVELS[defenseLevel] || LEVELS[0];
 
@@ -51,6 +55,7 @@ export const DefenseProvider = ({ children }) => {
       await axios.post(getApiUrl('/api/chat/defense-level'), { level: numLevel }, { headers });
 
       setDefenseLevel(numLevel);
+      setLevelChosenThisSession(true);
       localStorage.setItem('aigoat_defense_level', String(numLevel));
 
       window.dispatchEvent(new CustomEvent('defenseLevelChanged', { detail: { level: numLevel } }));
@@ -58,6 +63,7 @@ export const DefenseProvider = ({ children }) => {
     } catch (err) {
       // Fallback: still update locally even if backend fails
       setDefenseLevel(numLevel);
+      setLevelChosenThisSession(true);
       localStorage.setItem('aigoat_defense_level', String(numLevel));
       window.dispatchEvent(new CustomEvent('defenseLevelChanged', { detail: { level: numLevel } }));
       return { success: true, warning: 'Backend sync failed, saved locally' };
@@ -67,7 +73,16 @@ export const DefenseProvider = ({ children }) => {
   }, []);
 
   return (
-    <DefenseContext.Provider value={{ defenseLevel, levelDetails, changeDefenseLevel, loading, LEVELS }}>
+    <DefenseContext.Provider
+      value={{
+        defenseLevel,
+        levelDetails,
+        changeDefenseLevel,
+        loading,
+        LEVELS,
+        levelChosenThisSession,
+      }}
+    >
       {children}
     </DefenseContext.Provider>
   );

@@ -2,6 +2,7 @@
 
 # Python
 venv/
+venv-*/
 __pycache__/
 *.py[cod]
 *.so
@@ -31,6 +32,8 @@ build/
 *.log
 *.pid
 *.port
+logs/
+.pids/
 
 # System files
 .DS_Store
@@ -53,3 +56,11 @@ docker-compose.override.yml
 
 #Solution Files
 docs/challenges-walkthrough.md
+
+# Develpoment Files
+AGENTS.md
+CLAUDE.md
+agent-docs
+agent-docs/*
+.cursor
+.cursor/*

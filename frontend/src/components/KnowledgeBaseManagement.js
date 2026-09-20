@@ -23,6 +23,7 @@ import {
   Tooltip,
   Snackbar,
   Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -35,9 +36,16 @@ import {
   Warning as WarningIcon,
   ContentCopy as CopyIcon,
 } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import { apiClient as axios } from '../config/api';
+import { RelatedMap, SectionCard } from './common';
+import RetrievalTraceInspector from './rag/RetrievalTraceInspector';
+import RetrievalAskPanel from './rag/RetrievalAskPanel';
 
 const KnowledgeBaseManagement = () => {
+  const [searchParams] = useSearchParams();
+  const labFromQuery = searchParams.get('lab');
+  const [lab, setLab] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [products, setProducts] = useState([]);
@@ -49,11 +57,15 @@ const KnowledgeBaseManagement = () => {
   const [kbIntegration, setKbIntegration] = useState(() => {
     return localStorage.getItem('kb_integration') === 'true';
   });
+  const [ragStats, setRagStats] = useState(null);
+  const [trustFilter, setTrustFilter] = useState('all');
+  const [injectedOnly, setInjectedOnly] = useState(false);
   const [formData, setFormData] = useState({
     product_id: '',
     title: '',
     content: '',
-    category: 'product_info'
+    category: 'product_info',
+    trust_tier: 'user',
   });
 
   const categories = [
@@ -66,8 +78,28 @@ const KnowledgeBaseManagement = () => {
   useEffect(() => {
     fetchDocuments();
     fetchProducts();
+    fetchRagStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!labFromQuery) {
+      setLab(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const token = localStorage.getItem('token');
+    axios.get(`/api/labs/${labFromQuery}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).then(({ data }) => {
+      if (cancelled) return;
+      setLab(data);
+      localStorage.setItem('active_lab_id', labFromQuery);
+    }).catch(() => {
+      if (!cancelled) setLab(null);
+    });
+    return () => { cancelled = true; };
+  }, [labFromQuery]);
 
   const fetchDocuments = async () => {
     try {
@@ -87,6 +119,17 @@ const KnowledgeBaseManagement = () => {
       console.error('Error fetching documents:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRagStats = async () => {
+    try {
+      const response = await axios.get('/api/rag-stats/', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setRagStats(response.data);
+    } catch (error) {
+      console.error('Error fetching RAG stats:', error);
     }
   };
 
@@ -119,8 +162,9 @@ const KnowledgeBaseManagement = () => {
       
       setOpenDialog(false);
       setEditingDoc(null);
-      setFormData({ product_id: '', title: '', content: '', category: 'product_info' });
+      setFormData({ product_id: '', title: '', content: '', category: 'product_info', trust_tier: 'user' });
       fetchDocuments();
+      fetchRagStats();
       
     } catch (error) {
       console.error('Error saving document:', error);
@@ -135,7 +179,8 @@ const KnowledgeBaseManagement = () => {
       product_id: doc.product_id,
       title: doc.title,
       content: doc.content,
-      category: doc.category
+      category: doc.category,
+      trust_tier: doc.trust_tier || 'user',
     });
     setOpenDialog(true);
   };
@@ -154,6 +199,7 @@ const KnowledgeBaseManagement = () => {
       });
       setSnack({ open: true, message: 'Document deleted successfully', severity: 'success' });
       fetchDocuments();
+      fetchRagStats();
     } catch (error) {
       setSnack({ open: true, message: 'Error deleting document', severity: 'error' });
     }
@@ -171,6 +217,7 @@ const KnowledgeBaseManagement = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       fetchDocuments();
+      fetchRagStats();
       setSnack({ open: true, message: 'Knowledge base regenerated successfully!', severity: 'success' });
     } catch (error) {
       setSnack({ open: true, message: 'Error regenerating knowledge base', severity: 'error' });
@@ -186,6 +233,7 @@ const KnowledgeBaseManagement = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setSnack({ open: true, message: `Knowledge base synced successfully! ${response.data.synced || response.data.synced_count || 0} documents synced.`, severity: 'success' });
+      fetchRagStats();
     } catch (error) {
       setSnack({ open: true, message: 'Error syncing knowledge base', severity: 'error' });
     } finally {
@@ -257,6 +305,12 @@ const KnowledgeBaseManagement = () => {
     },
   ];
 
+  const visibleDocuments = documents.filter((doc) => {
+    if (injectedOnly && !doc.is_user_injected) return false;
+    if (trustFilter !== 'all' && (doc.trust_tier || 'user') !== trustFilter) return false;
+    return true;
+  });
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -268,6 +322,24 @@ const KnowledgeBaseManagement = () => {
       <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem', mb: 3 }}>
         RAG (Retrieval-Augmented Generation) attack surface for AI Goat Shop
       </Typography>
+
+      {lab && (
+        <Box sx={{ mb: 3 }}>
+          <SectionCard title={lab.name || labFromQuery} dense>
+            {lab.objective && (
+              <Typography sx={{ fontSize: '0.88rem', mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+                {lab.objective}
+              </Typography>
+            )}
+            <RelatedMap
+              dense
+              risks={lab.risks || []}
+              surface={lab.surface}
+              relatedLabIds={lab.related_lab_ids || []}
+            />
+          </SectionCard>
+        </Box>
+      )}
 
       {/* Educational Section */}
       <Card sx={{ mb: 3, border: '1px solid', borderColor: (t) => alpha(t.palette.primary.main, 0.2), bgcolor: (t) => alpha(t.palette.primary.main, 0.03) }}>
@@ -352,6 +424,35 @@ const KnowledgeBaseManagement = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {ragStats && (
+        <Card sx={{ mb: 3, border: '1px solid', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }}>
+          <CardContent sx={{ p: 2.5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+              Index pipeline
+            </Typography>
+            <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+              Documents ({ragStats.db_documents ?? 0}) → Chunks ({ragStats.indexed_chunks ?? 0}) → Embeddings → Index ({ragStats.collection_count ?? 0})
+            </Typography>
+            {ragStats.in_sync === false && (
+              <Alert severity="warning" sx={{ mb: 1 }}>
+                Index is stale — Sync to Vector DB
+              </Alert>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {ragStats.in_sync ? 'Index matches the database' : 'Documents exist that are not in the vector store'}
+              {ragStats.last_sync_at ? ` · last sync ${ragStats.last_sync_at}` : ''}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      <Box sx={{ mb: 3 }}>
+        <RetrievalTraceInspector />
+      </Box>
+      <Box sx={{ mb: 3 }}>
+        <RetrievalAskPanel />
+      </Box>
 
       {/* Statistics */}
       {statistics && (
@@ -493,11 +594,28 @@ const KnowledgeBaseManagement = () => {
         </CardContent>
       </Card>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h6">
-          Knowledge Documents ({documents.length})
+          Knowledge Documents ({visibleDocuments.length})
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Trust tier</InputLabel>
+            <Select
+              value={trustFilter}
+              label="Trust tier"
+              onChange={(e) => setTrustFilter(e.target.value)}
+            >
+              <MenuItem value="all">All tiers</MenuItem>
+              <MenuItem value="system">system</MenuItem>
+              <MenuItem value="partner">partner</MenuItem>
+              <MenuItem value="user">user</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControlLabel
+            control={<Switch checked={injectedOnly} onChange={(e) => setInjectedOnly(e.target.checked)} size="small" />}
+            label="Injected only"
+          />
           <Button
             variant="outlined"
             onClick={handleSync}
@@ -526,7 +644,7 @@ const KnowledgeBaseManagement = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {documents.map((doc) => (
+        {visibleDocuments.map((doc) => (
           <Grid item xs={12} md={6} key={doc.id}>
             <Card>
               <CardContent>
@@ -543,6 +661,18 @@ const KnowledgeBaseManagement = () => {
                       color={getCategoryColor(doc.category)}
                       size="small"
                     />
+                    <Chip
+                      label={doc.is_user_injected ? 'injected' : 'seeded'}
+                      size="small"
+                      sx={{ ml: 0.5 }}
+                    />
+                    <Chip label={doc.trust_tier || 'user'} size="small" sx={{ ml: 0.5 }} />
+                    {doc.is_latest === false && (
+                      <Chip label={`v${doc.version || 1} stale`} size="small" color="warning" sx={{ ml: 0.5 }} />
+                    )}
+                    {doc.valid_until && (
+                      <Chip label={`until ${doc.valid_until}`} size="small" sx={{ ml: 0.5 }} />
+                    )}
                   </Box>
                   <Box>
                     <Tooltip title="Edit">
@@ -622,6 +752,21 @@ const KnowledgeBaseManagement = () => {
                         {category.label}
                       </MenuItem>
                     ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Trust tier</InputLabel>
+                  <Select
+                    value={formData.trust_tier || 'user'}
+                    onChange={(e) => setFormData({...formData, trust_tier: e.target.value})}
+                    label="Trust tier"
+                  >
+                    <MenuItem value="user">user (default for injected docs)</MenuItem>
+                    <MenuItem value="partner">partner</MenuItem>
+                    <MenuItem value="system">system (spoofable — the trust-tier lab)</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

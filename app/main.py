@@ -43,15 +43,20 @@ if os.path.exists(media_dir):
     app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 from app.api.admin import router as admin_router
+from app.api.agent import router as agent_router
 from app.api.auth import router as auth_router
 from app.api.challenge_chat import router as challenge_chat_router
 from app.api.challenges import router as challenge_router
 from app.api.chat import router as chat_router
 from app.api.labs import router as lab_router
+from app.api.mcp import router as mcp_router
 from app.api.profile import router as profile_router
 from app.api.rag import router as rag_router
 from app.api.shop import router as shop_router
+from app.api.skills import router as skills_router
+from app.api.surfaces import router as surfaces_router
 from app.api.system import router as system_router
+from app.api.taxonomy import router as taxonomy_router
 
 app.include_router(auth_router)
 app.include_router(shop_router)
@@ -63,3 +68,8 @@ app.include_router(challenge_router)
 app.include_router(challenge_chat_router)
 app.include_router(rag_router)
 app.include_router(lab_router)
+app.include_router(taxonomy_router)
+app.include_router(surfaces_router)
+app.include_router(agent_router)
+app.include_router(mcp_router)
+app.include_router(skills_router)
