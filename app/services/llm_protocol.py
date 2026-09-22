@@ -34,6 +34,7 @@ class LLMClient(Protocol):
         prompt: str,
         system: str = "",
         options: dict[str, Any] | None = None,
+        stop: Any = None,
     ) -> AsyncIterator[str]: ...
 
     async def chat(

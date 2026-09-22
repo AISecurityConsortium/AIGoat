@@ -162,7 +162,7 @@ const McpConsole = ({ labId, lab }) => {
       )}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <SectionCard title="1. Pick the server">
-        <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1.5 }}>
           This lab is already pointed at the server it needs. The command below is the process that starts for this click.
         </Typography>
         {servers.length === 0 ? (
@@ -192,7 +192,7 @@ const McpConsole = ({ labId, lab }) => {
           <Box sx={{ mt: 2 }}>
             <Chip size="small" label={selected.trust_tier} color={trustColor(selected.trust_tier)} sx={{ mr: 1 }} />
             <Chip size="small" label={selected.protocol_era} variant="outlined" />
-            <Typography sx={{ mt: 1.5, fontSize: '0.75rem', fontWeight: 600 }}>
+            <Typography sx={{ mt: 1.5, fontSize: '0.9375rem', fontWeight: 600 }}>
               Command that starts the server
             </Typography>
             <CodeBlock code={(selected.command_display || []).join(' ')} language="bash" />
@@ -201,7 +201,7 @@ const McpConsole = ({ labId, lab }) => {
       </SectionCard>
 
       <SectionCard title="2. List tools">
-        <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1.5 }}>
           The description text is the attack surface. List tools first. Discover is optional identity.
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -212,7 +212,7 @@ const McpConsole = ({ labId, lab }) => {
 
       {discover && (
         <SectionCard title="server/discover">
-          <Typography sx={{ fontSize: '0.82rem', mb: 1 }}>
+          <Typography sx={{ fontSize: '0.9375rem', mb: 1 }}>
             protocol_version: {discover.protocol_version || 'unknown'}
           </Typography>
           <CodeBlock code={pretty(discover.discover || discover)} language="json" maxLines={16} />
@@ -221,7 +221,7 @@ const McpConsole = ({ labId, lab }) => {
 
       {tools.length > 0 && (
         <SectionCard title="3. Read the description">
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1 }}>
             Read this as attacker-controlled text. A second list can change it.
           </Typography>
           <FormControlLabel
@@ -244,7 +244,7 @@ const McpConsole = ({ labId, lab }) => {
               >
                 <Typography sx={{ fontFamily: 'monospace', fontWeight: 700 }}>{tool.name}</Typography>
                 {drifted && (
-                  <Typography sx={{ color: 'warning.main', fontSize: '0.75rem' }}>
+                  <Typography sx={{ color: 'warning.main', fontSize: '0.9375rem' }}>
                     Description changed since the last list (rug-pull).
                   </Typography>
                 )}
@@ -253,7 +253,7 @@ const McpConsole = ({ labId, lab }) => {
                   sx={{
                     whiteSpace: 'pre-wrap',
                     fontFamily: 'monospace',
-                    fontSize: '0.82rem',
+                    fontSize: '0.9375rem',
                     m: 0,
                     mt: 1,
                   }}
@@ -268,7 +268,7 @@ const McpConsole = ({ labId, lab }) => {
 
       {tools.length > 0 && (
         <SectionCard title="4. Call a tool">
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1.5 }}>
             Only if this lab asks you to. A result can carry a decoy token.
           </Typography>
           <TextField

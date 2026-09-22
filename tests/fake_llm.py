@@ -69,6 +69,7 @@ class FakeLLMClient:
         prompt: str,
         system: str = "",
         options: dict[str, Any] | None = None,
+        stop: Any = None,
     ) -> AsyncIterator[str]:
         self.calls.append({"method": "generate_stream", "prompt": prompt, "system": system})
         reply = self._next(prompt)

@@ -26,13 +26,8 @@ import { alpha } from '@mui/material/styles';
 import { 
   AddShoppingCart as AddShoppingCartIcon,
   FilterList as FilterIcon,
-  GitHub as GitHubIcon,
-  StarBorder as StarBorderIcon,
-  Visibility as VisibilityIcon,
-  CallSplit as ForkIcon,
   WarningAmber as WarningIcon,
   BugReport as BugReportIcon,
-  OpenInNew as OpenInNewIcon,
   Shield as ShieldIcon,
   Verified as VerifiedIcon,
 } from '@mui/icons-material';
@@ -41,33 +36,28 @@ import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useSearch } from '../contexts/SearchContext';
-
-const GITHUB_REPO = 'AISecurityConsortium/AIGoat';
+import { StartHerePanel } from './common';
+import { formatUsd } from '../utils/money';
+import { getStartHereDismissedKey, START_HERE_SHOW_EVENT } from '../config/learningPath';
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width:900px)');
   const isLoggedIn = !!localStorage.getItem('token');
+  const isLearner = isLoggedIn && localStorage.getItem('username') && localStorage.getItem('username') !== 'admin';
   const { mode } = useThemeMode();
   const isDark = mode === 'dark';
-  const [ghStats, setGhStats] = useState({ stars: null, forks: null, watchers: null });
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`https://api.github.com/repos/${GITHUB_REPO}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data && !cancelled) {
-          setGhStats({
-            stars: data.stargazers_count,
-            forks: data.forks_count,
-            watchers: data.subscribers_count,
-          });
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  const startLabs = () => {
+    try {
+      localStorage.removeItem(getStartHereDismissedKey());
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(new CustomEvent(START_HERE_SHOW_EVENT));
+    window.setTimeout(() => {
+      document.getElementById('start-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
 
   return (
     <Box
@@ -90,108 +80,6 @@ const HeroSection = () => {
           zIndex: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          <Chip
-            label="AI Security Consortium"
-            component="a"
-            href="https://www.aisecurityconsortium.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            clickable
-            icon={<OpenInNewIcon sx={{ fontSize: '0.65rem !important' }} />}
-            sx={{
-              bgcolor: isDark ? 'rgba(74,222,128,0.1)' : 'rgba(22,163,74,0.08)',
-              color: isDark ? '#4ade80' : '#16a34a',
-              fontWeight: 700,
-              fontSize: '0.7rem',
-              border: isDark ? '1px solid rgba(74,222,128,0.25)' : '1px solid rgba(22,163,74,0.2)',
-              letterSpacing: '0.04em',
-              textDecoration: 'none',
-              '&:hover': { bgcolor: isDark ? 'rgba(74,222,128,0.18)' : 'rgba(22,163,74,0.14)' },
-              '& .MuiChip-icon': { color: 'inherit' },
-            }}
-          />
-          <Chip
-            label="AI Security Learning Platform"
-            sx={{
-              bgcolor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(79, 70, 229, 0.06)',
-              color: isDark ? '#818cf8' : '#4f46e5',
-              fontWeight: 600,
-              fontSize: '0.7rem',
-              border: isDark ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(79, 70, 229, 0.15)',
-            }}
-          />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box
-              component="a"
-              href={`https://github.com/${GITHUB_REPO}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'inline-flex', alignItems: 'center', gap: 0.4,
-                color: isDark ? '#94a3b8' : '#64748b', textDecoration: 'none', fontSize: '0.68rem', fontWeight: 600,
-                px: 0.75, py: 0.35, borderRadius: '5px',
-                border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                transition: 'all 0.15s',
-                '&:hover': { color: isDark ? '#e2e8f0' : '#1e293b', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)', bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' },
-              }}
-            >
-              <GitHubIcon sx={{ fontSize: '0.8rem' }} />
-              GitHub
-            </Box>
-            <Box
-              component="a"
-              href={`https://github.com/${GITHUB_REPO}/stargazers`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'inline-flex', alignItems: 'center', gap: 0.3,
-                color: '#f59e0b', textDecoration: 'none', fontSize: '0.68rem', fontWeight: 600,
-                px: 0.6, py: 0.35, borderRadius: '5px',
-                border: '1px solid rgba(245,158,11,0.2)',
-                transition: 'all 0.15s',
-                '&:hover': { bgcolor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.4)' },
-              }}
-            >
-              <StarBorderIcon sx={{ fontSize: '0.75rem' }} />
-              Star{ghStats.stars !== null && <Box component="span" sx={{ ml: 0.3, fontWeight: 800 }}>{ghStats.stars}</Box>}
-            </Box>
-            <Box
-              component="a"
-              href={`https://github.com/${GITHUB_REPO}/fork`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'inline-flex', alignItems: 'center', gap: 0.3,
-                color: isDark ? '#94a3b8' : '#64748b', textDecoration: 'none', fontSize: '0.68rem', fontWeight: 600,
-                px: 0.6, py: 0.35, borderRadius: '5px',
-                border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-                transition: 'all 0.15s',
-                '&:hover': { color: isDark ? '#e2e8f0' : '#1e293b', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)', bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' },
-              }}
-            >
-              <ForkIcon sx={{ fontSize: '0.75rem' }} />
-              Fork{ghStats.forks !== null && <Box component="span" sx={{ ml: 0.3, fontWeight: 800 }}>{ghStats.forks}</Box>}
-            </Box>
-            <Box
-              component="a"
-              href={`https://github.com/${GITHUB_REPO}/watchers`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'inline-flex', alignItems: 'center', gap: 0.3,
-                color: isDark ? '#38bdf8' : '#0284c7', textDecoration: 'none', fontSize: '0.68rem', fontWeight: 600,
-                px: 0.6, py: 0.35, borderRadius: '5px',
-                border: isDark ? '1px solid rgba(56,189,248,0.2)' : '1px solid rgba(2,132,199,0.15)',
-                transition: 'all 0.15s',
-                '&:hover': { bgcolor: isDark ? 'rgba(56,189,248,0.08)' : 'rgba(2,132,199,0.06)', borderColor: isDark ? 'rgba(56,189,248,0.4)' : 'rgba(2,132,199,0.3)' },
-              }}
-            >
-              <VisibilityIcon sx={{ fontSize: '0.72rem' }} />
-              Watch{ghStats.watchers !== null && <Box component="span" sx={{ ml: 0.3, fontWeight: 800 }}>{ghStats.watchers}</Box>}
-            </Box>
-          </Box>
-        </Box>
         <Typography
           variant="h3"
           sx={{
@@ -224,8 +112,8 @@ const HeroSection = () => {
             fontSize: '0.95rem',
           }}
         >
-          Your hands-on lab for exploring LLM vulnerabilities. Learn to attack and defend 
-          AI systems through real-world exercises mapped to the OWASP Top 10 for LLM Applications.
+          Your hands-on lab for LLM, RAG, MCP, and agentic security. Attack and defend
+          AI systems through real-world exercises mapped to the OWASP Top 10 for LLM, MCP, and Agentic Applications.
         </Typography>
         {/* Vulnerable app warning */}
         <Box
@@ -261,7 +149,7 @@ const HeroSection = () => {
             >
               Get Started
             </Button>
-          ) : (
+          ) : !isLearner ? (
             <Button
               variant="contained"
               size="small"
@@ -272,8 +160,36 @@ const HeroSection = () => {
                 '&:hover': { bgcolor: (t) => t.palette.primary.dark },
               }}
             >
-              Browse Products
+              Browse products
             </Button>
+          ) : (
+            <>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={startLabs}
+                sx={{
+                  bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
+                  fontWeight: 600, px: 2.5, py: 0.8, borderRadius: '8px', textTransform: 'none', fontSize: '0.8rem',
+                  '&:hover': { bgcolor: (t) => t.palette.primary.dark },
+                }}
+              >
+                Start the labs
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => { document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                sx={{
+                  borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                  color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary,
+                  fontWeight: 600, px: 2, py: 0.8, borderRadius: '8px', textTransform: 'none', fontSize: '0.8rem',
+                  '&:hover': { borderColor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main, bgcolor: (t) => t.palette.custom?.overlay?.active ?? t.palette.action.hover },
+                }}
+              >
+                Browse products
+              </Button>
+            </>
           )}
           <Button
             variant="outlined"
@@ -306,8 +222,8 @@ const HeroSection = () => {
         {/* Platform stats */}
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 1.5 }}>
           {[
-            { icon: <ShieldIcon sx={{ fontSize: '0.8rem' }} />, label: '10 OWASP LLM Risks', color: isDark ? '#f87171' : '#dc2626' },
-            { icon: <BugReportIcon sx={{ fontSize: '0.8rem' }} />, label: '50+ Attack Scenarios', color: isDark ? '#fb923c' : '#ea580c' },
+            { icon: <BugReportIcon sx={{ fontSize: '0.8rem' }} />, label: '30 Attack Labs', color: isDark ? '#fb923c' : '#ea580c' },
+            { icon: <ShieldIcon sx={{ fontSize: '0.8rem' }} />, label: '9 CTF Challenges', color: isDark ? '#f87171' : '#dc2626' },
             { icon: <VerifiedIcon sx={{ fontSize: '0.8rem' }} />, label: '3 Defense Levels', color: isDark ? '#4ade80' : '#16a34a' },
           ].map((stat) => (
             <Box key={stat.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: stat.color, fontSize: '0.68rem', fontWeight: 600 }}>
@@ -319,74 +235,122 @@ const HeroSection = () => {
 
         {/* Built by credit */}
         <Typography variant="caption" sx={{ color: isDark ? '#64748b' : '#94a3b8', fontSize: '0.65rem', display: 'block' }}>
-          Built &amp; maintained by <strong>Farooq</strong> and <strong>Nal</strong> from the{' '}
-          <Box
-            component="a"
-            href="https://www.aisecurityconsortium.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              color: isDark ? '#94a3b8' : '#64748b',
-              textDecoration: 'underline',
-              textDecorationColor: isDark ? 'rgba(148,163,184,0.3)' : 'rgba(100,116,139,0.3)',
-              textUnderlineOffset: '2px',
-              '&:hover': { color: isDark ? '#e2e8f0' : '#334155' },
-            }}
-          >
-            AI Security Consortium
-          </Box>
-          {' '}community.
+          Built &amp; maintained by <strong>Farooq</strong> and <strong>Nal</strong>.
         </Typography>
       </Box>
 
-      {/* Right: Video player with vignette fade on all edges */}
-      <Box
-        sx={{
-          flex: isMobile ? 1 : '0 0 30%',
-          position: 'relative',
-          height: isMobile ? 200 : 390,
-          overflow: 'hidden',
-          ml: isMobile ? 0 : 'auto',
-          mr: isMobile ? 0 : 12,
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-            background: (t) => {
-              const bg = t.palette.background.default;
-              return isMobile
-                ? `linear-gradient(to top, ${bg} 0%, transparent 40%)`
-                : [
-                    `linear-gradient(to right, ${bg} 0%, transparent 40%)`,
-                    `linear-gradient(to left,  ${bg} 0%, transparent 40%)`,
-                    `linear-gradient(to bottom,${bg} 0%, transparent 35%)`,
-                    `linear-gradient(to top,   ${bg} 0%, transparent 35%)`,
-                  ].join(', ');
-            },
-            backgroundSize: isMobile ? '100% 100%' : '50% 100%, 50% 100%, 100% 50%, 100% 50%',
-            backgroundPosition: isMobile ? '0 0' : 'left, right, top, bottom',
-            backgroundRepeat: 'no-repeat',
-          },
-        }}
-      >
+      {isDark ? (
         <Box
-          component="video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          src="/media/videos/landing-page-video.mp4"
           sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center 35%',
-            display: 'block',
+            flex: isMobile ? 1 : '0 0 30%',
+            position: 'relative',
+            height: isMobile ? 200 : 390,
+            overflow: 'hidden',
+            ml: isMobile ? 0 : 'auto',
+            mr: isMobile ? 0 : 12,
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              background: (t) => {
+                const bg = t.palette.background.default;
+                return isMobile
+                  ? `linear-gradient(to top, ${bg} 0%, transparent 40%)`
+                  : [
+                      `linear-gradient(to right, ${bg} 0%, transparent 40%)`,
+                      `linear-gradient(to left,  ${bg} 0%, transparent 40%)`,
+                      `linear-gradient(to bottom,${bg} 0%, transparent 35%)`,
+                      `linear-gradient(to top,   ${bg} 0%, transparent 35%)`,
+                    ].join(', ');
+              },
+              backgroundSize: isMobile ? '100% 100%' : '50% 100%, 50% 100%, 100% 50%, 100% 50%',
+              backgroundPosition: isMobile ? '0 0' : 'left, right, top, bottom',
+              backgroundRepeat: 'no-repeat',
+            },
           }}
-        />
-      </Box>
+        >
+          <Box
+            component="video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            src="/media/videos/landing-page-video.mp4"
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center 35%',
+              display: 'block',
+            }}
+          />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            flex: isMobile ? 1 : '0 0 36%',
+            height: isMobile ? 240 : 390,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            ml: isMobile ? 0 : 'auto',
+            mr: isMobile ? 0 : 8,
+            position: 'relative',
+          }}
+        >
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              width: isMobile ? 214 : 348,
+              height: isMobile ? 214 : 348,
+              borderRadius: '50%',
+              background: 'conic-gradient(from 0deg, rgba(79,70,229,0) 0deg, #4f46e5 70deg, #818cf8 150deg, rgba(79,70,229,0) 230deg)',
+              animation: 'aigoatOrbit 8s linear infinite',
+              '@keyframes aigoatOrbit': { to: { transform: 'rotate(360deg)' } },
+            }}
+          />
+          <Box
+            sx={{
+              width: isMobile ? 200 : 328,
+              height: isMobile ? 200 : 328,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              position: 'relative',
+              zIndex: 1,
+              bgcolor: '#f8f9fc',
+              boxShadow: '0 16px 40px rgba(79, 70, 229, 0.16)',
+            }}
+          >
+            <Box
+              component="video"
+              autoPlay
+              loop
+              muted
+              playsInline
+              src="/media/videos/landing-page-video.mp4"
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center 35%',
+                display: 'block',
+              }}
+            />
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                background: 'radial-gradient(circle, transparent 55%, rgba(248,249,252,0.45) 76%, #f8f9fc 100%)',
+              }}
+            />
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };
@@ -626,10 +590,17 @@ const ProductList = () => {
     navigate(`/product/${productId}`);
   };
 
+  const learnerUsername = localStorage.getItem('username');
+  const showStartHere = !!localStorage.getItem('token')
+    && learnerUsername
+    && learnerUsername !== 'admin';
+
   return (
     <Container maxWidth="xl" sx={{ mt: 1, mb: 6, px: { xs: 2, sm: 3, md: 12 } }}>
       <HeroSection />
-      
+
+      {showStartHere && <StartHerePanel username={learnerUsername} />}
+
       {/* Products Header Bar */}
       <Box
         id="products-section"
@@ -782,7 +753,7 @@ const ProductList = () => {
               </Typography>
               <Box sx={{ px: 1, mb: 2 }}>
                 <Typography variant="caption" sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.72rem' }}>
-                  ₹{filters.priceRange[0]} – ₹{filters.priceRange[1]}
+                  {formatUsd(filters.priceRange[0])} – {formatUsd(filters.priceRange[1])}
                 </Typography>
                 <Slider
                   value={filters.priceRange}
@@ -961,7 +932,7 @@ const ProductList = () => {
                           fontSize: '1rem',
                         }}
                       >
-                        ₹{product.price}
+                        {formatUsd(product.price)}
                       </Typography>
                       <IconButton
                         size="small"

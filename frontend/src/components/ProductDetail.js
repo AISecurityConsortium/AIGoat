@@ -23,6 +23,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { formatUsd } from '../utils/money';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
@@ -394,7 +395,7 @@ const ProductDetail = () => {
           </Box>
           
           <Typography variant="h4" color="primary" gutterBottom>
-            ₹{product.price}
+            {formatUsd(product.price)}
           </Typography>
           
           {/* Stock Status */}
@@ -472,7 +473,7 @@ const ProductDetail = () => {
                 sx={{
                   flex: 1,
                   minWidth: 140,
-                  fontSize: '0.9rem',
+                  fontSize: '1rem',
                   py: 1.25,
                   bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
                   '&:hover': { bgcolor: (t) => t.palette.primary.dark },
@@ -489,7 +490,7 @@ const ProductDetail = () => {
                 sx={{
                   flex: 1,
                   minWidth: 140,
-                  fontSize: '0.9rem',
+                  fontSize: '1rem',
                   py: 1.25,
                   bgcolor: (t) => t.palette.custom?.brand?.accent ?? t.palette.secondary.main,
                   '&:hover': { bgcolor: (t) => t.palette.secondary.dark },
@@ -503,7 +504,7 @@ const ProductDetail = () => {
                 startIcon={<TipIcon />}
                 onClick={() => setTipDialogOpen(true)}
                 sx={{
-                  fontSize: '0.875rem',
+                  fontSize: '0.9375rem',
                   py: 1.25,
                   borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
                   color: (t) => t.palette.custom?.text?.accent ?? t.palette.primary.main,
@@ -559,7 +560,7 @@ const ProductDetail = () => {
                         fontWeight: 600,
                         textTransform: 'capitalize',
                         color: 'text.secondary',
-                        fontSize: '0.82rem',
+                        fontSize: '0.9375rem',
                       }}
                     >
                       {key.replace(/_/g, ' ')}
@@ -571,7 +572,7 @@ const ProductDetail = () => {
                         borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
                       }}
                     >
-                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.82rem' }}>
+                      <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.9375rem' }}>
                         {value}
                       </Typography>
                     </Box>
@@ -619,21 +620,21 @@ const ProductDetail = () => {
                   />
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="body2" sx={{
-                      fontWeight: 600, fontSize: '0.8rem', lineHeight: 1.3, mb: 0.5,
+                      fontWeight: 600, fontSize: '0.9375rem', lineHeight: 1.3, mb: 0.5,
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                       color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary,
                     }}>
                       {sp.name}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.5 }}>
-                      <Rating value={sp.average_rating} precision={0.5} readOnly size="small" sx={{ fontSize: '0.8rem' }} />
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
+                      <Rating value={sp.average_rating} precision={0.5} readOnly size="small" sx={{ fontSize: '0.9375rem' }} />
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
                         ({sp.review_count})
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main }}>
-                        ₹{sp.price}
+                      <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main }}>
+                        {formatUsd(sp.price)}
                       </Typography>
                       <IconButton
                         size="small"
@@ -645,7 +646,7 @@ const ProductDetail = () => {
                           '&:hover': { bgcolor: (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.2) },
                         }}
                       >
-                        <CartIcon sx={{ fontSize: '0.85rem' }} />
+                        <CartIcon sx={{ fontSize: '0.9375rem' }} />
                       </IconButton>
                     </Box>
                   </CardContent>

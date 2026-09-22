@@ -48,7 +48,7 @@ const PageHeader = ({ icon, title, subtitle, actions, maxSubtitleWidth = 560 }) 
               color: 'text.secondary',
               maxWidth: maxSubtitleWidth,
               lineHeight: 1.7,
-              fontSize: '0.9rem',
+              fontSize: '1rem',
             }}
           >
             {subtitle}

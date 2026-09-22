@@ -38,7 +38,7 @@ const DefenseLevelChip = ({ level, showFullLabel = false, color }) => {
         bgcolor: levelColor ? `${levelColor}18` : 'primary.main',
         color: levelColor ?? 'primary.main',
         fontWeight: 700,
-        fontSize: '0.68rem',
+        fontSize: '0.8125rem',
         minWidth: 32,
         border: levelColor ? `1px solid ${levelColor}30` : (t) => `1px solid ${t.palette.primary.main}4D`,
       }}

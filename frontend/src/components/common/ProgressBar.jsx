@@ -30,7 +30,7 @@ const ProgressBar = ({ value, total, label, showChip = true }) => {
                 : (t) => t.palette.custom?.overlay?.hover ?? alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.06),
               color: complete ? 'secondary.main' : 'text.secondary',
               fontWeight: 600,
-              fontSize: '0.75rem',
+              fontSize: '0.9375rem',
               border: complete
                 ? (t) => `1px solid ${alpha(t.palette.secondary.main, 0.3)}`
                 : (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,

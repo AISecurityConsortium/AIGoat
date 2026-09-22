@@ -17,12 +17,13 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { apiClient as axios } from '../config/api';
+import { formatUsd } from '../utils/money';
 
 const STATUS_CONFIG = {
-  processing: { label: 'Processing', icon: <ClockIcon sx={{ fontSize: '0.8rem' }} />, color: '#3b82f6' },
-  shipped:    { label: 'Shipped',    icon: <ShipIcon sx={{ fontSize: '0.8rem' }} />,   color: '#8b5cf6' },
-  delivered:  { label: 'Delivered',  icon: <CheckIcon sx={{ fontSize: '0.8rem' }} />,  color: '#22c55e' },
-  cancelled:  { label: 'Cancelled',  icon: <CancelIcon sx={{ fontSize: '0.8rem' }} />, color: '#ef4444' },
+  processing: { label: 'Processing', icon: <ClockIcon sx={{ fontSize: '0.9375rem' }} />, color: '#3b82f6' },
+  shipped:    { label: 'Shipped',    icon: <ShipIcon sx={{ fontSize: '0.9375rem' }} />,   color: '#8b5cf6' },
+  delivered:  { label: 'Delivered',  icon: <CheckIcon sx={{ fontSize: '0.9375rem' }} />,  color: '#22c55e' },
+  cancelled:  { label: 'Cancelled',  icon: <CancelIcon sx={{ fontSize: '0.9375rem' }} />, color: '#ef4444' },
 };
 
 const OrderHistory = () => {
@@ -53,7 +54,7 @@ const OrderHistory = () => {
     }
   };
 
-  const fmt = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  const fmt = formatUsd;
 
   const relDate = (dateStr) => {
     const d = new Date(dateStr);
@@ -104,13 +105,13 @@ const OrderHistory = () => {
         </Typography>
         {orders.length > 0 && (
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary' }}>
               {orders.length} order{orders.length !== 1 ? 's' : ''}
             </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary' }}>
               {totalItems} item{totalItems !== 1 ? 's' : ''}
             </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', fontWeight: 600 }}>
+            <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary', fontWeight: 600 }}>
               {fmt(totalSpent)} total
             </Typography>
           </Box>
@@ -133,7 +134,7 @@ const OrderHistory = () => {
           <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', color: 'text.primary', mb: 0.5 }}>
             No orders yet
           </Typography>
-          <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary', mb: 3 }}>
+          <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary', mb: 3 }}>
             When you place an order, it will appear here.
           </Typography>
           <Button
@@ -187,7 +188,7 @@ const OrderHistory = () => {
                     label={statusCfg.label}
                     size="small"
                     sx={{
-                      height: 22, fontSize: '0.62rem', fontWeight: 700,
+                      height: 22, fontSize: '0.8125rem', fontWeight: 700,
                       bgcolor: alpha(statusCfg.color, 0.1),
                       color: statusCfg.color,
                       border: `1px solid ${alpha(statusCfg.color, 0.2)}`,
@@ -216,14 +217,14 @@ const OrderHistory = () => {
                       bgcolor: (t) => t.palette.custom?.surface?.sunken ?? t.palette.action.hover,
                       border: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
                     }}>
-                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: 'text.secondary' }}>+{items.length - 4}</Typography>
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'text.secondary' }}>+{items.length - 4}</Typography>
                     </Box>
                   )}
                 </Box>
 
                 {/* Order ID + date */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: 'text.primary' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: 'text.primary' }}>
                     #{order.order_id}
                   </Typography>
                   <IconButton
@@ -231,10 +232,10 @@ const OrderHistory = () => {
                     onClick={(e) => { e.stopPropagation(); copyOrderId(order.order_id); }}
                     sx={{ width: 18, height: 18, color: copiedId === order.order_id ? 'success.main' : 'text.disabled' }}
                   >
-                    {copiedId === order.order_id ? <CheckIcon sx={{ fontSize: '0.6rem' }} /> : <CopyIcon sx={{ fontSize: '0.55rem' }} />}
+                    {copiedId === order.order_id ? <CheckIcon sx={{ fontSize: '0.8125rem' }} /> : <CopyIcon sx={{ fontSize: '0.8125rem' }} />}
                   </IconButton>
                 </Box>
-                <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', mb: 1.5 }}>
+                <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mb: 1.5 }}>
                   {relDate(order.created_at)} at {timeStr(order.created_at)} &middot; {items.length} item{items.length !== 1 ? 's' : ''}
                 </Typography>
 
@@ -259,14 +260,14 @@ const OrderHistory = () => {
                             sx={{ width: 48, height: 48, borderRadius: '8px' }}
                           />
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography sx={{ fontWeight: 600, fontSize: '0.82rem', color: 'text.primary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: 'text.primary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {item.product_name}
                             </Typography>
-                            <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                            <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                               Qty {item.quantity} &times; {fmt(item.price)}
                             </Typography>
                           </Box>
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: 'text.primary', flexShrink: 0 }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: 'text.primary', flexShrink: 0 }}>
                             {fmt(item.quantity * item.price)}
                           </Typography>
                         </Box>
@@ -285,20 +286,20 @@ const OrderHistory = () => {
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                            <ShipIcon sx={{ fontSize: '0.85rem', color: 'text.secondary' }} />
-                            <Typography sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <ShipIcon sx={{ fontSize: '0.9375rem', color: 'text.secondary' }} />
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               Shipping
                             </Typography>
                           </Box>
-                          <Typography sx={{ fontSize: '0.78rem', color: 'text.primary', fontWeight: 600, mb: 0.25 }}>
+                          <Typography sx={{ fontSize: '0.9375rem', color: 'text.primary', fontWeight: 600, mb: 0.25 }}>
                             {order.shipping_info.name}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', lineHeight: 1.5 }}>
+                          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.5 }}>
                             {order.shipping_info.address}{order.shipping_info.city ? `, ${order.shipping_info.city}` : ''}
                             {order.shipping_info.state ? `, ${order.shipping_info.state}` : ''} {order.shipping_info.zip_code || ''}
                           </Typography>
                           {order.shipping_info.phone && (
-                            <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', mt: 0.5 }}>
+                            <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mt: 0.5 }}>
                               {order.shipping_info.phone}
                             </Typography>
                           )}
@@ -315,15 +316,15 @@ const OrderHistory = () => {
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-                            <CardIcon sx={{ fontSize: '0.85rem', color: 'text.secondary' }} />
-                            <Typography sx={{ fontWeight: 700, fontSize: '0.72rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <CardIcon sx={{ fontSize: '0.9375rem', color: 'text.secondary' }} />
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               Payment
                             </Typography>
                           </Box>
-                          <Typography sx={{ fontSize: '0.78rem', color: 'text.primary', fontWeight: 600, mb: 0.25 }}>
+                          <Typography sx={{ fontSize: '0.9375rem', color: 'text.primary', fontWeight: 600, mb: 0.25 }}>
                             {order.payment.card_type || 'Card'} &bull;&bull;&bull;&bull; {order.payment.card_number?.slice(-4) || '••••'}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
+                          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                             Charged {fmt(order.payment.amount || 0)}
                           </Typography>
                           {order.applied_coupon && (
@@ -331,7 +332,7 @@ const OrderHistory = () => {
                               label={`${order.applied_coupon} applied`}
                               size="small"
                               sx={{
-                                mt: 0.75, height: 20, fontSize: '0.6rem', fontWeight: 700,
+                                mt: 0.75, height: 20, fontSize: '0.8125rem', fontWeight: 700,
                                 bgcolor: (t) => alpha(t.palette.success.main, 0.1),
                                 color: 'success.main',
                                 border: (t) => `1px solid ${alpha(t.palette.success.main, 0.2)}`,
@@ -339,7 +340,7 @@ const OrderHistory = () => {
                             />
                           )}
                           {order.discount_amount > 0 && (
-                            <Typography sx={{ fontSize: '0.7rem', color: 'success.main', fontWeight: 600, mt: 0.5 }}>
+                            <Typography sx={{ fontSize: '0.8125rem', color: 'success.main', fontWeight: 600, mt: 0.5 }}>
                               Saved {fmt(order.discount_amount)}
                             </Typography>
                           )}

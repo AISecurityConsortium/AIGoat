@@ -44,6 +44,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
+import { formatUsd } from '../utils/money';
 
 const AdminOrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -174,9 +175,7 @@ const AdminOrderManagement = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
-  };
+  const formatCurrency = formatUsd;
 
   if (loading) {
     return (

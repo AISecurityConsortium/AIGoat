@@ -10,3 +10,4 @@ export { default as ProgressBar } from './ProgressBar';
 export { default as RelatedMap } from './RelatedMap';
 export { default as LabPrimer } from './LabPrimer';
 export { default as TranscriptViewer } from './TranscriptViewer';
+export { default as StartHerePanel } from './StartHerePanel';

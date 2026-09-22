@@ -25,7 +25,7 @@ const RiskChip = ({ code, framework, size = 'small', onClick }) => {
         color: isDark ? '#c8d0db' : '#475569',
         border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
         fontWeight: 700,
-        fontSize: '0.7rem',
+        fontSize: '0.8125rem',
         minWidth: 56,
         height: 24,
         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',

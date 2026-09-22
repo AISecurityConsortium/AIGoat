@@ -45,7 +45,7 @@ const CodeBlock = ({ code, language, copyable = true, maxLines, onCopy }) => {
           component="pre"
           sx={{
             color: (t) => t.palette.custom?.text?.body ?? 'text.primary',
-            fontSize: '0.82rem',
+            fontSize: '0.9375rem',
             flex: 1,
             fontFamily: 'monospace',
             lineHeight: 1.5,
@@ -76,7 +76,7 @@ const CodeBlock = ({ code, language, copyable = true, maxLines, onCopy }) => {
         <Button
           size="small"
           onClick={() => setExpanded((v) => !v)}
-          sx={{ mt: 0.5, textTransform: 'none', fontSize: '0.75rem' }}
+          sx={{ mt: 0.5, textTransform: 'none', fontSize: '0.9375rem' }}
         >
           {expanded ? 'Show less' : 'Show more'}
         </Button>

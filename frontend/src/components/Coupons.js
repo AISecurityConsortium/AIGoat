@@ -34,6 +34,7 @@ import {
   Schedule as PendingIcon,
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
+import { formatUsd } from '../utils/money';
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([]);
@@ -407,7 +408,7 @@ const Coupons = () => {
                   </Box>
                   
                   <Typography variant="h4" color="primary" sx={{ fontWeight: 700, mb: 1 }}>
-                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `₹${coupon.discount_value}`}
+                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatUsd(coupon.discount_value)}
                   </Typography>
                   
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -443,7 +444,7 @@ const Coupons = () => {
                     />
                     {coupon.minimum_order_amount > 0 && (
                       <Chip
-                        label={`Min ₹${coupon.minimum_order_amount}`}
+                        label={`Min ${formatUsd(coupon.minimum_order_amount)}`}
                         variant="outlined"
                         size="small"
                       />
@@ -637,7 +638,7 @@ const Coupons = () => {
                 <Grid item xs={4}>
                   <Paper sx={{ p: 2, textAlign: 'center' }}>
                     <Typography variant="h4" color="success.main">
-                      ₹{usageStats.total_discount_given.toFixed(0)}
+                      {formatUsd(usageStats.total_discount_given)}
                     </Typography>
                     <Typography variant="body2">Total Discount Given</Typography>
                   </Paper>
@@ -660,7 +661,7 @@ const Coupons = () => {
                   <ListItem key={usage.id} divider>
                     <ListItemText
                       primary={`${usage.coupon_code} - ${usage.user_name}`}
-                      secondary={`Order: ${usage.order_id} | Discount: ₹${usage.discount_amount} | Date: ${new Date(usage.used_at).toLocaleDateString()}`}
+                      secondary={`Order: ${usage.order_id} | Discount: ${formatUsd(usage.discount_amount)} | Date: ${new Date(usage.used_at).toLocaleDateString()}`}
                     />
                   </ListItem>
                 ))}

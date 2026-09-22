@@ -26,7 +26,7 @@ const TranscriptViewer = ({ events = [], emptyDescription = 'No transcript event
     <Box>
       {events.map((event, idx) => (
         <Box key={`${event.seq ?? idx}-${event.ts ?? idx}`} sx={{ mb: 1.5 }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600 }}>
             {event.type || 'event'}
             {event.seq != null ? ` #${event.seq}` : ''}
           </Typography>

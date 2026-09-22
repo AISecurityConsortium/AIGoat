@@ -59,7 +59,7 @@ def _generate_default_knowledge(products: list[Product]) -> list[dict]:
         if not items:
             return "N/A"
         prices = [float(p.price) for p in items]
-        return f"INR {min(prices):.0f} - INR {max(prices):.0f}"
+        return f"USD {min(prices):.0f} - USD {max(prices):.0f}"
 
     def _names(items, limit=5):
         return ", ".join(p.name for p in items[:limit])
@@ -71,8 +71,8 @@ def _generate_default_knowledge(products: list[Product]) -> list[dict]:
             f"AI Goat Shop carries {len(products)} products across categories: "
             f"apparel ({len(apparel)} items), drinkware ({len(drinkware)} items), "
             f"accessories ({len(accessories)} items), and posters/prints ({len(posters)} items). "
-            f"Prices range from INR {min(float(p.price) for p in products):.0f} "
-            f"to INR {max(float(p.price) for p in products):.0f}."
+            f"Prices range from USD {min(float(p.price) for p in products):.0f} "
+            f"to USD {max(float(p.price) for p in products):.0f}."
         ),
         "category": "product_info",
         "product_id": products[0].id if products else 1,
@@ -147,7 +147,7 @@ def _generate_default_knowledge(products: list[Product]) -> list[dict]:
         "content": (
             "Standard shipping takes 5-7 business days within India. Express shipping (2-3 days) "
             "is available at an additional cost. International shipping is available to select countries "
-            "and takes 10-15 business days. Free shipping on orders above INR 2500. "
+            "and takes 10-15 business days. Free shipping on orders above USD 2500. "
             "Tracking information is sent via email once the order is dispatched."
         ),
         "category": "support",

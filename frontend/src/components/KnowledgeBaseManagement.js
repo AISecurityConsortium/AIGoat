@@ -319,7 +319,7 @@ const KnowledgeBaseManagement = () => {
           Knowledge Base
         </Typography>
       </Box>
-      <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem', mb: 3 }}>
+      <Typography sx={{ color: 'text.secondary', fontSize: '1rem', mb: 3 }}>
         RAG (Retrieval-Augmented Generation) attack surface for AI Goat Shop
       </Typography>
 
@@ -327,7 +327,7 @@ const KnowledgeBaseManagement = () => {
         <Box sx={{ mb: 3 }}>
           <SectionCard title={lab.name || labFromQuery} dense>
             {lab.objective && (
-              <Typography sx={{ fontSize: '0.88rem', mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+              <Typography sx={{ fontSize: '1rem', mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
                 {lab.objective}
               </Typography>
             )}
@@ -359,7 +359,7 @@ const KnowledgeBaseManagement = () => {
           </Typography>
           <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
             <strong>Why this matters for security:</strong> Because the chatbot treats retrieved KB content as authoritative, anyone who can write to the
-            knowledge base can influence what the chatbot tells users. This is the core attack surface for <strong>OWASP LLM08 (Vector & Retrieval Weaknesses)</strong>.
+            knowledge base can influence what the chatbot tells users. This is the core attack surface for <strong>OWASP LLM09 (Vector and Embedding Weaknesses)</strong>.
           </Typography>
         </CardContent>
       </Card>
@@ -370,7 +370,7 @@ const KnowledgeBaseManagement = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
             How to use this page
           </Typography>
-          <Box component="ol" sx={{ m: 0, pl: 2.5, '& li': { mb: 1, fontSize: '0.875rem', lineHeight: 1.6 } }}>
+          <Box component="ol" sx={{ m: 0, pl: 2.5, '& li': { mb: 1, fontSize: '0.9375rem', lineHeight: 1.6 } }}>
             <li><strong>Enable KB Integration</strong> using the toggle below. This tells Cracky AI to retrieve documents from this knowledge base when answering questions.</li>
             <li><strong>Add legitimate documents</strong> first to see RAG working normally. Add a real product description, then ask Cracky about that product.</li>
             <li><strong>Add a poisoned document</strong> using one of the examples below. Observe how the chatbot treats the malicious content as trusted information.</li>
@@ -398,24 +398,24 @@ const KnowledgeBaseManagement = () => {
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{ex.title}</Typography>
-                    <Chip label={ex.category} size="small" sx={{ fontSize: '0.65rem', height: 22 }} />
+                    <Chip label={ex.category} size="small" sx={{ fontSize: '0.8125rem', height: 22 }} />
                   </Box>
                   <Box sx={{ bgcolor: (t) => alpha(t.palette.common.black, t.palette.mode === 'dark' ? 0.3 : 0.05), borderRadius: 1, p: 1.5, mb: 1.5, border: '1px solid', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }}>
                     <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 0.5 }}>
                       Document Title: <span style={{ fontFamily: 'monospace' }}>{ex.sampleTitle}</span>
                     </Typography>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.78rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.9375rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                       {ex.sampleContent}
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                       <Tooltip title={copiedExample === ex.id ? 'Copied!' : 'Copy content'}>
                         <IconButton size="small" onClick={() => copyExample(ex.sampleContent, ex.id)} sx={{ color: copiedExample === ex.id ? 'success.main' : 'text.secondary' }}>
-                          <CopyIcon sx={{ fontSize: '0.85rem' }} />
+                          <CopyIcon sx={{ fontSize: '0.9375rem' }} />
                         </IconButton>
                       </Tooltip>
                     </Box>
                   </Box>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8rem', lineHeight: 1.5, fontStyle: 'italic' }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.5, fontStyle: 'italic' }}>
                     {ex.explanation}
                   </Typography>
                 </CardContent>
@@ -434,11 +434,31 @@ const KnowledgeBaseManagement = () => {
             <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
               Documents ({ragStats.db_documents ?? 0}) → Chunks ({ragStats.indexed_chunks ?? 0}) → Embeddings → Index ({ragStats.collection_count ?? 0})
             </Typography>
-            {ragStats.in_sync === false && (
-              <Alert severity="warning" sx={{ mb: 1 }}>
-                Index is stale. Sync to Vector DB
-              </Alert>
-            )}
+            {ragStats.in_sync === false && (() => {
+              const indexed = ragStats.indexed_chunks ?? 0;
+              const collectionCount = ragStats.collection_count ?? 0;
+              const neverSyncedEmpty = indexed === 0 && collectionCount === 0 && !ragStats.last_sync_at;
+              const staleAfterPriorSync = indexed > 0 || !!ragStats.last_sync_at;
+              if (neverSyncedEmpty) {
+                return (
+                  <Alert severity="info" sx={{ mb: 1 }}>
+                    The vector index starts empty. Click Sync to Vector DB, then poison a document.
+                  </Alert>
+                );
+              }
+              if (staleAfterPriorSync) {
+                return (
+                  <Alert severity="warning" sx={{ mb: 1 }}>
+                    Index is stale. Sync to Vector DB
+                  </Alert>
+                );
+              }
+              return (
+                <Alert severity="info" sx={{ mb: 1 }}>
+                  The vector index starts empty. Click Sync to Vector DB, then poison a document.
+                </Alert>
+              );
+            })()}
             <Typography variant="caption" color="text.secondary">
               {ragStats.in_sync ? 'Index matches the database' : 'Documents exist that are not in the vector store'}
               {ragStats.last_sync_at ? ` · last sync ${ragStats.last_sync_at}` : ''}
@@ -557,12 +577,12 @@ const KnowledgeBaseManagement = () => {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Chip
-                icon={<KBIcon sx={{ fontSize: '0.85rem !important' }} />}
+                icon={<KBIcon sx={{ fontSize: '0.9375rem !important' }} />}
                 label={kbIntegration ? 'Active' : 'Inactive'}
                 size="small"
                 sx={{
                   fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontSize: '0.8125rem',
                   height: 26,
                   bgcolor: (t) => kbIntegration
                     ? alpha(t.palette.success.main, 0.15)

@@ -381,6 +381,54 @@ async def seed_challenges(session: AsyncSession) -> None:
     await session.commit()
 
 
+async def sync_challenge_metadata(session: AsyncSession) -> tuple[int, int]:
+    """Update challenge rows from CHALLENGE_DEFINITIONS without wiping attempts.
+
+    A workshop image that already has ChallengeAttempt rows keeps those attempts;
+    metadata (including owasp_ref) is overwritten from CHALLENGE_DEFINITIONS.
+    Rows are matched by position (ordered by id). Missing trailing rows are
+    inserted when the DB has fewer challenges than definitions; attempts are
+    never deleted.
+    """
+    result = await session.execute(select(Challenge).order_by(Challenge.id.asc()))
+    existing = list(result.scalars().all())
+    updated = 0
+    inserted = 0
+    for i, defn in enumerate(CHALLENGE_DEFINITIONS):
+        fields = {
+            "title": defn["title"],
+            "description": defn["description"],
+            "difficulty": defn["difficulty"],
+            "points": defn["points"],
+            "owasp_ref": defn["owasp_ref"],
+            "evaluator_key": defn["evaluator_key"],
+            "hints": defn["hints"],
+            "target_route": defn.get("target_route"),
+        }
+        if i < len(existing):
+            row = existing[i]
+            for key, value in fields.items():
+                setattr(row, key, value)
+            updated += 1
+        else:
+            session.add(Challenge(**fields))
+            inserted += 1
+    await session.commit()
+    return updated, inserted
+
+
+async def run_sync_challenges() -> None:
+    import app.models as _models  # noqa: F401 — register models with Base.metadata
+    assert _models
+    await init_db()
+    async with async_session() as session:
+        updated, inserted = await sync_challenge_metadata(session)
+    print(
+        f"Challenge metadata synced: {updated} updated, {inserted} inserted "
+        f"(attempts preserved)."
+    )
+
+
 async def seed_knowledge_base(session: AsyncSession, products: list[Product]) -> None:
     existing = await session.execute(select(KnowledgeBaseEntry).limit(1))
     if existing.scalar_one_or_none():
@@ -418,4 +466,7 @@ async def run_seed() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(run_seed())
+    if len(sys.argv) > 1 and sys.argv[1] == "--sync-challenges":
+        asyncio.run(run_sync_challenges())
+    else:
+        asyncio.run(run_seed())

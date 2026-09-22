@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, Typography, IconButton } from '@mui/material';
-import { GitHub as GitHubIcon, Favorite as HeartIcon, OpenInNew as ExternalIcon } from '@mui/icons-material';
+import { GitHub as GitHubIcon, Favorite as HeartIcon } from '@mui/icons-material';
 import { ThemeToggleProvider, useThemeMode } from './contexts/ThemeContext';
 import Header from './components/Header';
 import ProductList from './components/ProductList';
@@ -65,10 +65,10 @@ const Footer = () => {
             sx={{ width: 28, height: 28, borderRadius: '8px', opacity: 0.85 }}
           />
           <Box>
-            <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
               AI Goat
             </Typography>
-            <Typography sx={{ fontSize: '0.62rem', color: text, lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: '0.875rem', color: text, lineHeight: 1.3 }}>
               AI Security Learning Platform
             </Typography>
           </Box>
@@ -76,11 +76,11 @@ const Footer = () => {
 
         {/* Center: made with love */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography sx={{ fontSize: '0.7rem', color: text }}>
+          <Typography sx={{ fontSize: '0.9375rem', color: text }}>
             Made with
           </Typography>
-          <HeartIcon sx={{ fontSize: '0.72rem', color: '#ef4444' }} />
-          <Typography sx={{ fontSize: '0.7rem', color: text }}>
+          <HeartIcon sx={{ fontSize: '0.95rem', color: '#ef4444' }} />
+          <Typography sx={{ fontSize: '0.9375rem', color: text }}>
             by{' '}
             <Box component="span" sx={{ fontWeight: 700, color: isDark ? '#c8d0db' : '#475569' }}>Farooq</Box>
             {' & '}
@@ -90,23 +90,6 @@ const Footer = () => {
 
         {/* Right: links */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            component="a"
-            href="https://www.aisecurityconsortium.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              display: 'flex', alignItems: 'center', gap: 0.4,
-              fontSize: '0.65rem', fontWeight: 600, color: text, textDecoration: 'none',
-              px: 1, py: 0.4, borderRadius: '6px',
-              border: `1px solid ${muted}`,
-              transition: 'all 0.15s',
-              '&:hover': { color: accent, borderColor: accent, bgcolor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.04)' },
-            }}
-          >
-            <ExternalIcon sx={{ fontSize: '0.65rem' }} />
-            AI Security Consortium
-          </Box>
           <IconButton
             component="a"
             href={`https://github.com/${GITHUB_REPO}`}
@@ -114,19 +97,19 @@ const Footer = () => {
             rel="noopener noreferrer"
             size="small"
             sx={{
-              width: 28, height: 28, color: text,
+              width: 34, height: 34, color: text,
               border: `1px solid ${muted}`, borderRadius: '6px',
               '&:hover': { color: accent, borderColor: accent, bgcolor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.04)' },
             }}
           >
-            <GitHubIcon sx={{ fontSize: '0.85rem' }} />
+            <GitHubIcon sx={{ fontSize: '1.05rem' }} />
           </IconButton>
         </Box>
       </Box>
 
       {/* Bottom bar */}
       <Box sx={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)'}`, py: 1.25, px: 3, textAlign: 'center' }}>
-        <Typography sx={{ fontSize: '0.58rem', color: '#FFFFFF', letterSpacing: '0.04em', fontWeight: 500 }}>
+        <Typography sx={{ fontSize: '0.875rem', color: '#FFFFFF', letterSpacing: '0.02em', fontWeight: 500 }}>
           &copy; {new Date().getFullYear()} AI Goat &mdash; Deliberately vulnerable. For educational purposes only.
         </Typography>
       </Box>

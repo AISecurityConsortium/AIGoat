@@ -214,7 +214,7 @@ const AgentConsole = ({ labId, lab, seedGoal }) => {
             {' · '}
             L{run.defense_level}
           </Typography>
-          <Typography sx={{ mb: 1, color: 'text.secondary', fontSize: '0.8rem' }}>
+          <Typography sx={{ mb: 1, color: 'text.secondary', fontSize: '0.9375rem' }}>
             The tool_call is the evidence. Model prose can lie.
           </Typography>
           {steps.length === 0 ? (
@@ -235,13 +235,13 @@ const AgentConsole = ({ labId, lab, seedGoal }) => {
                     )}
                   </Typography>
                   {step.thought ? (
-                    <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', mt: 0.5 }}>
+                    <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mt: 0.5 }}>
                       {step.thought}
                     </Typography>
                   ) : null}
                   <CodeBlock code={JSON.stringify(step.action_input || {}, null, 2)} language="json" />
                   {step.observation ? (
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', mt: 0.5 }}>
+                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.9375rem', mt: 0.5 }}>
                       {step.observation}
                     </Typography>
                   ) : null}
@@ -281,7 +281,7 @@ const AgentConsole = ({ labId, lab, seedGoal }) => {
             <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>Standing shop notes</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography sx={{ mb: 1.5, color: 'text.secondary', fontSize: '0.85rem' }}>
+            <Typography sx={{ mb: 1.5, color: 'text.secondary', fontSize: '0.9375rem' }}>
               Notes are per user and per lab. At L0 they are trusted policy.
             </Typography>
             <TextField
@@ -333,7 +333,7 @@ const AgentConsole = ({ labId, lab, seedGoal }) => {
                         <Chip size="small" label="dropped by memory.scan" color="success" sx={{ ml: 1 }} />
                       )}
                     </Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
+                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.9375rem', whiteSpace: 'pre-wrap' }}>
                       {note.value}
                     </Typography>
                   </Box>

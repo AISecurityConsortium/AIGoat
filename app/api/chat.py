@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +56,109 @@ DEFENSE_LEVELS = {
 
 def _get_defense_level(user: User) -> int:
     return user.defense_level
+
+
+def _client_left(task: asyncio.Task) -> bool:
+    return task.done() and not task.cancelled() and task.exception() is None
+
+
+async def _stream_model_tokens(
+    client,
+    request: Request,
+    prompt: str,
+    options: dict | None,
+    gone: dict | None = None,
+) -> AsyncIterator[str]:
+    """Yield model tokens, and close the model stream when the browser disconnects.
+
+    Ollama serves one generation at a time. Leaving the upstream stream open
+    queues the next turn until the abandoned reply finishes.
+    """
+    queue: asyncio.Queue[str | None] = asyncio.Queue()
+    client_gone = False
+    stop = asyncio.Event()
+    if gone is None:
+        gone = {}
+
+    async def pump() -> None:
+        try:
+            async for token in client.generate_stream(
+                prompt=prompt,
+                system="",
+                options=options,
+                stop=stop,
+            ):
+                await queue.put(token)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error("Stream generation error: %s", e)
+        finally:
+            queue.put_nowait(None)
+
+    async def watch_disconnect() -> None:
+        # StreamingResponse does not listen for disconnect on ASGI 2.4.
+        # Starlette's is_disconnected() poll cancels the read immediately and
+        # can miss the message, so block on the ASGI receive channel instead.
+        receive = getattr(request, "_receive", None)
+        if receive is None:
+            while not await request.is_disconnected():
+                await asyncio.sleep(0.05)
+            return
+        while True:
+            message = await receive()
+            if message.get("type") == "http.disconnect":
+                return
+
+    pump_task = asyncio.create_task(pump())
+    watch_task: asyncio.Task | None = asyncio.create_task(watch_disconnect())
+    try:
+        while True:
+            get_task = asyncio.create_task(queue.get())
+            waiting = {get_task}
+            if watch_task is not None:
+                waiting.add(watch_task)
+            done, _pending = await asyncio.wait(
+                waiting,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if watch_task is not None and watch_task in done and get_task not in done:
+                if _client_left(watch_task):
+                    client_gone = True
+                    get_task.cancel()
+                    await asyncio.gather(get_task, return_exceptions=True)
+                    break
+                logger.error("Disconnect watch failed: %s", watch_task.exception())
+                watch_task = None
+                token = await get_task
+            else:
+                token = get_task.result()
+            if token is None:
+                break
+            if watch_task is not None and _client_left(watch_task):
+                client_gone = True
+                break
+            yield token
+    finally:
+        if not pump_task.done():
+            # Starlette may cancel this generator on disconnect without our
+            # watcher seeing the message. Closing the socket is what frees
+            # Ollama; cancelling the read task does not.
+            stop.set()
+            pump_task.cancel()
+        pending = [pump_task]
+        if watch_task is not None:
+            if not watch_task.done():
+                watch_task.cancel()
+            pending.append(watch_task)
+        try:
+            await asyncio.shield(asyncio.gather(*pending, return_exceptions=True))
+        except asyncio.CancelledError:
+            raise
+
+    if client_gone:
+        gone["client"] = True
+        return
 
 
 async def _prepare_chat(
@@ -108,6 +213,7 @@ async def chat(
 @router.post("/api/chat/stream")
 async def chat_stream(
     body: ChatRequest,
+    request: Request,
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> StreamingResponse:
@@ -124,17 +230,20 @@ async def chat_stream(
 
     async def token_gen():
         collected: list[str] = []
-        try:
-            async for token in client.generate_stream(
-                prompt=prepared["prompt"],
-                system="",
-                options=prepared["options"],
-            ):
-                collected.append(token)
-                data = json.dumps({"token": token, "done": False})
-                yield f"data: {data}\n\n"
-        except Exception as e:
-            logger.error("Stream generation error: %s", e)
+        gone: dict = {}
+        async for token in _stream_model_tokens(
+            client,
+            request,
+            prepared["prompt"],
+            prepared["options"],
+            gone,
+        ):
+            collected.append(token)
+            data = json.dumps({"token": token, "done": False})
+            yield f"data: {data}\n\n"
+
+        if gone.get("client"):
+            return
 
         full_reply = "".join(collected)
         if not full_reply:

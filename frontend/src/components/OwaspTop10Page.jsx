@@ -25,13 +25,13 @@ const LLM_2025_TO_2026 = [
   { tag: 'Moved up', hue: 'warning', code: 'LLM07', title: 'Misinformation', note: 'was LLM09' },
   { tag: 'Renamed', hue: 'secondary', code: 'LLM08', title: 'Hidden Context Exposure', note: 'was LLM07 System Prompt Leakage' },
   { tag: 'Moved down', hue: 'info', code: 'LLM09', title: 'Vector and Embedding Weaknesses', note: 'was LLM08' },
-  { tag: 'Moved down', hue: 'info', code: 'LLM10', title: 'Insecure Output Handling', note: 'was LLM05' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM10', title: 'Improper Output Handling', note: 'was LLM05' },
 ];
 
 const outboundButtonSx = {
   textTransform: 'none',
   fontWeight: 600,
-  fontSize: '0.78rem',
+  fontSize: '0.9375rem',
   borderRadius: '8px',
   borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
   color: (t) => t.palette.custom?.text?.accent ?? 'primary.main',
@@ -100,10 +100,10 @@ const FrameworkTabs = ({ frameworks, selectedId, onSelect }) => {
               },
             }}
           >
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: selected ? 'primary.main' : 'text.primary', lineHeight: 1.2 }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: selected ? 'primary.main' : 'text.primary', lineHeight: 1.2 }}>
               {fw.version}
             </Typography>
-            <Typography sx={{ fontSize: '0.62rem', fontWeight: 500, mt: 0.25, lineHeight: 1.2, color: selected ? 'primary.main' : 'text.secondary' }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, mt: 0.25, lineHeight: 1.2, color: selected ? 'primary.main' : 'text.secondary' }}>
               {fw.name.replace('OWASP ', '').replace(' for LLM Applications', '')}
             </Typography>
           </Box>
@@ -152,7 +152,7 @@ const OwaspTop10Page = () => {
       <Button
         variant="outlined"
         size="small"
-        endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
+        endIcon={<ExternalIcon sx={{ fontSize: '0.9375rem !important' }} />}
         component="a"
         href={framework?.url || 'https://genai.owasp.org/llm-top-10/'}
         target="_blank"
@@ -164,7 +164,7 @@ const OwaspTop10Page = () => {
       <Button
         variant="outlined"
         size="small"
-        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.75rem !important' }} />}
+        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
         onClick={() => navigate('/threat-modeling')}
         sx={outboundButtonSx}
       >
@@ -173,7 +173,7 @@ const OwaspTop10Page = () => {
       <Button
         variant="outlined"
         size="small"
-        endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
+        endIcon={<ExternalIcon sx={{ fontSize: '0.9375rem !important' }} />}
         component="a"
         href="https://genai.owasp.org/"
         target="_blank"
@@ -223,7 +223,7 @@ const OwaspTop10Page = () => {
           <Box sx={{ mb: 3 }}>
             <SectionCard>
               <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', mb: 0.5 }}>{framework.name}</Typography>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 1.5 }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1.5 }}>
                 v{framework.version}
                 {framework.status ? ` · ${framework.status}` : ''}
                 {framework.publisher ? ` · ${framework.publisher}` : ''}
@@ -234,10 +234,10 @@ const OwaspTop10Page = () => {
                   {framework.maturity_note}
                 </Alert>
               )}
-              <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.78rem', lineHeight: 1.6 }}>
+              <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.9375rem', lineHeight: 1.6 }}>
                 {framework.attribution}
               </Typography>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.7rem', mt: 1 }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.8125rem', mt: 1 }}>
                 Source licence: {framework.source_license}
               </Typography>
             </SectionCard>
@@ -247,7 +247,7 @@ const OwaspTop10Page = () => {
         {selectedId === 'owasp-llm-2026' && (
           <Box sx={{ mb: 3 }}>
             <SectionCard title="What changed from 2025 to 2026">
-              <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.85rem', lineHeight: 1.6, mb: 2 }}>
+              <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.9375rem', lineHeight: 1.6, mb: 2 }}>
                 OWASP re-ranked the LLM Top 10 for 2026 as agents, tools, and retrieval moved from side channels
                 to the default architecture. AIGoat maps labs to the 2026 list only. Titles below are OWASP labels;
                 the notes are AIGoat teaching commentary, not the official explanations.
@@ -260,7 +260,7 @@ const OwaspTop10Page = () => {
                     sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}
                   >
                     <Chip size="small" label={row.tag} color={row.hue} />
-                    <Typography sx={{ fontSize: '0.85rem', color: 'text.primary' }}>
+                    <Typography sx={{ fontSize: '0.9375rem', color: 'text.primary' }}>
                       <Box component="span" sx={{ fontWeight: 700 }}>{row.code}</Box>
                       {' '}{row.title}
                       <Box component="span" sx={{ color: 'text.secondary' }}>
@@ -270,7 +270,7 @@ const OwaspTop10Page = () => {
                   </Box>
                 ))}
               </Box>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 2, lineHeight: 1.6 }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mt: 2, lineHeight: 1.6 }}>
                 Nothing was added or removed. Agent-specific risks moved to the Agentic Applications list.
               </Typography>
             </SectionCard>
@@ -322,16 +322,16 @@ const OwaspTop10Page = () => {
                 }}
               >
                 <RiskChip code={risk.code} framework={framework.name} />
-                <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.88rem', flex: 1 }}>
+                <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '1rem', flex: 1 }}>
                   {risk.title}
                 </Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.7rem', mr: 1 }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.8125rem', mr: 1 }}>
                   {(risk.lab_ids || []).length} labs · {(risk.challenge_ids || []).length} challenges
                 </Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
                 <Box sx={{ borderTop: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`, pt: 2 }}>
-                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', lineHeight: 1.7, mb: 2, fontSize: '0.85rem' }}>
+                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', lineHeight: 1.7, mb: 2, fontSize: '0.9375rem' }}>
                     {risk.summary}
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
@@ -351,7 +351,7 @@ const OwaspTop10Page = () => {
                     <Button
                       variant="outlined"
                       size="small"
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: '0.8rem !important' }} />}
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                       onClick={() => navigate(`/owasp-top-10/${framework.id}/${risk.code}`)}
                       sx={{
                         color: 'primary.light',
@@ -359,7 +359,7 @@ const OwaspTop10Page = () => {
                         borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
-                        fontSize: '0.78rem',
+                        fontSize: '0.9375rem',
                       }}
                     >
                       View risk
@@ -368,7 +368,7 @@ const OwaspTop10Page = () => {
                       <Button
                         variant="outlined"
                         size="small"
-                        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.8rem !important' }} />}
+                        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                         onClick={() => navigate(attacksRiskPath(framework.id, risk.code))}
                         sx={{
                           color: 'primary.light',
@@ -376,7 +376,7 @@ const OwaspTop10Page = () => {
                           borderRadius: '8px',
                           textTransform: 'none',
                           fontWeight: 600,
-                          fontSize: '0.78rem',
+                          fontSize: '0.9375rem',
                         }}
                       >
                         Try in Attack Lab
@@ -390,7 +390,7 @@ const OwaspTop10Page = () => {
         </Box>
 
         <Box sx={{ mt: 5, textAlign: 'center' }}>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 2, lineHeight: 1.6 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 2, lineHeight: 1.6 }}>
             Ready to test these vulnerabilities hands-on? Jump into the Attack Labs
             and practice exploiting real LLM weaknesses in a safe environment.
           </Typography>
@@ -403,7 +403,7 @@ const OwaspTop10Page = () => {
               bgcolor: (t) => t.palette.custom?.brand?.primary ?? 'primary.main',
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.9375rem',
               px: 3,
               py: 1,
               borderRadius: '10px',

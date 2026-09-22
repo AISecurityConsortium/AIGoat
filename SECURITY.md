@@ -16,9 +16,9 @@ The following are part of the educational design and should NOT be reported as s
 | **Sensitive Info Disclosure** (LLM02) | Admin credentials, customer data, and config paths leaked through the chatbot at Level 0 |
 | **Data Poisoning** (LLM04) | Injecting false information via reviews, tips, and Knowledge Base entries |
 | **Insecure Output** (LLM05) | XSS via chatbot output at Defense Level 0 (HTML/JS rendering) |
-| **System Prompt Leakage** (LLM07) | Extracting the chatbot's hidden system prompt and confidential config block |
-| **RAG Weaknesses** (LLM08) | Poisoning the Knowledge Base, manipulating vector retrieval, context flooding |
-| **Misinformation** (LLM09) | Inducing the chatbot to fabricate certifications, endorsements, or specifications |
+| **System Prompt Leakage** (LLM08 Hidden Context Exposure) | Extracting the chatbot's hidden system prompt and confidential config block |
+| **RAG Weaknesses** (LLM09 Vector and Embedding Weaknesses) | Poisoning the Knowledge Base, manipulating vector retrieval, context flooding |
+| **Misinformation** (LLM07) | Inducing the chatbot to fabricate certifications, endorsements, or specifications |
 | **Weak Credentials** | Default demo accounts (`admin/admin123`, `alice/password123`, etc.) |
 | **Context Override & Role Confusion** | Making the chatbot abandon its role or follow injected instructions |
 | **Guardrail Bypass** | Successfully bypassing Level 1 or Level 2 defenses with creative prompts |

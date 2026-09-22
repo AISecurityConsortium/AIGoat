@@ -107,7 +107,7 @@ const RetrievalTraceInspector = () => {
               label={`Budget ${trace.token_budget?.used ?? 0}/${trace.token_budget?.max ?? 0} · dropped ${trace.token_budget?.chunks_dropped ?? 0}`}
             />
           </Box>
-          <Table size="small" sx={{ '& td, & th': { fontSize: '0.75rem' } }}>
+          <Table size="small" sx={{ '& td, & th': { fontSize: '0.9375rem' } }}>
             <caption style={{ captionSide: 'top', textAlign: 'left', fontWeight: 600, paddingBottom: 8 }}>
               Ranked retrieval candidates
             </caption>

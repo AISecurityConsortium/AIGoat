@@ -84,7 +84,7 @@ def _build_order_context(orders: list, user: User) -> str:
 def _build_product_context(products: list) -> str:
     lines = []
     for p in products:
-        lines.append(f"- {p.name}: {p.description} | price INR {p.price}")
+        lines.append(f"- {p.name}: {p.description} | price USD {p.price}")
     return "\n".join(lines) if lines else ""
 
 

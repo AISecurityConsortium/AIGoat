@@ -93,15 +93,14 @@ NEEDS_SEED=$(python -c "
 import asyncio
 from app.core.database import async_session, init_db
 from sqlalchemy import select, func
-from app.models import User, Product, Challenge
+from app.models import User, Product
 
 async def check():
     await init_db()
     async with async_session() as db:
         users = (await db.execute(select(func.count(User.id)))).scalar() or 0
         products = (await db.execute(select(func.count(Product.id)))).scalar() or 0
-        challenges = (await db.execute(select(func.count(Challenge.id)))).scalar() or 0
-        if users < 5 or products < 20 or challenges < 9:
+        if users < 5 or products < 20:
             print('yes')
         else:
             print('no')
@@ -115,6 +114,12 @@ if [ "$NEEDS_SEED" = "yes" ]; then
 else
     ok "Database already has required data"
 fi
+
+# Refresh challenge title/description/owasp_ref/hints/etc. from CHALLENGE_DEFINITIONS
+# without wiping ChallengeAttempt (full seed deletes attempts; this sync does not).
+info "Syncing challenge metadata..."
+python -m scripts.seed --sync-challenges
+ok "Challenge metadata synced"
 
 # ── Step 4: Start backend ─────────────────────────────────────
 info "Starting uvicorn on port ${BACKEND_PORT:-8000}..."

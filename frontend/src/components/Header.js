@@ -54,6 +54,13 @@ import { useThemeMode } from '../contexts/ThemeContext';
 import { apiClient as axios } from '../config/api';
 import { useFeatureFlag } from '../hooks/useFeatureFlags';
 import DefenseLevelToggle from './DefenseLevelToggle';
+import { formatUsd } from '../utils/money';
+
+const SHOP_ROUTES = ['/home', '/cart', '/orders', '/coupons'];
+
+const isShopRoute = (pathname) => (
+  SHOP_ROUTES.includes(pathname) || pathname.startsWith('/product/')
+);
 
 const getNavLinkStyles = (theme) => {
   const { palette } = theme;
@@ -83,22 +90,65 @@ const getNavLinkStyles = (theme) => {
     },
   };
 };
-const StyledNavLink = ({ to, children, icon, onClick }) => {
+const NavMenu = ({ label, items }) => {
   const theme = useTheme();
   const styles = getNavLinkStyles(theme);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [anchor, setAnchor] = useState(null);
+  const active = items.some((item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`));
+
   return (
-    <Box
-      component={NavLink}
-      to={to}
-      onClick={onClick}
-      sx={{
-        ...styles.base,
-        '&.active': styles.active,
-      }}
-    >
-      {icon && <Box sx={{ display: 'flex', fontSize: '1.1rem', opacity: 0.85 }}>{icon}</Box>}
-      {children}
-    </Box>
+    <>
+      <Box
+        component="button"
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={Boolean(anchor)}
+        onClick={(event) => setAnchor(event.currentTarget)}
+        sx={{
+          ...styles.base,
+          ...(active ? styles.active : {}),
+          border: 'none',
+          bgcolor: active ? styles.active.bgcolor : 'transparent',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        {label}
+        <ExpandMoreIcon sx={{ fontSize: '1rem' }} />
+      </Box>
+      <Menu
+        anchorEl={anchor}
+        open={Boolean(anchor)}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{
+          sx: {
+            bgcolor: (t) => t.palette.custom?.surface?.elevated ?? t.palette.background.paper,
+            border: (t) => `1px solid ${t.palette.custom?.border?.medium ?? t.palette.divider}`,
+            borderRadius: '12px',
+            mt: 1,
+            minWidth: 200,
+          },
+        }}
+      >
+        {items.map((item) => (
+          <MenuItem
+            key={item.to}
+            onClick={() => {
+              setAnchor(null);
+              navigate(item.to);
+            }}
+            selected={location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)}
+          >
+            {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
+            <ListItemText>{item.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 };
 
@@ -112,13 +162,15 @@ const Header = () => {
   const { searchBarQuery, setSearchBarQuery } = useSearch();
   const { mode, toggleTheme } = useThemeMode();
   const theme = useTheme();
-  const isMobile = useMediaQuery('(max-width:900px)');
+  const isMobile = useMediaQuery('(max-width:1279px)');
+  const isWide = useMediaQuery('(min-width:1440px)');
 
   const { enabled: ragSystemEnabled, loading: ragLoading } = useFeatureFlag('rag_system');
 
   const isLoggedIn = !!localStorage.getItem('token');
   const isAdmin = userProfile?.username === 'admin';
   const isShopper = isAdmin; // Admin is the "shopper-only" role; everyone else sees workshop features
+  const showShopTools = isLoggedIn && (isShopper || isShopRoute(location.pathname));
 
   const fetchCartCount = useCallback(async () => {
     try {
@@ -202,7 +254,7 @@ const Header = () => {
         <Box
           component="img"
           src="/media/images/logo.jpg"
-          alt="AI Goat Shop Logo"
+          alt="AI Goat"
           sx={{ height: 34, width: 'auto', mr: 1.5, borderRadius: '6px' }}
         />
         <Typography
@@ -214,11 +266,10 @@ const Header = () => {
             fontSize: '1rem',
           }}
         >
-          AI Goat Shop
+          AI Goat
         </Typography>
       </Box>
 
-      {/* Public nav links */}
       <Box
         component="span"
         onClick={() => {
@@ -233,28 +284,33 @@ const Header = () => {
       >
         Shop
       </Box>
-      <StyledNavLink to="/owasp-top-10">OWASP Top 10</StyledNavLink>
-      <StyledNavLink to="/threat-modeling">Threat Modeling</StyledNavLink>
-
-      {/* Logged-in, non-shopper nav links */}
       {isLoggedIn && !isShopper && (
-        <>
-          <StyledNavLink to="/attacks">Attack Labs</StyledNavLink>
-          <StyledNavLink to="/challenges">Challenges</StyledNavLink>
-          <StyledNavLink to="/agent">Agent</StyledNavLink>
-          <StyledNavLink to="/mcp">MCP</StyledNavLink>
-          {ragSystemEnabled && !ragLoading && (
-            <StyledNavLink to="/knowledge-base">Knowledge Base</StyledNavLink>
-          )}
-        </>
+        <NavMenu
+          label="Learn"
+          items={[
+            { to: '/attacks', label: 'Attack Labs', icon: <BugReportIcon fontSize="small" /> },
+            { to: '/challenges', label: 'Challenges', icon: <ChallengesIcon fontSize="small" /> },
+            { to: '/agent', label: 'Agent', icon: <AIIcon fontSize="small" /> },
+            { to: '/mcp', label: 'MCP', icon: <SecurityIcon fontSize="small" /> },
+            ...(ragSystemEnabled && !ragLoading
+              ? [{ to: '/knowledge-base', label: 'Knowledge Base', icon: <LibraryBooksIcon fontSize="small" /> }]
+              : []),
+          ]}
+        />
       )}
+      <NavMenu
+        label="Reference"
+        items={[
+          { to: '/owasp-top-10', label: 'OWASP Top 10', icon: <SecurityIcon fontSize="small" /> },
+          { to: '/threat-modeling', label: 'Threat Modeling', icon: <ThreatModelIcon fontSize="small" /> },
+        ]}
+      />
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
 
-      {/* Search bar (logged in only) */}
-      {isLoggedIn && (
-        <Box sx={{ maxWidth: 280, minWidth: 160, mr: 1 }}>
+      {showShopTools && (
+        <Box sx={{ width: 200, mr: 1, flexShrink: 1 }}>
           <TextField
             fullWidth
             size="small"
@@ -262,6 +318,7 @@ const Header = () => {
             value={searchBarQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             sx={{
+              maxWidth: 200,
               '& .MuiOutlinedInput-root': {
                 color: 'text.primary',
                 backgroundColor: (t) => t.palette.custom?.overlay?.hover ?? t.palette.divider,
@@ -295,45 +352,30 @@ const Header = () => {
         </Box>
       )}
 
-      {/* Defense Level Toggle (logged-in non-shopper) */}
-      {isLoggedIn && !isShopper && <DefenseLevelToggle />}
+      {isLoggedIn && !isShopper && <DefenseLevelToggle compact={!isWide} />}
 
-      {/* Theme Toggle */}
-      <IconButton
-        onClick={toggleTheme}
-        sx={{
-          color: (t) => (t.palette.mode === 'dark' ? t.palette.warning.main : t.palette.primary.main),
-          ml: 0.5,
-          '&:hover': { bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(t.palette.warning.main, 0.1) : t.palette.custom?.overlay?.active) },
-        }}
-        title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {mode === 'dark' ? <LightModeIcon sx={{ fontSize: '1.1rem' }} /> : <DarkModeIcon sx={{ fontSize: '1.1rem' }} />}
-      </IconButton>
+      {!isLoggedIn && (
+        <IconButton
+          onClick={toggleTheme}
+          sx={{
+            color: (t) => (t.palette.mode === 'dark' ? t.palette.warning.main : t.palette.primary.main),
+            ml: 0.5,
+            '&:hover': { bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(t.palette.warning.main, 0.1) : t.palette.custom?.overlay?.active) },
+          }}
+          title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {mode === 'dark' ? <LightModeIcon sx={{ fontSize: '1.1rem' }} /> : <DarkModeIcon sx={{ fontSize: '1.1rem' }} />}
+        </IconButton>
+      )}
 
-      {/* Right-side actions */}
       {isLoggedIn ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
-          {/* Wallet */}
-          {userProfile?.wallet_balance !== undefined && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.5, borderRadius: '8px', bgcolor: (t) => alpha(t.palette.warning.main, 0.1), border: (t) => `1px solid ${alpha(t.palette.warning.main, 0.2)}` }}>
-              <WalletIcon sx={{ fontSize: '0.9rem', color: 'warning.main' }} />
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'warning.main' }}>
-                ₹{parseFloat(userProfile.wallet_balance).toFixed(0)}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Cart */}
-          <IconButton onClick={() => navigate('/cart')} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary', bgcolor: (t) => t.palette.custom?.overlay?.hover ?? t.palette.divider } }}>
-            <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}>
-              <CartIcon sx={{ fontSize: '1.2rem' }} />
-            </Badge>
-          </IconButton>
-
-          {/* Orders */}
-          {!isAdmin && (
-            <StyledNavLink to="/orders" icon={<ShoppingBagIcon sx={{ fontSize: '1rem' }} />}>Orders</StyledNavLink>
+          {showShopTools && (
+            <IconButton aria-label="Cart" onClick={() => navigate('/cart')} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary', bgcolor: (t) => t.palette.custom?.overlay?.hover ?? t.palette.divider } }}>
+              <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}>
+                <CartIcon sx={{ fontSize: '1.2rem' }} />
+              </Badge>
+            </IconButton>
           )}
 
           {/* Profile dropdown */}
@@ -383,7 +425,24 @@ const Header = () => {
               <Typography sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
                 @{userProfile?.username}
               </Typography>
+              {userProfile?.wallet_balance !== undefined && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.75 }}>
+                  <WalletIcon sx={{ fontSize: '0.9rem', color: 'warning.main' }} />
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'warning.main' }}>
+                    {formatUsd(userProfile.wallet_balance)}
+                  </Typography>
+                </Box>
+              )}
             </Box>
+
+            <MenuItem onClick={toggleTheme} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
+              <ListItemIcon>
+                {mode === 'dark'
+                  ? <LightModeIcon sx={{ color: 'text.secondary' }} fontSize="small" />
+                  : <DarkModeIcon sx={{ color: 'text.secondary' }} fontSize="small" />}
+              </ListItemIcon>
+              <ListItemText>{mode === 'dark' ? 'Light mode' : 'Dark mode'}</ListItemText>
+            </MenuItem>
 
             <MenuItem onClick={() => handleProfileMenuClick('/profile')} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
               <ListItemIcon><AccountCircleIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
@@ -526,15 +585,14 @@ const Header = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: (t) => `1px solid ${t.palette.divider}` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box component="img" src="/media/images/logo.jpg" alt="AI Goat" sx={{ height: 30, borderRadius: '6px' }} />
-          <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>AI Goat Shop</Typography>
+          <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>AI Goat</Typography>
         </Box>
         <IconButton onClick={() => setMobileOpen(false)} sx={{ color: 'text.secondary' }}>
           <CloseIcon />
         </IconButton>
       </Box>
 
-      {/* Search (logged in) */}
-      {isLoggedIn && (
+      {showShopTools && (
         <Box sx={{ px: 2, py: 2 }}>
           <TextField
             fullWidth
@@ -558,16 +616,31 @@ const Header = () => {
         </Box>
       )}
 
-      {/* Defense Level (logged-in non-shopper) */}
       {isLoggedIn && !isShopper && (
         <Box sx={{ px: 3, pb: 2 }}>
-          <DefenseLevelToggle />
+          <DefenseLevelToggle compact />
         </Box>
       )}
 
       <Divider sx={{ borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
 
-      {/* Shop section */}
+      {isLoggedIn && !isShopper && (
+        <MobileSection title="Learn">
+          <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
+          <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
+          <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
+          <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
+          {ragSystemEnabled && !ragLoading && (
+            <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="Knowledge Base" />
+          )}
+        </MobileSection>
+      )}
+
+      <MobileSection title="Reference">
+        <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
+        <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
+      </MobileSection>
+
       <MobileSection title="Shop">
         <MobileNavItem to="/home" icon={<GiftCardIcon />} label="Shop" />
         {isLoggedIn && (
@@ -583,36 +656,8 @@ const Header = () => {
         )}
       </MobileSection>
 
-      {/* Workshop section (logged-in non-shopper) */}
-      {isLoggedIn && !isShopper && (
-        <MobileSection title="Workshop">
-          <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
-          <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
-          <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
-          <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
-          <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
-          <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
-        </MobileSection>
-      )}
-
-      {/* Not logged in: still show the public learning pages */}
-      {!isLoggedIn && (
-        <MobileSection title="Learn">
-          <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
-          <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
-        </MobileSection>
-      )}
-
-      {/* Tools section */}
-      {isLoggedIn && ragSystemEnabled && !ragLoading && (
-        <MobileSection title="Tools">
-          <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="Knowledge Base" />
-        </MobileSection>
-      )}
-
-      {/* Admin section */}
       {isAdmin && (
-        <MobileSection title="Admin">
+        <MobileSection title="Account">
           <MobileNavItem to="/admin-dashboard" icon={<AdminIcon />} label="Dashboard" />
           <MobileNavItem to="/user-management" icon={<PeopleIcon />} label="User Management" />
           <MobileNavItem to="/order-management" icon={<OrderManagementIcon />} label="Order Management" />
@@ -662,23 +707,52 @@ const Header = () => {
 
   // ─── Mobile Toolbar ────────────────────────────────────────────────
   const renderMobileToolbar = () => (
-    <Toolbar sx={{ minHeight: '56px !important', justifyContent: 'space-between' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/home')}>
-        <Box component="img" src="/media/images/logo.jpg" alt="AI Goat Shop" sx={{ height: 30, width: 'auto', mr: 1, borderRadius: '6px' }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>
-          AI Goat Shop
+    <Toolbar sx={{ minHeight: '56px !important', justifyContent: 'space-between', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', minWidth: 0 }} onClick={() => navigate('/home')}>
+        <Box component="img" src="/media/images/logo.jpg" alt="AI Goat" sx={{ height: 30, width: 'auto', mr: 1, borderRadius: '6px', flexShrink: 0 }} />
+        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          AI Goat
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        {isLoggedIn && (
-          <IconButton onClick={() => navigate('/cart')} sx={{ color: 'text.secondary' }}>
-            <Badge badgeContent={cartCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 14, height: 14 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+        {isLoggedIn && !isShopper && (
+          <>
+            <DefenseLevelToggle compact />
+            <IconButton
+              onClick={() => navigate('/attacks')}
+              aria-label="Attack Labs"
+              sx={{ color: 'text.secondary' }}
+              title="Attack Labs"
+            >
+              <BugReportIcon sx={{ fontSize: '1.2rem' }} />
+            </IconButton>
+          </>
+        )}
+        {showShopTools && (
+          <IconButton
+            onClick={() => navigate('/cart')}
+            aria-label="Cart"
+            sx={{ color: 'text.secondary', mr: 0.25 }}
+          >
+            <Badge
+              badgeContent={cartCount}
+              color="error"
+              sx={{
+                '& .MuiBadge-badge': {
+                  fontSize: '0.6rem',
+                  minWidth: 14,
+                  height: 14,
+                  top: 4,
+                  right: 4,
+                },
+              }}
+            >
               <CartIcon sx={{ fontSize: '1.2rem' }} />
             </Badge>
           </IconButton>
         )}
-        <IconButton onClick={() => setMobileOpen(true)} sx={{ color: 'text.primary' }}>
+        <IconButton onClick={() => setMobileOpen(true)} sx={{ color: 'text.primary' }} aria-label="Open menu">
           <MenuIcon />
         </IconButton>
       </Box>

@@ -48,7 +48,7 @@ const RiskDetailPage = () => {
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="md">
-        <Breadcrumbs sx={{ mb: 2, fontSize: '0.8rem' }}>
+        <Breadcrumbs sx={{ mb: 2, fontSize: '0.9375rem' }}>
           <Link component={RouterLink} to="/owasp-top-10" underline="hover" color="inherit">
             Frameworks
           </Link>
@@ -60,7 +60,7 @@ const RiskDetailPage = () => {
           >
             {frameworkId}
           </Link>
-          <Typography color="text.primary" sx={{ fontSize: '0.8rem' }}>{risk.code}</Typography>
+          <Typography color="text.primary" sx={{ fontSize: '0.9375rem' }}>{risk.code}</Typography>
         </Breadcrumbs>
 
         <PageHeader
@@ -71,7 +71,7 @@ const RiskDetailPage = () => {
               <Button
                 variant="outlined"
                 size="small"
-                endIcon={<ArrowForwardIcon sx={{ fontSize: '0.8rem !important' }} />}
+                endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                 onClick={() => navigate(attacksRiskPath(frameworkId, risk.code))}
                 sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
               >
@@ -83,7 +83,7 @@ const RiskDetailPage = () => {
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <SectionCard title="Description">
-            <Typography sx={{ fontSize: '0.88rem', lineHeight: 1.7, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+            <Typography sx={{ fontSize: '1rem', lineHeight: 1.7, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
               {risk.description}
             </Typography>
           </SectionCard>
@@ -106,7 +106,7 @@ const RiskDetailPage = () => {
 
           <SectionCard title="Labs that teach this">
             {(risk.labs || []).length === 0 ? (
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>
                 No labs mapped to this risk yet.
               </Typography>
             ) : (
@@ -127,7 +127,7 @@ const RiskDetailPage = () => {
 
           <SectionCard title="Challenges">
             {(risk.challenges || []).length === 0 ? (
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>
                 No challenges mapped to this risk yet.
               </Typography>
             ) : (
@@ -148,7 +148,7 @@ const RiskDetailPage = () => {
 
           <SectionCard title="Related risks">
             {(risk.related_risks || []).length === 0 ? (
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>
                 No cross-framework relatives recorded.
               </Typography>
             ) : (
@@ -163,8 +163,8 @@ const RiskDetailPage = () => {
                         onClick={() => navigate(`/owasp-top-10/${relFw}/${relCode}`)}
                       />
                       <Box>
-                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>{related.title}</Typography>
-                        <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
+                        <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600 }}>{related.title}</Typography>
+                        <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
                           {related.framework_name}
                         </Typography>
                       </Box>

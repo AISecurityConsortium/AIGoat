@@ -38,10 +38,10 @@ const LabPrimer = ({ lab, onTryPayload }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-      {lab.objective && (
-        <SectionCard title="What you are doing" dense>
-          <Typography sx={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
-            {lab.objective}
+      {lab.description && (
+        <SectionCard title="Goal" dense>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
+            {lab.description}
           </Typography>
         </SectionCard>
       )}
@@ -58,7 +58,7 @@ const LabPrimer = ({ lab, onTryPayload }) => {
       )}
 
       {payloads.length > 0 && (
-        <SectionCard title="Try this" dense>
+        <SectionCard title="Show me" dense>
           <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
             {payloads.map((text) => (
               <Box component="li" key={text} sx={{ mb: 1 }}>
@@ -71,7 +71,7 @@ const LabPrimer = ({ lab, onTryPayload }) => {
                       display: 'block',
                       whiteSpace: 'pre-wrap',
                       fontWeight: 500,
-                      fontSize: '0.85rem',
+                      fontSize: '0.9375rem',
                       lineHeight: 1.5,
                       px: 0,
                     }}
@@ -79,7 +79,7 @@ const LabPrimer = ({ lab, onTryPayload }) => {
                     {text}
                   </Button>
                 ) : (
-                  <Typography sx={{ fontSize: '0.85rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {text}
                   </Typography>
                 )}
@@ -87,10 +87,18 @@ const LabPrimer = ({ lab, onTryPayload }) => {
             ))}
           </Box>
           {canFill && (
-            <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>
               Click a step to put it in the Goal box.
             </Typography>
           )}
+        </SectionCard>
+      )}
+
+      {lab.objective && (
+        <SectionCard title="How this attack works" dense>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+            {lab.objective}
+          </Typography>
         </SectionCard>
       )}
 
@@ -99,14 +107,14 @@ const LabPrimer = ({ lab, onTryPayload }) => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
             <DefenseLevelChip level={defenseLevel} />
           </Box>
-          <Typography sx={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
+          <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
             {expected}
           </Typography>
         </SectionCard>
       )}
 
       {watch && (
-        <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary', lineHeight: 1.5 }}>
+        <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary', lineHeight: 1.5 }}>
           {watch}
         </Typography>
       )}
@@ -117,6 +125,7 @@ const LabPrimer = ({ lab, onTryPayload }) => {
 LabPrimer.propTypes = {
   lab: PropTypes.shape({
     surface: PropTypes.string,
+    description: PropTypes.string,
     objective: PropTypes.string,
     example_payloads: PropTypes.arrayOf(PropTypes.string),
     expected_by_level: PropTypes.objectOf(PropTypes.string),

@@ -27,6 +27,11 @@ class McpServerSpec:
     def command_display(self) -> list[str]:
         return [sys.executable, str(self.script_path)]
 
+    def command_display_redacted(self) -> list[str]:
+        """Learner-facing argv: literal interpreter name and project-relative script."""
+        rel = self.script_path.resolve().relative_to(_project_root()).as_posix()
+        return ["python", rel]
+
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
@@ -118,6 +123,7 @@ def servers_public() -> list[dict[str, object]]:
             "trust_tier": spec.trust_tier,
             "protocol_era": spec.protocol_era,
             "command_display": spec.command_display(),
+            "command_display_redacted": spec.command_display_redacted(),
         }
         for spec in load_mcp_registry()
     ]

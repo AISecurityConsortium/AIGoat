@@ -40,7 +40,7 @@ const ApprovalDialog = ({ open, tool, arguments: args, onApprove, onDeny }) => {
             p: 1.5,
             borderRadius: 1,
             bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'grey.100',
-            fontSize: '0.8rem',
+            fontSize: '0.9375rem',
             overflow: 'auto',
           }}
         >

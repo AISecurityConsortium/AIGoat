@@ -20,6 +20,8 @@ const MONO_FONT = [
 
 const commonTypography = {
   fontFamily: BODY_FONT,
+  fontSize: 16,
+  htmlFontSize: 16,
   h1: {
     fontSize: '2.5rem',
     fontWeight: 800,
@@ -51,40 +53,40 @@ const commonTypography = {
     letterSpacing: '-0.01em',
   },
   h6: {
-    fontSize: '1.05rem',
+    fontSize: '1.125rem',
     fontWeight: 600,
     lineHeight: 1.4,
     letterSpacing: '-0.005em',
   },
   body1: {
-    fontSize: '0.9rem',
+    fontSize: '1rem',
     lineHeight: 1.65,
     letterSpacing: '-0.005em',
     fontWeight: 400,
   },
   body2: {
-    fontSize: '0.82rem',
+    fontSize: '0.9375rem',
     lineHeight: 1.6,
     letterSpacing: '-0.003em',
     fontWeight: 400,
   },
   button: {
-    fontSize: '0.82rem',
+    fontSize: '0.9375rem',
     fontWeight: 600,
     textTransform: 'none',
     letterSpacing: '0.01em',
   },
   caption: {
-    fontSize: '0.72rem',
-    lineHeight: 1.4,
+    fontSize: '0.8125rem',
+    lineHeight: 1.45,
     letterSpacing: '0.02em',
     fontWeight: 500,
   },
   overline: {
     fontFamily: MONO_FONT,
-    fontSize: '0.68rem',
+    fontSize: '0.75rem',
     fontWeight: 600,
-    letterSpacing: '0.1em',
+    letterSpacing: '0.08em',
     textTransform: 'uppercase',
   },
 };
@@ -130,7 +132,7 @@ const darkTheme = createTheme({
         root: {
           borderRadius: 8,
           padding: '10px 22px',
-          fontSize: '0.82rem',
+          fontSize: '0.9375rem',
           fontWeight: 600,
           textTransform: 'none',
           boxShadow: 'none',
@@ -151,6 +153,7 @@ const darkTheme = createTheme({
           color: '#e2e8f0',
           '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
         },
+        sizeSmall: { fontSize: '0.9375rem', padding: '6px 14px' },
       },
     },
     MuiCard: {
@@ -214,9 +217,15 @@ const darkTheme = createTheme({
     MuiTab: { styleOverrides: { root: { color: '#94a3b8', '&.Mui-selected': { color: '#e2e8f0' } } } },
     MuiTableCell: {
       styleOverrides: {
-        root: { borderBottom: '1px solid rgba(255, 255, 255, 0.06)', color: '#e2e8f0' },
+        root: { borderBottom: '1px solid rgba(255, 255, 255, 0.06)', color: '#e2e8f0', fontSize: '0.9375rem' },
         head: { color: '#94a3b8', fontWeight: 600 },
       },
+    },
+    MuiInputBase: {
+      styleOverrides: { root: { fontSize: '1rem' }, input: { fontSize: '1rem' } },
+    },
+    MuiFormHelperText: {
+      styleOverrides: { root: { fontSize: '0.8125rem' } },
     },
     MuiDivider: { styleOverrides: { root: { borderColor: 'rgba(255, 255, 255, 0.08)' } } },
     MuiAlert: { styleOverrides: { root: { borderRadius: 10 } } },
@@ -258,7 +267,7 @@ const lightTheme = createTheme({
         root: {
           borderRadius: 8,
           padding: '10px 22px',
-          fontSize: '0.82rem',
+          fontSize: '0.9375rem',
           fontWeight: 600,
           textTransform: 'none',
           boxShadow: 'none',
@@ -279,6 +288,7 @@ const lightTheme = createTheme({
           color: '#1e293b',
           '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
         },
+        sizeSmall: { fontSize: '0.9375rem', padding: '6px 14px' },
       },
     },
     MuiCard: {
@@ -339,9 +349,15 @@ const lightTheme = createTheme({
     MuiTab: { styleOverrides: { root: { color: '#64748b', '&.Mui-selected': { color: '#1e293b' } } } },
     MuiTableCell: {
       styleOverrides: {
-        root: { borderBottom: '1px solid rgba(0, 0, 0, 0.06)' },
+        root: { borderBottom: '1px solid rgba(0, 0, 0, 0.06)', fontSize: '0.9375rem' },
         head: { fontWeight: 600 },
       },
+    },
+    MuiInputBase: {
+      styleOverrides: { root: { fontSize: '1rem' }, input: { fontSize: '1rem' } },
+    },
+    MuiFormHelperText: {
+      styleOverrides: { root: { fontSize: '0.8125rem' } },
     },
     MuiDivider: { styleOverrides: { root: { borderColor: 'rgba(0, 0, 0, 0.08)' } } },
     MuiAlert: { styleOverrides: { root: { borderRadius: 10 } } },

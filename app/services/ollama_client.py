@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
+import socket
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +16,66 @@ if TYPE_CHECKING:
     from app.services.llm_protocol import LLMClient
 
 logger = logging.getLogger(__name__)
+
+
+def _next_stream(stream: Any) -> Any:
+    nxt = getattr(stream, "_stream", None)
+    if nxt is not None:
+        return nxt
+    core = getattr(stream, "_httpcore_stream", None)
+    return getattr(core, "_stream", None) if core is not None else None
+
+
+def _ollama_socket(resp: Any):
+    """Walk httpx's stream wrappers to the socket Ollama is writing to."""
+    stream = getattr(resp, "stream", None)
+    seen: set[int] = set()
+    while stream is not None and id(stream) not in seen:
+        seen.add(id(stream))
+        core = getattr(stream, "_httpcore_stream", None)
+        connection = getattr(core, "_connection", None)
+        if connection is None:
+            inner = getattr(core, "_stream", None)
+            connection = getattr(inner, "_connection", None)
+        network = getattr(connection, "_network_stream", None)
+        if network is not None and hasattr(network, "get_extra_info"):
+            sock = network.get_extra_info("socket")
+            if sock is not None:
+                return sock
+        stream = _next_stream(stream)
+    return None
+
+
+def _close_socket(sock: Any) -> None:
+    # uvloop's transport socket rejects shutdown(); closing the fd still
+    # drops the TCP connection and unblocks the pending read.
+    fileno = -1
+    try:
+        fileno = sock.fileno()
+    except Exception:
+        return
+    try:
+        sock.shutdown(socket.SHUT_RDWR)
+    except Exception:
+        pass
+    if fileno != -1:
+        try:
+            os.close(fileno)
+        except OSError:
+            pass
+
+
+async def _force_close_stream(resp: Any) -> None:
+    """Close the Ollama socket even if a read is in progress.
+
+    ``Response.aclose()`` takes the HTTP connection lock that the reader is
+    holding, so it waits until the next token instead of stopping the model.
+    """
+    sock = _ollama_socket(resp)
+    if sock is None:
+        logger.warning("Could not reach the Ollama socket to stop generation")
+        return
+    _close_socket(sock)
 
 _ollama_client: "OllamaClient | None" = None
 
@@ -82,6 +145,7 @@ class OllamaClient:
         prompt: str,
         system: str = "",
         options: dict[str, Any] | None = None,
+        stop: asyncio.Event | None = None,
     ) -> AsyncIterator[str]:
         payload: dict[str, Any] = {
             "model": self.model,
@@ -92,22 +156,35 @@ class OllamaClient:
             payload["system"] = system
         if options:
             payload["options"] = options
+        stopper: asyncio.Task | None = None
         try:
             async with self._http.stream(
                 "POST", "/api/generate", json=payload
             ) as resp:
                 resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if not line:
-                        continue
-                    chunk = json.loads(line)
-                    token = chunk.get("response", "")
-                    if token:
-                        yield token
-                    if chunk.get("done"):
-                        return
+                if stop is not None:
+
+                    async def _close_on_stop() -> None:
+                        await stop.wait()
+                        await _force_close_stream(resp)
+
+                    stopper = asyncio.create_task(_close_on_stop())
+                try:
+                    async for line in resp.aiter_lines():
+                        if not line:
+                            continue
+                        chunk = json.loads(line)
+                        token = chunk.get("response", "")
+                        if token:
+                            yield token
+                        if chunk.get("done"):
+                            return
+                finally:
+                    if stopper is not None and not stopper.done():
+                        stopper.cancel()
         except Exception as e:
-            logger.error("Ollama stream failed: %s", e)
+            if stop is None or not stop.is_set():
+                logger.error("Ollama stream failed: %s", e)
 
     def _chat_payload(
         self,

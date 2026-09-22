@@ -144,7 +144,7 @@ const STRIDE_ROWS = [
 const outboundButtonSx = {
   textTransform: 'none',
   fontWeight: 600,
-  fontSize: '0.78rem',
+  fontSize: '0.9375rem',
   borderRadius: '8px',
 };
 
@@ -211,7 +211,7 @@ const ThreatModelingPage = () => {
             <Button
               variant="outlined"
               size="small"
-              endIcon={<ArrowForwardIcon sx={{ fontSize: '0.75rem !important' }} />}
+              endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
               component={RouterLink}
               to="/owasp-top-10"
               sx={outboundButtonSx}
@@ -272,8 +272,8 @@ const ThreatModelingPage = () => {
                 },
               }}
             >
-              <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', mb: 0.5 }}>{model.name}</Typography>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.78rem', lineHeight: 1.45 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', mb: 0.5 }}>{model.name}</Typography>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.45 }}>
                 {model.question}
               </Typography>
             </Box>
@@ -314,14 +314,14 @@ const ThreatModelingPage = () => {
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>{model.name}</Typography>
-                  <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>{model.question}</Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{model.name}</Typography>
+                  <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>{model.question}</Typography>
                 </Box>
               </AccordionSummary>
               <AccordionDetails>
                 <Box component="ul" sx={{ m: 0, pl: 2.5, mb: 2 }}>
                   {model.bullets.map((bullet) => (
-                    <Typography key={bullet} component="li" sx={{ fontSize: '0.85rem', lineHeight: 1.6, mb: 0.75 }}>
+                    <Typography key={bullet} component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
                       {bullet}
                     </Typography>
                   ))}
@@ -334,7 +334,7 @@ const ThreatModelingPage = () => {
                 <Button
                   variant="outlined"
                   size="small"
-                  endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
+                  endIcon={<ExternalIcon sx={{ fontSize: '0.9375rem !important' }} />}
                   href={model.official}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -356,7 +356,7 @@ const ThreatModelingPage = () => {
         </Box>
 
         <SectionCard title="Worked example: refund someone else's order">
-          <Typography sx={{ fontSize: '0.88rem', lineHeight: 1.65, mb: 2, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.65, mb: 2, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
             Refund someone else's order without standing at the till. One sentence. The model is four surfaces, a handful of tools, and a defense toggle.
           </Typography>
           <Diagram
@@ -366,8 +366,8 @@ const ThreatModelingPage = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, my: 3 }}>
             {EXAMPLE_STEPS.map((step) => (
               <Box key={step.title}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.88rem', mb: 0.5 }}>{step.title}</Typography>
-                <Typography sx={{ fontSize: '0.85rem', lineHeight: 1.6, mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '1rem', mb: 0.5 }}>{step.title}</Typography>
+                <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
                   {step.body}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
@@ -383,14 +383,14 @@ const ThreatModelingPage = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2, mb: 3 }}>
             {STRIDE_ROWS.map((row) => (
               <Box key={row.threat} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', minWidth: 130 }}>{row.threat}</Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{row.where}</Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', minWidth: 130 }}>{row.threat}</Typography>
+                <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary' }}>{row.where}</Typography>
                 <LabChip lab={{ id: row.lab, label: row.lab }} />
               </Box>
             ))}
           </Box>
           <SectionCard tone="info" title="What a real shop would ship" dense>
-            <Typography sx={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
               Pin tools, scan memory, require approval on refunds and exports, and never render model HTML.
             </Typography>
           </SectionCard>

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Box, Chip, Tooltip, Typography } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { attacksSurfacePath, labPath, riskPath } from '../../utils/taxonomyLinks';
+import { useLabs } from '../../hooks/useLabs';
 import RiskChip from './RiskChip';
 
 /**
@@ -16,9 +17,11 @@ import RiskChip from './RiskChip';
 
 const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense = false }) => {
   const navigate = useNavigate();
+  const { labs: catalog } = useLabs();
+  const names = Object.fromEntries((catalog || []).map((lab) => [lab.id, lab.name]));
   const labItems = labs.length
     ? labs
-    : relatedLabIds.map((id) => ({ id }));
+    : relatedLabIds.map((id) => ({ id, name: names[id] }));
   const hasRisks = risks.length > 0;
   const hasLabs = labItems.length > 0;
   const hasSurface = Boolean(surface);
@@ -28,7 +31,7 @@ const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense 
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: dense ? 0 : 2 }}>
       {hasRisks && (
         <Box>
-          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
             Risks
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
@@ -52,7 +55,7 @@ const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense 
       )}
       {hasSurface && (
         <Box>
-          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
             Surface
           </Typography>
           <Chip
@@ -67,30 +70,29 @@ const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense 
       )}
       {hasLabs && (
         <Box>
-          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
             Related labs
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
             {labItems.map((item) => {
               const id = typeof item === 'string' ? item : item.id;
-              const name = typeof item === 'string' ? undefined : item.name;
+              const name = (typeof item === 'string' ? names[item] : item.name) || names[id];
               const chip = (
                 <Chip
                   component={RouterLink}
                   to={labPath(item)}
-                  label={id}
+                  label={name || id}
                   size="small"
                   clickable
                   onClick={(event) => event.stopPropagation()}
                   sx={{
                     textDecoration: 'none',
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                     fontWeight: 600,
                   }}
                 />
               );
               return (
-                <Tooltip key={id} title={name && name !== id ? name : id}>
+                <Tooltip key={id} title={id}>
                   <Box component="span">{chip}</Box>
                 </Tooltip>
               );

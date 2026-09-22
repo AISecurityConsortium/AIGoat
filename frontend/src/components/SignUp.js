@@ -153,6 +153,8 @@ const SignUp = () => {
                     onChange={handleInputChange('first_name')}
                     required
                     autoFocus
+                    InputLabelProps={{ shrink: true }}
+                    placeholder="Alex"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -162,6 +164,8 @@ const SignUp = () => {
                     value={formData.last_name}
                     onChange={handleInputChange('last_name')}
                     required
+                    InputLabelProps={{ shrink: true }}
+                    placeholder="Rivera"
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -171,6 +175,8 @@ const SignUp = () => {
                     value={formData.username}
                     onChange={handleInputChange('username')}
                     required
+                    InputLabelProps={{ shrink: true }}
+                    placeholder="alexrivera"
                     helperText="Choose a unique username for login"
                   />
                 </Grid>
@@ -182,6 +188,8 @@ const SignUp = () => {
                     value={formData.email}
                     onChange={handleInputChange('email')}
                     required
+                    InputLabelProps={{ shrink: true }}
+                    placeholder="alex@example.com"
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -192,6 +200,7 @@ const SignUp = () => {
                     value={formData.password}
                     onChange={handleInputChange('password')}
                     required
+                    InputLabelProps={{ shrink: true }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">

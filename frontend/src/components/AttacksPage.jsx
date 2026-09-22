@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container, Typography, Box, Card, CardContent, Collapse, IconButton,
-  useMediaQuery, Alert, Skeleton, Button,
+  Alert, Skeleton, Button,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -47,6 +47,43 @@ const LEGACY_ID_MAP = {
 };
 
 const LEVEL_ORDER = ['0', '1', '2'];
+
+const FRAMEWORK_TONES = {
+  'owasp-llm-2026': {
+    main: '#4f46e5',
+    ink: '#3730a3',
+    inkDark: '#c7d2fe',
+    soft: 'rgba(79,70,229,0.08)',
+    softDark: 'rgba(99,102,241,0.16)',
+  },
+  'owasp-mcp-2025': {
+    main: '#0f766e',
+    ink: '#115e59',
+    inkDark: '#99f6e4',
+    soft: 'rgba(15,118,110,0.04)',
+    softDark: 'rgba(45,212,191,0.07)',
+  },
+  'owasp-agentic-2026': {
+    main: '#e0a15a',
+    ink: '#9a6230',
+    inkDark: '#f6d2a8',
+    onMain: '#4a2c12',
+    soft: 'rgba(224,161,90,0.045)',
+    softDark: 'rgba(224,161,90,0.07)',
+  },
+};
+
+const toneOf = (frameworkId) => FRAMEWORK_TONES[frameworkId] || FRAMEWORK_TONES['owasp-llm-2026'];
+
+const toneColors = (tone, theme) => {
+  const dark = theme.palette.mode === 'dark';
+  return {
+    main: tone.main,
+    ink: dark ? tone.inkDark : tone.ink,
+    soft: dark ? tone.softDark : tone.soft,
+    onMain: tone.onMain || '#ffffff',
+  };
+};
 
 const LAB_ID_RENAME_2026 = {
   'llm08-6': 'llm01-5',
@@ -101,8 +138,6 @@ const AttacksPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const isMobile = useMediaQuery('(max-width:900px)');
-
   const frameworkFilter = searchParams.get('framework') || DEFAULT_FRAMEWORK;
   const surfaceFilter = searchParams.get('surface') || '';
   const difficultyFilter = searchParams.get('difficulty') || '';
@@ -225,6 +260,7 @@ const AttacksPage = () => {
   const cat = categories[activeTab] || { code: '', title: '', labs: [] };
   const catLabs = cat.labs || [];
   const completedCount = catLabs.filter((l) => completed[l.id]).length;
+  const activeTone = toneOf(frameworkFilter);
 
   const selectFramework = (id) => {
     const next = new URLSearchParams(searchParams);
@@ -287,11 +323,12 @@ const AttacksPage = () => {
           role="tablist"
           aria-label="Security frameworks"
           onKeyDown={handlePillKeyDown}
-          sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.25, mb: 1.5 }}
         >
           {orderedFrameworks.map((fw) => {
             const selected = fw.id === frameworkFilter;
             const count = pillCounts[fw.id] || 0;
+            const tone = toneOf(fw.id);
             return (
               <Box
                 key={fw.id}
@@ -306,33 +343,43 @@ const AttacksPage = () => {
                   }
                 }}
                 sx={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  px: 2, py: 1.1, borderRadius: '999px', cursor: 'pointer',
-                  minWidth: isMobile ? 96 : 120, textAlign: 'center',
-                  transition: 'all 0.15s',
-                  bgcolor: selected
-                    ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
-                    : (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
-                  border: selected
-                    ? (t) => `1.5px solid ${t.palette.primary.main}`
-                    : (t) => `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                  px: 1.75,
+                  py: 1.35,
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  overflow: 'hidden',
+                  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                  bgcolor: (t) => {
+                    const colors = toneColors(tone, t);
+                    return selected ? colors.main : (t.palette.custom?.surface?.elevated ?? t.palette.background.paper);
+                  },
+                  color: (t) => (selected ? toneColors(tone, t).onMain : toneColors(tone, t).ink),
+                  border: (t) => (selected
+                    ? '1px solid transparent'
+                    : `1px solid ${alpha(tone.main, t.palette.mode === 'dark' ? 0.32 : 0.2)}`),
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: (t) => {
+                      const colors = toneColors(tone, t);
+                      return selected ? colors.main : colors.soft;
+                    },
+                  },
                   '&:focus-visible': {
                     outline: '2px solid',
-                    outlineColor: 'primary.main',
+                    outlineColor: tone.main,
                     outlineOffset: 2,
                   },
                 }}
               >
-                <Typography sx={{
-                  fontSize: '0.75rem', fontWeight: 700,
-                  color: selected ? 'primary.main' : 'text.primary', lineHeight: 1.2,
-                }}>
+                <Typography sx={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.2, color: 'inherit' }}>
                   {shortFrameworkLabel(fw)}
                 </Typography>
-                <Typography sx={{
-                  fontSize: '0.6rem', fontWeight: 600, mt: 0.2,
-                  color: selected ? 'primary.main' : 'text.secondary',
-                }}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'inherit', opacity: selected ? 0.92 : 0.75, whiteSpace: 'nowrap' }}>
                   {count} {count === 1 ? 'lab' : 'labs'}
                 </Typography>
               </Box>
@@ -344,11 +391,26 @@ const AttacksPage = () => {
           role="tablist"
           aria-label="Lab categories"
           onKeyDown={handleTabKeyDown}
-          sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 4 }}
+          sx={(t) => {
+            const colors = toneColors(activeTone, t);
+            return {
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+              gap: 1,
+              mb: 3,
+              p: 1.25,
+              borderRadius: '14px',
+              bgcolor: colors.soft,
+              border: `1px solid ${alpha(activeTone.main, t.palette.mode === 'dark' ? 0.22 : 0.12)}`,
+            };
+          }}
         >
           {categories.map((c, i) => {
             const hasLabs = c.labs.length > 0;
             const isActive = activeTab === i;
+            const labLabel = hasLabs
+              ? `${c.labs.length} ${c.labs.length === 1 ? 'lab' : 'labs'}`
+              : 'Soon';
             return (
               <Box
                 key={c.code}
@@ -363,52 +425,68 @@ const AttacksPage = () => {
                   }
                 }}
                 sx={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  px: 2, py: 1.25, borderRadius: '10px', cursor: 'pointer',
-                  minWidth: isMobile ? 80 : 110, textAlign: 'center',
-                  transition: 'all 0.15s',
-                  bgcolor: isActive
-                    ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
-                    : hasLabs
-                      ? (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03)
-                      : (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.015),
-                  border: isActive
-                    ? (t) => `1.5px solid ${t.palette.primary.main}`
-                    : hasLabs
-                      ? (t) => `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`
-                      : (t) => `1.5px dashed ${t.palette.custom?.border?.medium ?? t.palette.divider}`,
+                  display: 'grid',
+                  gridTemplateColumns: '72px minmax(0, 1fr) auto',
+                  alignItems: 'center',
+                  gap: 1.25,
+                  px: 1.15,
+                  py: 1,
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s, border-color 0.15s',
+                  bgcolor: (t) => {
+                    if (isActive) return t.palette.mode === 'dark' ? alpha(activeTone.main, 0.28) : '#ffffff';
+                    if (!hasLabs) return 'transparent';
+                    return t.palette.mode === 'dark' ? alpha('#000', 0.18) : alpha('#fff', 0.72);
+                  },
+                  border: (t) => {
+                    if (isActive) return `1.5px solid ${activeTone.main}`;
+                    if (!hasLabs) return `1.5px dashed ${alpha(activeTone.main, 0.35)}`;
+                    return `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`;
+                  },
+                  opacity: hasLabs ? 1 : 0.72,
+                  '&:hover': {
+                    bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(activeTone.main, 0.22) : '#ffffff'),
+                  },
                   '&:focus-visible': {
                     outline: '2px solid',
-                    outlineColor: 'primary.main',
+                    outlineColor: activeTone.main,
                     outlineOffset: 2,
                   },
                 }}
               >
                 <Typography sx={{
-                  fontSize: '0.7rem', fontWeight: 700,
-                  color: isActive ? 'primary.main' : hasLabs ? 'text.primary' : (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
-                  lineHeight: 1.2,
+                  fontSize: '0.8125rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.02em',
+                  textAlign: 'center',
+                  lineHeight: 1,
+                  px: 0.75,
+                  py: 0.7,
+                  borderRadius: '7px',
+                  color: isActive ? '#fff' : (t) => toneColors(activeTone, t).ink,
+                  bgcolor: isActive ? activeTone.main : (t) => alpha(activeTone.main, t.palette.mode === 'dark' ? 0.28 : 0.14),
                 }}>
                   {c.code}
                 </Typography>
                 <Typography sx={{
-                  fontSize: '0.62rem', fontWeight: 500, mt: 0.25, lineHeight: 1.2,
-                  color: isActive ? 'primary.main' : hasLabs ? 'text.secondary' : (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
-                  opacity: hasLabs ? 1 : 0.7,
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                  color: 'text.primary',
                 }}>
                   {c.title}
                 </Typography>
                 <Typography sx={{
-                  fontSize: '0.55rem', fontWeight: 600, mt: 0.35,
-                  color: isActive ? 'primary.main' : hasLabs ? 'text.secondary' : (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  color: (t) => (hasLabs ? toneColors(activeTone, t).ink : (t.palette.custom?.text?.muted ?? 'text.secondary')),
+                  fontStyle: hasLabs ? 'normal' : 'italic',
                 }}>
-                  {c.labs.length} {c.labs.length === 1 ? 'lab' : 'labs'}
+                  {labLabel}
                 </Typography>
-                {!hasLabs && (
-                  <Typography sx={{ fontSize: '0.5rem', color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', mt: 0.25, fontStyle: 'italic' }}>
-                    Soon
-                  </Typography>
-                )}
               </Box>
             );
           })}
@@ -416,7 +494,7 @@ const AttacksPage = () => {
 
         {cat.code && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 700 }}>
+            <Typography variant="h5" sx={{ color: (t) => toneColors(activeTone, t).ink, fontWeight: 700 }}>
               {cat.code}: {cat.title}
             </Typography>
           </Box>
@@ -474,7 +552,7 @@ const AttacksPage = () => {
                       </IconButton>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.95rem' }}>{lab.name}</Typography>
+                          <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '1rem' }}>{lab.name}</Typography>
                           <RiskChip
                             code={lab.owasp}
                             onClick={(event) => {
@@ -487,7 +565,7 @@ const AttacksPage = () => {
                           />
                           {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
                         </Box>
-                        <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
+                        <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.9375rem', mt: 0.25 }}>
                           {lab.description}
                         </Typography>
                       </Box>
@@ -496,26 +574,40 @@ const AttacksPage = () => {
 
                     <Collapse in={isExpanded}>
                       <Box sx={{ px: 3, pb: 3, borderTop: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}` }}>
-                        {lab.objective && (
+                        {lab.description && (
                           <Box sx={{ mt: 2, mb: 3 }}>
                             <SectionCard tone="info" dense title="Goal">
-                              <Typography sx={{ color: (t) => t.palette.custom?.text?.accent ?? 'primary.light', fontSize: '0.88rem' }}>
+                              <Typography sx={{ color: (t) => t.palette.custom?.text?.accent ?? 'primary.light', fontSize: '1rem' }}>
+                                {lab.description}
+                              </Typography>
+                            </SectionCard>
+                          </Box>
+                        )}
+
+                        {(lab.example_payloads || []).length > 0 && (
+                          <>
+                            <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.9375rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
+                              Show me
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+                              {(lab.example_payloads || []).map((prompt, i) => (
+                                <CodeBlock key={`${lab.id}-p${i}`} code={prompt} language="prompt" />
+                              ))}
+                            </Box>
+                          </>
+                        )}
+
+                        {lab.objective && (
+                          <Box sx={{ mb: 3 }}>
+                            <SectionCard dense title="How this attack works">
+                              <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
                                 {lab.objective}
                               </Typography>
                             </SectionCard>
-                        </Box>
+                          </Box>
                         )}
 
-                        <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
-                          Example Prompts
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-                          {(lab.example_payloads || []).map((prompt, i) => (
-                            <CodeBlock key={`${lab.id}-p${i}`} code={prompt} language="prompt" />
-                          ))}
-                        </Box>
-
-                        <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
+                        <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.9375rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
                           Expected Results by Defense Level
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -525,10 +617,10 @@ const AttacksPage = () => {
                               <Box key={level} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                                 <DefenseLevelChip level={Number(level)} />
                                 <Box>
-                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.7rem', fontWeight: 600 }}>
+                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.8125rem', fontWeight: 600 }}>
                                     {DEFENSE_LEVEL_LABELS[Number(level)]}
                                   </Typography>
-                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.9375rem', lineHeight: 1.5 }}>
                                     {text}
                                   </Typography>
                                 </Box>
