@@ -24,9 +24,9 @@ from app.core.security import hash_password
 from app.models import User
 from app.schemas.chat import ChatRequest
 
-# From config/labs.yml: llm01-1 pins level 0, llm03-1 leaves the override null.
+# From config/labs/*.yml: llm01-1 pins level 0, llm04-1 leaves the override null.
 PINNED_LAB = "llm01-1"
-UNPINNED_LAB = "llm03-1"
+UNPINNED_LAB = "llm04-1"
 
 
 async def _make_user(db: AsyncSession, username: str, level: int) -> User:

@@ -23,7 +23,6 @@ ALLOWED_SURFACES = frozenset(
         "rag.kb",
         "agent.runner",
         "mcp.client",
-        "skill.runtime",
         "api.raw",
     }
 )
@@ -39,6 +38,7 @@ class LabDefinition(BaseModel):
     challenge_evaluator: str | None = None
     description: str = ""
     risks: tuple[str, ...] = ()
+    primary_risk: str = ""
     surface: str = "chat.cracky"
     surface_config: dict[str, Any] = Field(default_factory=dict)
     difficulty: str = "beginner"
@@ -60,10 +60,13 @@ class LabDefinition(BaseModel):
         owasp = data.get("owasp") or ""
         risks = tuple(data.get("risks") or ())
         if not risks and owasp:
-            data["risks"] = [f"owasp-llm-2025:{owasp}"]
+            data["risks"] = [f"owasp-llm-2026:{owasp}"]
+            risks = tuple(data["risks"])
         elif risks and not owasp:
             first = risks[0]
             data["owasp"] = first.split(":", 1)[-1] if ":" in str(first) else first
+        if not (data.get("primary_risk") or "") and risks:
+            data["primary_risk"] = risks[0]
 
         surface_config = dict(data.get("surface_config") or {})
         top_override = data.get("defense_override")

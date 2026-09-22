@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.memory import clear_lab_memory
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundError
@@ -37,8 +38,6 @@ def _related_lab_ids(lab_id: str) -> list[str]:
             if other == lab_id or other in seen:
                 continue
             seen.append(other)
-            if len(seen) >= 5:
-                return seen
     return seen
 
 
@@ -55,6 +54,7 @@ def _lab_out(lab, sess: LabSession | None) -> LabOut:
         completed_at=sess.completed_at.isoformat() if sess and sess.completed_at else None,
         reset_count=sess.reset_count if sess else 0,
         risks=list(lab.risks),
+        primary_risk=lab.primary_risk or (lab.risks[0] if lab.risks else ""),
         surface=lab.surface,
         difficulty=lab.difficulty,
         objective=lab.objective,
@@ -74,6 +74,7 @@ def _matches_filters(
     *,
     framework: str | None,
     risk: str | None,
+    primary_only: bool,
     surface: str | None,
     difficulty: str | None,
     status: str | None,
@@ -84,8 +85,13 @@ def _matches_filters(
         return False
     if difficulty and lab.difficulty != difficulty:
         return False
-    if risk and risk not in lab.risks:
-        return False
+    primary = lab.primary_risk or (lab.risks[0] if lab.risks else "")
+    if risk:
+        if primary_only:
+            if primary != risk:
+                return False
+        elif risk not in lab.risks:
+            return False
     if framework and not any(r.startswith(f"{framework}:") for r in lab.risks):
         return False
     return True
@@ -97,6 +103,7 @@ async def list_labs(
     db: Annotated[AsyncSession, Depends(get_db)],
     framework: str | None = Query(default=None),
     risk: str | None = Query(default=None),
+    primary_only: bool = Query(default=False),
     surface: str | None = Query(default=None),
     difficulty: str | None = Query(default=None),
     status: str | None = Query(default=None),
@@ -112,6 +119,7 @@ async def list_labs(
             lab,
             framework=framework,
             risk=risk,
+            primary_only=primary_only,
             surface=surface,
             difficulty=difficulty,
             status=status,
@@ -216,11 +224,13 @@ async def reset_lab(
     )
     sess = result.scalar_one_or_none()
     if sess:
+        await clear_lab_memory(db, user.id, lab_id)
         sess.completed_at = None
         sess.reset_count = (sess.reset_count or 0) + 1
         await db.commit()
         await db.refresh(sess)
         return {"reset": True, "lab_id": lab_id, "reset_count": sess.reset_count}
+    await clear_lab_memory(db, user.id, lab_id)
     new_sess = LabSession(
         user_id=user.id,
         lab_id=lab_id,

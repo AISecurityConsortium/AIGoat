@@ -18,7 +18,7 @@ class DefenseStage(str, Enum):
     OUTPUT = "output"
     TOOL_CALL = "tool_call"
     RETRIEVAL = "retrieval"
-    SKILL_LOAD = "skill_load"
+    MEMORY = "memory"
 
 
 class ControlAction(str, Enum):

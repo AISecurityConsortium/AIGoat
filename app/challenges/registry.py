@@ -17,21 +17,11 @@ from app.challenges.evaluators.mcp_protocol import (
     McpRugPullEvaluator,
     McpShadowEvaluator,
 )
+from app.challenges.evaluators.memory_poison import MemoryPoisonEvaluator
 from app.challenges.evaluators.multistep_injection import MultiStepInjectionEvaluator
 from app.challenges.evaluators.prompt_injection import PromptInjectionEvaluator
 from app.challenges.evaluators.rag_manipulation import RAGManipulationEvaluator
 from app.challenges.evaluators.role_confusion import RoleConfusionEvaluator
-from app.challenges.evaluators.skill_runtime import (
-    SkillConverterEvaluator,
-    SkillDocRugEvaluator,
-    SkillHashDriftEvaluator,
-    SkillImpersonationEvaluator,
-    SkillInstructionEvaluator,
-    SkillIsolationEvaluator,
-    SkillPrivilegeEvaluator,
-    SkillScanBypassEvaluator,
-    SkillTyposquatEvaluator,
-)
 from app.challenges.evaluators.state_exploitation import StateExploitationEvaluator
 from app.challenges.evaluators.supply_chain import SupplyChainEvaluator
 from app.challenges.evaluators.system_prompt_extraction import SystemPromptExtractionEvaluator
@@ -51,19 +41,11 @@ _REGISTRY: dict[str, ChallengeEvaluator] = {
     "supply chain": SupplyChainEvaluator(),
     "excessive agency": ExcessiveAgencyEvaluator(),
     "tool agency": ToolAgencyEvaluator(),
+    "memory poison": MemoryPoisonEvaluator(),
     "mcp poisoning": McpPoisoningEvaluator(),
     "mcp rug pull": McpRugPullEvaluator(),
     "mcp decoy": McpDecoyEvaluator(),
     "mcp shadow": McpShadowEvaluator(),
-    "skill instruction": SkillInstructionEvaluator(),
-    "skill privilege": SkillPrivilegeEvaluator(),
-    "skill typosquat": SkillTyposquatEvaluator(),
-    "skill impersonation": SkillImpersonationEvaluator(),
-    "skill doc rug": SkillDocRugEvaluator(),
-    "skill isolation": SkillIsolationEvaluator(),
-    "skill hash drift": SkillHashDriftEvaluator(),
-    "skill scan bypass": SkillScanBypassEvaluator(),
-    "skill converter": SkillConverterEvaluator(),
     "unbounded consumption": UnboundedConsumptionEvaluator(),
 }
 

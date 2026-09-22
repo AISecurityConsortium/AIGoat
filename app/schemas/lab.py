@@ -15,6 +15,7 @@ class LabOut(BaseModel):
     completed_at: str | None = None
     reset_count: int = 0
     risks: list[str] = Field(default_factory=list)
+    primary_risk: str = ""
     surface: str
     difficulty: str
     objective: str = ""

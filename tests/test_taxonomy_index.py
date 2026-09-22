@@ -32,8 +32,8 @@ class TestTaxonomyIndex:
     def teardown_method(self) -> None:
         _reset_all()
 
-    def test_labs_for_llm01_2025(self):
-        labs = labs_for_risk("owasp-llm-2025:LLM01")
+    def test_labs_for_llm01_2026(self):
+        labs = labs_for_risk("owasp-llm-2026:LLM01")
         assert "llm01-1" in labs
         assert "llm01-2" in labs
         assert "llm01-3" in labs
@@ -47,17 +47,17 @@ class TestTaxonomyIndex:
         assert any(risk.id.startswith("owasp-agentic-2026:") for risk in related)
 
     def test_challenges_for_llm01(self):
-        assert 1 in challenges_for_risk("owasp-llm-2025:LLM01")
+        assert 1 in challenges_for_risk("owasp-llm-2026:LLM01")
 
     def test_coverage_summary_shape(self):
         rows = coverage_summary()
-        assert len(rows) == 5
+        assert len(rows) == 3
         by_id = {row["framework_id"]: row for row in rows}
-        llm2025 = by_id["owasp-llm-2025"]
-        assert llm2025["risk_count"] == 10
-        assert llm2025["covered_risk_count"] > 0
-        assert llm2025["lab_count"] > 0
-        assert llm2025["covered_risk_count"] <= llm2025["risk_count"]
+        llm2026 = by_id["owasp-llm-2026"]
+        assert llm2026["risk_count"] == 10
+        assert llm2026["covered_risk_count"] > 0
+        assert llm2026["lab_count"] > 0
+        assert llm2026["covered_risk_count"] <= llm2026["risk_count"]
 
     def test_unknown_lab_risk_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         frameworks_dir = tmp_path / "frameworks"
@@ -118,10 +118,10 @@ class TestTaxonomyIndex:
 
     def test_2026_rename_llm07_to_llm08(self):
         # LLM07:2025 System Prompt Leakage became LLM08:2026 Hidden Context Exposure.
-        assert "llm07-1" in labs_for_risk("owasp-llm-2026:LLM08")
+        assert "llm08-1" in labs_for_risk("owasp-llm-2026:LLM08")
 
     def test_2026_excessive_agency_moved_to_third(self):
-        assert "llm06-1" in labs_for_risk("owasp-llm-2026:LLM03")
+        assert "llm03-3" in labs_for_risk("owasp-llm-2026:LLM03")
 
     def test_2026_coverage_is_non_zero(self):
         by_id = {row["framework_id"]: row for row in coverage_summary()}

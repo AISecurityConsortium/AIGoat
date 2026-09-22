@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-labelledby="t d">
+  <title id="t">Pick a threat model by the question it answers</title>
+  <desc id="d">ATLAS is the attacker story. MAESTRO is the agent stack. NIST AI RMF is evidence. SAIF is the product lifecycle. STRIDE and LINDDUN walk each arrow. OWASP AI Exchange names the document.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #475569; }
+    .box { fill: none; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+    .lbl { font-size: 12px; font-weight: 700; }
+    .sub { font-size: 12px; }
+  </style>
+  <rect class="box" x="16" y="20" width="220" height="72"/>
+  <text class="lbl" x="126" y="48" text-anchor="middle">MITRE ATLAS</text>
+  <text class="sub" x="126" y="68" text-anchor="middle">What would an attacker do next?</text>
+
+  <rect class="box" x="250" y="20" width="220" height="72"/>
+  <text class="lbl" x="360" y="48" text-anchor="middle">MAESTRO</text>
+  <text class="sub" x="360" y="68" text-anchor="middle">Which agent layer failed?</text>
+
+  <rect class="box" x="484" y="20" width="220" height="72"/>
+  <text class="lbl" x="594" y="48" text-anchor="middle">NIST AI RMF</text>
+  <text class="sub" x="594" y="68" text-anchor="middle">Can we prove we measured it?</text>
+
+  <rect class="box" x="16" y="112" width="220" height="72"/>
+  <text class="lbl" x="126" y="140" text-anchor="middle">Google SAIF</text>
+  <text class="sub" x="126" y="160" text-anchor="middle">Would the lifecycle catch this?</text>
+
+  <rect class="box" x="250" y="112" width="220" height="72"/>
+  <text class="lbl" x="360" y="140" text-anchor="middle">STRIDE and LINDDUN</text>
+  <text class="sub" x="360" y="160" text-anchor="middle">What fails on each arrow?</text>
+
+  <rect class="box" x="484" y="112" width="220" height="72"/>
+  <text class="lbl" x="594" y="140" text-anchor="middle">OWASP AI Exchange</text>
+  <text class="sub" x="594" y="160" text-anchor="middle">Which OWASP doc am I holding?</text>
+
+  <text class="sub" x="360" y="230" text-anchor="middle">Pick by the question, not the brand. Then walk the AIGoat shop agent once.</text>
+  <text class="sub" x="360" y="252" text-anchor="middle">Titles are labels. The notes on this page are AIGoat teaching commentary.</text>
+</svg>

@@ -436,7 +436,7 @@ const KnowledgeBaseManagement = () => {
             </Typography>
             {ragStats.in_sync === false && (
               <Alert severity="warning" sx={{ mb: 1 }}>
-                Index is stale — Sync to Vector DB
+                Index is stale. Sync to Vector DB
               </Alert>
             )}
             <Typography variant="caption" color="text.secondary">
@@ -766,7 +766,7 @@ const KnowledgeBaseManagement = () => {
                   >
                     <MenuItem value="user">user (default for injected docs)</MenuItem>
                     <MenuItem value="partner">partner</MenuItem>
-                    <MenuItem value="system">system (spoofable — the trust-tier lab)</MenuItem>
+                    <MenuItem value="system">system (spoofable: the trust-tier lab)</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

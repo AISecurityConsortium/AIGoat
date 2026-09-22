@@ -8,7 +8,7 @@ class TestTaxonomyAPI:
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
-        assert len(data) == 5
+        assert len(data) == 3
 
     async def test_get_framework_includes_attribution(self, client):
         resp = await client.get("/api/frameworks/owasp-llm-2026")
@@ -25,7 +25,7 @@ class TestTaxonomyAPI:
     async def test_list_risks_count(self, client):
         resp = await client.get("/api/risks/")
         assert resp.status_code == 200
-        assert len(resp.json()) == 50
+        assert len(resp.json()) == 30
 
     async def test_list_risks_framework_filter(self, client):
         resp = await client.get("/api/risks/", params={"framework": "owasp-llm-2026"})

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────
-# AI Goat — Framework: OWASP Top 10 for LLM Applications (2026)
+# AI Goat: Framework: OWASP Top 10 for LLM Applications (2026)
 # ─────────────────────────────────────────────────────────────────────
 #
 # Framework YAML files live in config/frameworks/. Each file describes
@@ -34,7 +34,7 @@
 #   risks[].description Two to four AIGoat-authored sentences (~400 chars).
 #   risks[].attack_surfaces
 #                       Subset of: chat.cracky, rag.kb, agent.runner,
-#                       mcp.client, skill.runtime, api.raw
+#                       mcp.client, api.raw
 #   risks[].related      Fully qualified ids: <framework-id>:<CODE>
 #
 # ── How to Add a Framework ─────────────────────────────────────────
@@ -73,7 +73,6 @@ risks:
     description: "Manipulating LLMs via crafted inputs that override system instructions, leading to unauthorized actions or data leaks. This includes both direct injection (user input) and indirect injection (poisoned external data)."
     attack_surfaces: ["chat.cracky", "rag.kb"]
     related:
-      - "owasp-llm-2025:LLM01"
       - "owasp-agentic-2026:ASI01"
       - "owasp-agentic-2026:ASI03"
       - "owasp-agentic-2026:ASI05"
@@ -86,7 +85,6 @@ risks:
     description: "LLMs may inadvertently reveal confidential data in their responses, including PII, credentials, API keys, or proprietary system details embedded in training data or context."
     attack_surfaces: ["chat.cracky", "rag.kb"]
     related:
-      - "owasp-llm-2025:LLM02"
       - "owasp-agentic-2026:ASI03"
       - "owasp-agentic-2026:ASI07"
       - "owasp-agentic-2026:ASI10"
@@ -96,7 +94,6 @@ risks:
     description: "Granting LLMs too much autonomy, permissions, or functionality without proper guardrails, allowing them to take unintended or harmful actions on behalf of users."
     attack_surfaces: ["agent.runner"]
     related:
-      - "owasp-llm-2025:LLM06"
       - "owasp-agentic-2026:ASI01"
       - "owasp-agentic-2026:ASI02"
       - "owasp-agentic-2026:ASI03"
@@ -107,9 +104,8 @@ risks:
     title: "Supply Chain"
     summary: "Backdoors in models, poisoned dependencies, or malicious plugins can compromise the entire application silently."
     description: "Vulnerabilities arising from compromised training data, pre-trained models, plugins, or third-party components integrated into LLM-based applications."
-    attack_surfaces: ["mcp.client", "skill.runtime"]
+    attack_surfaces: ["mcp.client"]
     related:
-      - "owasp-llm-2025:LLM03"
       - "owasp-agentic-2026:ASI04"
   - code: "LLM05"
     title: "Data and Model Poisoning"
@@ -117,7 +113,6 @@ risks:
     description: "Manipulation of training data or fine-tuning processes to introduce biases, backdoors, or vulnerabilities into the model, affecting its outputs and reliability."
     attack_surfaces: ["rag.kb"]
     related:
-      - "owasp-llm-2025:LLM04"
       - "owasp-agentic-2026:ASI06"
       - "owasp-agentic-2026:ASI08"
   - code: "LLM06"
@@ -126,14 +121,12 @@ risks:
     description: "Lack of rate limiting, resource controls, or cost management for LLM interactions, allowing denial-of-service attacks or runaway costs through excessive API consumption."
     attack_surfaces: ["chat.cracky", "agent.runner"]
     related:
-      - "owasp-llm-2025:LLM10"
   - code: "LLM07"
     title: "Misinformation"
     summary: "Users acting on incorrect AI-generated information, reputational damage, legal liability, or cascading errors in automated systems."
     description: "LLMs generating false, misleading, or fabricated information (hallucinations) that appears authoritative and convincing, potentially leading to wrong decisions."
     attack_surfaces: ["chat.cracky", "rag.kb"]
     related:
-      - "owasp-llm-2025:LLM09"
       - "owasp-agentic-2026:ASI09"
       - "owasp-agentic-2026:ASI10"
   - code: "LLM08"
@@ -142,14 +135,12 @@ risks:
     description: "Anything placed in the system prompt, tool schemas, or retrieved snippets can surface in the model's answers. Learners extract that material and use it to bypass remaining constraints. Defense levels change what is allowed to sit in context at all."
     attack_surfaces: ["chat.cracky"]
     related:
-      - "owasp-llm-2025:LLM07"
   - code: "LLM09"
     title: "Vector and Embedding Weaknesses"
     summary: "Poisoned knowledge bases, manipulated search results, or unauthorized access to sensitive documents through embedding manipulation."
     description: "Vulnerabilities in retrieval-augmented generation (RAG) systems where vector databases or embedding pipelines can be manipulated to inject malicious content or retrieve inappropriate data."
     attack_surfaces: ["rag.kb"]
     related:
-      - "owasp-llm-2025:LLM08"
       - "owasp-agentic-2026:ASI06"
   - code: "LLM10"
     title: "Improper Output Handling"
@@ -157,6 +148,5 @@ risks:
     description: "Failing to validate, sanitize, or encode LLM outputs before passing them to downstream components, enabling injection attacks like XSS, SSRF, or code execution."
     attack_surfaces: ["chat.cracky"]
     related:
-      - "owasp-llm-2025:LLM05"
       - "owasp-agentic-2026:ASI05"
       - "owasp-agentic-2026:ASI09"

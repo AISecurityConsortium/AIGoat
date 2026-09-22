@@ -43,7 +43,6 @@ PROTECTED_PATH_PREFIXES = (
     "/api/surfaces",
     "/api/agent",
     "/api/mcp",
-    "/api/skills",
     "/api/tips",
     "/api/coupons",
     "/api/reviews",

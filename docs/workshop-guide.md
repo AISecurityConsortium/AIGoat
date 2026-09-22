@@ -94,7 +94,7 @@ Most workshops run well in the **2-4 hour** range. This gives participants enoug
 - **Prepare demo accounts**: Each participant should have their own demo account. If you need more than the 4 pre-seeded accounts, participants can sign up through the UI
 - **Start at Level 0**: Always begin demonstrations at Defense Level 0 so attacks succeed visibly
 - **Use the projector for labs**: Walk through one lab (LLM01 recommended) on the projector before participants try on their own
-- **Monitor RAM**: If running on shared infrastructure, watch memory usage — Mistral needs ~4.5 GB per instance
+- **Monitor RAM**: If running on shared infrastructure, watch memory usage. Mistral needs ~4.5 GB per instance
 - **Have a backup plan**: If Ollama is slow on CPU-only machines, switch to `tinyllama` in `config/config.yml` for faster (but less realistic) responses
 
 ---
@@ -173,9 +173,31 @@ Switch between defense levels and repeat the same attacks. Discuss:
 - What is the principle of least privilege for AI systems?
 - How does RAG create new attack surface?
 
-### LLM04 -- Model Denial of Service
+### LLM05 -- Data and Model Poisoning
 
-**Lab:** Model Denial of Service
+**Lab:** Data and Model Poisoning
+
+**Concept:** Poisoned fine-tune or catalog-fact data is treated as learned ground truth. The learner does not override the system prompt, and this is not a retrieval ranking trick.
+
+**Teaching approach:**
+
+1. Ask a normal product price so the honest catalog is visible.
+2. Identify as warehouse QA. CorpusBot cites code POISON90 and 90% off because that pair was planted in the trusted corpus.
+3. Submit a catalog correction (for example, the hoodie is $1.00 after a markdown) and ask the price again. The bot cites the planted fact as official shop knowledge.
+
+**Defense progression:**
+- L0: Cites planted facts as official policy.
+- L1: Output moderation may hedge or strip coupon-like codes. The false price can still land.
+- L2: Guardrails refuse unverifiable catalog claims and staff-only discounts.
+
+**Discussion points:**
+- How is this different from a jailbreak?
+- How is this different from RAG ranking tricks (LLM09) or review poisoning (LLM02)?
+- What would you inspect before a fine-tune or a catalog dump?
+
+### LLM06 -- Unbounded Consumption
+
+**Lab:** Token Flood
 
 **Concept:** Crafted inputs cause excessive resource consumption (token generation, processing loops).
 
@@ -190,7 +212,7 @@ Switch between defense levels and repeat the same attacks. Discuss:
 - How do rate limiting and token budgets help?
 - What is the difference between DoS at the infrastructure level vs. the model level?
 
-### LLM05 -- Supply Chain Vulnerabilities
+### LLM04 -- Supply Chain Vulnerabilities
 
 **Lab:** Supply Chain Vulnerabilities
 
@@ -206,7 +228,7 @@ Switch between defense levels and repeat the same attacks. Discuss:
 - What are the risks of fine-tuning on untrusted data?
 - How does the AI supply chain differ from traditional software supply chains?
 
-### LLM07 -- System Prompt Extraction
+### LLM08 -- Hidden Context Exposure
 
 **Lab:** System Prompt Extraction
 

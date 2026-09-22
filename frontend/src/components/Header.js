@@ -41,6 +41,7 @@ import {
   CardGiftcard as GiftCardIcon,
   Security as SecurityIcon,
   BugReport as BugReportIcon,
+  AccountTree as ThreatModelIcon,
   EmojiEvents as ChallengesIcon,
   ExpandMore as ExpandMoreIcon,
   AccountBalanceWallet as WalletIcon,
@@ -200,7 +201,7 @@ const Header = () => {
       >
         <Box
           component="img"
-          src="/media/logo.jpg"
+          src="/media/images/logo.jpg"
           alt="AI Goat Shop Logo"
           sx={{ height: 34, width: 'auto', mr: 1.5, borderRadius: '6px' }}
         />
@@ -233,6 +234,7 @@ const Header = () => {
         Shop
       </Box>
       <StyledNavLink to="/owasp-top-10">OWASP Top 10</StyledNavLink>
+      <StyledNavLink to="/threat-modeling">Threat Modeling</StyledNavLink>
 
       {/* Logged-in, non-shopper nav links */}
       {isLoggedIn && !isShopper && (
@@ -241,7 +243,6 @@ const Header = () => {
           <StyledNavLink to="/challenges">Challenges</StyledNavLink>
           <StyledNavLink to="/agent">Agent</StyledNavLink>
           <StyledNavLink to="/mcp">MCP</StyledNavLink>
-          <StyledNavLink to="/skills">Skills</StyledNavLink>
           {ragSystemEnabled && !ragLoading && (
             <StyledNavLink to="/knowledge-base">Knowledge Base</StyledNavLink>
           )}
@@ -524,7 +525,7 @@ const Header = () => {
       {/* Drawer header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: (t) => `1px solid ${t.palette.divider}` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box component="img" src="/media/logo.jpg" alt="AI Goat" sx={{ height: 30, borderRadius: '6px' }} />
+          <Box component="img" src="/media/images/logo.jpg" alt="AI Goat" sx={{ height: 30, borderRadius: '6px' }} />
           <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>AI Goat Shop</Typography>
         </Box>
         <IconButton onClick={() => setMobileOpen(false)} sx={{ color: 'text.secondary' }}>
@@ -586,18 +587,19 @@ const Header = () => {
       {isLoggedIn && !isShopper && (
         <MobileSection title="Workshop">
           <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
+          <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
           <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
           <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
           <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
           <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
-          <MobileNavItem to="/skills" icon={<AIIcon />} label="Skills" />
         </MobileSection>
       )}
 
-      {/* Not logged in — still show OWASP */}
+      {/* Not logged in: still show the public learning pages */}
       {!isLoggedIn && (
         <MobileSection title="Learn">
           <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
+          <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
         </MobileSection>
       )}
 
@@ -662,7 +664,7 @@ const Header = () => {
   const renderMobileToolbar = () => (
     <Toolbar sx={{ minHeight: '56px !important', justifyContent: 'space-between' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/home')}>
-        <Box component="img" src="/media/logo.jpg" alt="AI Goat Shop" sx={{ height: 30, width: 'auto', mr: 1, borderRadius: '6px' }} />
+        <Box component="img" src="/media/images/logo.jpg" alt="AI Goat Shop" sx={{ height: 30, width: 'auto', mr: 1, borderRadius: '6px' }} />
         <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>
           AI Goat Shop
         </Typography>

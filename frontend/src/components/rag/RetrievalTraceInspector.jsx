@@ -20,7 +20,7 @@ import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { useDefense } from '../../contexts/DefenseContext';
 
-const score = (value) => (value === null || value === undefined ? '—' : Number(value).toFixed(3));
+const score = (value) => (value === null || value === undefined ? 'n/a' : Number(value).toFixed(3));
 
 const RetrievalTraceInspector = () => {
   const { defenseLevel, levelChosenThisSession } = useDefense();
@@ -55,7 +55,7 @@ const RetrievalTraceInspector = () => {
   return (
     <SectionCard title="Retrieval trace">
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-        Runs retrieval only — no model call. Dropped chunks stay visible.
+        Runs retrieval only, with no model call. Dropped chunks stay visible.
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 2 }}>
         <TextField

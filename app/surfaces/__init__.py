@@ -7,7 +7,6 @@ from app.surfaces.chat_cracky import ChatCrackySurface
 from app.surfaces.mcp_client import McpClientSurface
 from app.surfaces.rag_kb import RagKbSurface
 from app.surfaces.registry import get_surface, register_surface
-from app.surfaces.skill_runtime import SkillRuntimeSurface
 
 
 def _register_if_missing(surface) -> None:
@@ -23,7 +22,6 @@ def ensure_registered() -> None:
     _register_if_missing(ApiRawSurface())
     _register_if_missing(AgentRunnerSurface())
     _register_if_missing(McpClientSurface())
-    _register_if_missing(SkillRuntimeSurface())
 
 
 ensure_registered()

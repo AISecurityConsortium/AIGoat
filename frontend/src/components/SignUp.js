@@ -96,7 +96,7 @@ const SignUp = () => {
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Box
             component="img"
-            src="/media/logo.jpg"
+            src="/media/images/logo.jpg"
             alt="AI Goat Shop Logo"
             sx={{ height: 60, width: 'auto', mb: 2 }}
           />

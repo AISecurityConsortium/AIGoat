@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -85,3 +85,23 @@ class PendingApproval(Base):
     )
 
     run: Mapped["AgentRun"] = relationship("AgentRun", back_populates="pending")
+
+
+class AgentMemory(Base):
+    """Per-user, per-lab notes. Never global. D5 intentional poison lives here at L0."""
+
+    __tablename__ = "agent_memory"
+    __table_args__ = (
+        UniqueConstraint("user_id", "lab_id", "key", name="uq_agent_memory_user_lab_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    lab_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

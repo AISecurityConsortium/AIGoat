@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" role="img" aria-labelledby="t d">
+  <title id="t">AIGoat surfaces and trust boundaries</title>
+  <desc id="d">Browser talks to FastAPI. Four live surfaces sit behind the API: chat.cracky, rag.kb, agent.runner, mcp.client. They reach Ollama, Chroma, SQLite, and stdio MCP children. Anything typed in the browser is untrusted.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #475569; }
+    .box { fill: none; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+    .accent { stroke: #6366f1; }
+    .danger { stroke: #ef4444; stroke-dasharray: 5 3; }
+    .lbl { font-size: 12px; font-weight: 700; }
+    .sub { font-size: 12px; }
+  </style>
+  <rect class="box danger" x="16" y="16" width="120" height="56"/>
+  <text class="lbl" x="76" y="40" text-anchor="middle">Browser</text>
+  <text class="sub" x="76" y="56" text-anchor="middle">untrusted</text>
+
+  <path d="M136 44 H188" stroke="#ef4444" stroke-width="1.5" marker-end="url(#d)"/>
+  <text class="sub" x="162" y="32" text-anchor="middle" fill="#ef4444">TLS / JWT</text>
+
+  <rect class="box accent" x="188" y="16" width="140" height="56"/>
+  <text class="lbl" x="258" y="40" text-anchor="middle" fill="#6366f1">FastAPI :8000</text>
+  <text class="sub" x="258" y="56" text-anchor="middle">auth + routes</text>
+
+  <rect class="box" x="40" y="120" width="150" height="52"/>
+  <text class="lbl" x="115" y="142" text-anchor="middle">chat.cracky</text>
+  <text class="sub" x="115" y="158" text-anchor="middle">storefront chat</text>
+
+  <rect class="box" x="204" y="120" width="150" height="52"/>
+  <text class="lbl" x="279" y="142" text-anchor="middle">rag.kb</text>
+  <text class="sub" x="279" y="158" text-anchor="middle">poisonable KB</text>
+
+  <rect class="box" x="368" y="120" width="150" height="52"/>
+  <text class="lbl" x="443" y="142" text-anchor="middle">agent.runner</text>
+  <text class="sub" x="443" y="158" text-anchor="middle">Intent Gate</text>
+
+  <rect class="box" x="532" y="120" width="150" height="52"/>
+  <text class="lbl" x="607" y="142" text-anchor="middle">mcp.client</text>
+  <text class="sub" x="607" y="158" text-anchor="middle">stdio RPC</text>
+
+  <path d="M258 72 V120" stroke="#64748b" stroke-width="1.2"/>
+  <path d="M115 120 V100 H607 V120" fill="none" stroke="#64748b" stroke-width="1.2"/>
+
+  <rect class="box" x="40" y="220" width="150" height="52"/>
+  <text class="lbl" x="115" y="242" text-anchor="middle">Ollama</text>
+  <text class="sub" x="115" y="258" text-anchor="middle">Mistral</text>
+
+  <rect class="box" x="204" y="220" width="150" height="52"/>
+  <text class="lbl" x="279" y="242" text-anchor="middle">Chroma</text>
+  <text class="sub" x="279" y="258" text-anchor="middle">vector store</text>
+
+  <rect class="box" x="368" y="220" width="150" height="52"/>
+  <text class="lbl" x="443" y="242" text-anchor="middle">SQLite</text>
+  <text class="sub" x="443" y="258" text-anchor="middle">shop + memory</text>
+
+  <rect class="box" x="532" y="220" width="150" height="52"/>
+  <text class="lbl" x="607" y="242" text-anchor="middle">MCP children</text>
+  <text class="sub" x="607" y="258" text-anchor="middle">spawn and reap</text>
+
+  <path d="M115 172 V220" stroke="#64748b" stroke-width="1.2"/>
+  <path d="M279 172 V220" stroke="#64748b" stroke-width="1.2"/>
+  <path d="M443 172 V220" stroke="#64748b" stroke-width="1.2"/>
+  <path d="M607 172 V220" stroke="#64748b" stroke-width="1.2"/>
+
+  <text class="sub" x="360" y="312" text-anchor="middle">Dashed red is a trust boundary. Typed input never becomes trusted by crossing it.</text>
+
+  <defs>
+    <marker id="d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#ef4444"/>
+    </marker>
+  </defs>
+</svg>

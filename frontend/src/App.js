@@ -23,10 +23,13 @@ import Coupons from './components/Coupons';
 import InventoryManagement from './components/InventoryManagement';
 import OllamaAIServicePage from './components/OllamaAIServicePage';
 import OwaspTop10Page from './components/OwaspTop10Page';
+import ThreatModelingPage from './components/ThreatModelingPage';
 import RiskDetailPage from './components/RiskDetailPage';
 import AttacksPage from './components/AttacksPage';
 import ChallengePage from './components/ChallengePage';
 import LabWorkspace from './components/LabWorkspace';
+import AgentHubPage from './components/agent/AgentHubPage';
+import McpHubPage from './components/mcp/McpHubPage';
 import { SearchProvider } from './contexts/SearchContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { DefenseProvider } from './contexts/DefenseContext';
@@ -53,11 +56,11 @@ const Footer = () => {
       {/* Main footer content */}
       <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, py: 3, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
 
-        {/* Left — brand */}
+        {/* Left: brand */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             component="img"
-            src="/media/logo.jpg"
+            src="/media/images/logo.jpg"
             alt="AI Goat"
             sx={{ width: 28, height: 28, borderRadius: '8px', opacity: 0.85 }}
           />
@@ -71,7 +74,7 @@ const Footer = () => {
           </Box>
         </Box>
 
-        {/* Center — made with love */}
+        {/* Center: made with love */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Typography sx={{ fontSize: '0.7rem', color: text }}>
             Made with
@@ -85,7 +88,7 @@ const Footer = () => {
           </Typography>
         </Box>
 
-        {/* Right — links */}
+        {/* Right: links */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box
             component="a"
@@ -212,6 +215,7 @@ function AppContent() {
 
                 <Route path="/owasp-top-10" element={<OwaspTop10Page />} />
                 <Route path="/owasp-top-10/:frameworkId/:riskCode" element={<RiskDetailPage />} />
+                <Route path="/threat-modeling" element={<ThreatModelingPage />} />
                 <Route path="/attacks" element={
                   <ProtectedRoute>
                     <AttacksPage />
@@ -224,17 +228,12 @@ function AppContent() {
                 } />
                 <Route path="/agent" element={
                   <ProtectedRoute>
-                    <LabWorkspace />
+                    <AgentHubPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/mcp" element={
                   <ProtectedRoute>
-                    <LabWorkspace />
-                  </ProtectedRoute>
-                } />
-                <Route path="/skills" element={
-                  <ProtectedRoute>
-                    <LabWorkspace />
+                    <McpHubPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/challenges" element={

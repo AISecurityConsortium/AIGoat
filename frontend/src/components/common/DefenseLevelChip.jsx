@@ -12,9 +12,9 @@ import { useTheme } from '@mui/material/styles';
 
 const COLOR_KEYS = { 0: 'error.main', 1: 'warning.light', 2: 'secondary.main' };
 export const DEFENSE_LEVEL_LABELS = {
-  0: 'L0 — Vulnerable',
-  1: 'L1 — Hardened',
-  2: 'L2 — Guardrailed',
+  0: 'L0: Vulnerable',
+  1: 'L1: Hardened',
+  2: 'L2: Guardrailed',
 };
 
 const getThemeColor = (theme, path) => {

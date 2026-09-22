@@ -6,6 +6,8 @@ from typing import Any
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.memory import notes_for_prompt, upsert_note
+from app.core.exceptions import ValidationError
 from app.models.coupon import Coupon
 from app.models.order import Order
 from app.models.product import Product
@@ -30,7 +32,7 @@ def _order_schema() -> dict[str, Any]:
     }
 
 
-def shop_tools(db: AsyncSession, user: User) -> ToolRegistry:
+def shop_tools(db: AsyncSession, user: User, lab_id: str = "", level: int = 0) -> ToolRegistry:
     """Closures over the calling user. Refunds never touch another user's row."""
     registry = ToolRegistry()
 
@@ -110,6 +112,28 @@ def shop_tools(db: AsyncSession, user: User) -> ToolRegistry:
             "note": "demo export of the calling user only",
         }
 
+    async def remember(key: str, value: str) -> dict[str, Any]:
+        if not lab_id:
+            return {"stored": False, "error": "lab_id required"}
+        try:
+            row = await upsert_note(db, user.id, lab_id, key, value)
+        except ValidationError as exc:
+            return {"stored": False, "error": str(exc)}
+        return {"stored": True, "key": row.key, "lab_id": lab_id}
+
+    async def recall(key: str = "") -> dict[str, Any]:
+        if not lab_id:
+            return {"notes": [], "error": "lab_id required"}
+        notes = await notes_for_prompt(db, user.id, lab_id, level)
+        visible = [n for n in notes if n.get("included", True)]
+        needle = (key or "").strip()
+        if needle:
+            visible = [n for n in visible if n["key"] == needle]
+        return {
+            "notes": [{"key": n["key"], "value": n["value"]} for n in visible],
+            "lab_id": lab_id,
+        }
+
     registry.register(Tool(
         name="lookup_order",
         description="Look up one of the current user's orders by numeric id.",
@@ -153,6 +177,31 @@ def shop_tools(db: AsyncSession, user: User) -> ToolRegistry:
         parameter_schema={
             "type": "object",
             "properties": {"scope": {"type": "string"}},
+            "required": [],
+            "additionalProperties": False,
+        },
+    ))
+    registry.register(Tool(
+        name="remember",
+        description="Store a short standing note for this lab. Key is letters, digits, underscore, or hyphen.",
+        handler=remember,
+        parameter_schema={
+            "type": "object",
+            "properties": {
+                "key": {"type": "string"},
+                "value": {"type": "string"},
+            },
+            "required": ["key", "value"],
+            "additionalProperties": False,
+        },
+    ))
+    registry.register(Tool(
+        name="recall",
+        description="Recall standing notes stored for this lab.",
+        handler=recall,
+        parameter_schema={
+            "type": "object",
+            "properties": {"key": {"type": "string"}},
             "required": [],
             "additionalProperties": False,
         },

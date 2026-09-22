@@ -26,7 +26,7 @@ async def test_list_surfaces_returns_enabled(client: AsyncClient):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     ids = [s["id"] for s in body]
-    assert ids == ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client", "skill.runtime"]
+    assert ids == ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client"]
     by_id = {s["id"]: s for s in body}
     assert by_id["chat.cracky"]["available"] is True
     assert by_id["rag.kb"]["available"] is True
@@ -34,7 +34,6 @@ async def test_list_surfaces_returns_enabled(client: AsyncClient):
     assert by_id["api.raw"]["reason"]
     assert by_id["agent.runner"]["available"] is True
     assert by_id["mcp.client"]["available"] is True
-    assert by_id["skill.runtime"]["available"] is True
 
 
 async def test_unknown_surface_execute_is_404(client: AsyncClient):

@@ -23,13 +23,12 @@ def _reset_profiles():
     reset_profiles_cache()
 
 
-def test_all_surfaces_are_the_six_known():
+def test_all_surfaces_are_the_five_known():
     assert all_surfaces() == (
         "chat.cracky",
         "rag.kb",
         "agent.runner",
         "mcp.client",
-        "skill.runtime",
         "api.raw",
     )
 

@@ -18,9 +18,10 @@ EVENT_TYPES = frozenset({
     "tool_result",
     "mcp_request",
     "mcp_response",
-    "skill_load",
     "approval_request",
     "control_decision",
+    "memory_read",
+    "memory_write",
 })
 
 

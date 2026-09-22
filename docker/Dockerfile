@@ -9,7 +9,6 @@ COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY prompts/ ./prompts/
-COPY skills/ ./skills/
 COPY guardrails/ ./guardrails/
 COPY media/ ./media/
 COPY alembic.ini ./alembic.ini

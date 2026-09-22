@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container, Typography, Box, Card, CardContent, Collapse, IconButton,
-  useMediaQuery, FormControl, InputLabel, Select, MenuItem, Alert, Skeleton, Button,
+  useMediaQuery, Alert, Skeleton, Button,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -12,14 +12,15 @@ import {
 } from '@mui/icons-material';
 import { useLocation, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useLabs } from '../hooks/useLabs';
-import { useFrameworks, useFramework } from '../hooks/useFrameworks';
+import { useFramework, useFrameworks } from '../hooks/useFrameworks';
 import {
   PageHeader, RiskChip, DifficultyChip, DefenseLevelChip, DEFENSE_LEVEL_LABELS,
   CodeBlock, EmptyState, ProgressBar, SectionCard, RelatedMap,
 } from './common';
 import { riskPath } from '../utils/taxonomyLinks';
-
-const DEFAULT_FRAMEWORK = 'owasp-llm-2026';
+import {
+  DEFAULT_FRAMEWORK, FRAMEWORK_ORDER, sortFrameworks, shortFrameworkLabel, labFrameworkId,
+} from '../utils/frameworkOrder';
 
 const LEGACY_ID_MAP = {
   'lm01-direct': 'llm01-1',
@@ -47,19 +48,46 @@ const LEGACY_ID_MAP = {
 
 const LEVEL_ORDER = ['0', '1', '2'];
 
+const LAB_ID_RENAME_2026 = {
+  'llm08-6': 'llm01-5',
+  'llm06-2': 'llm03-1',
+  'llm06-3': 'llm03-2',
+  'llm06-1': 'llm03-3',
+  'llm03-1': 'llm04-1',
+  'llm04-1': 'llm05-1',
+  'llm10-1': 'llm06-1',
+  'llm09-1': 'llm07-1',
+  'llm07-1': 'llm08-1',
+  'llm08-1': 'llm09-1',
+  'llm08-2': 'llm09-2',
+  'llm08-3': 'llm09-3',
+  'llm08-4': 'llm09-4',
+  'llm08-5': 'llm09-5',
+  'llm05-1': 'llm10-1',
+};
+
 const getCompletionKey = () => {
   const username = localStorage.getItem('username') || 'anonymous';
   return `aigoat_owasp_completed_${username}`;
 };
 
 const migrateCompletions = (raw) => {
-  if (localStorage.getItem('aigoat_owasp_completed_migrated')) return raw;
-  const next = { ...raw };
-  Object.entries(LEGACY_ID_MAP).forEach(([oldId, newId]) => {
-    if (raw[oldId]) next[newId] = true;
-  });
+  let next = { ...raw };
+  if (!localStorage.getItem('aigoat_owasp_completed_migrated')) {
+    Object.entries(LEGACY_ID_MAP).forEach(([oldId, newId]) => {
+      if (raw[oldId]) next[newId] = true;
+    });
+    localStorage.setItem('aigoat_owasp_completed_migrated', '1');
+  }
+  if (!localStorage.getItem('aigoat_owasp_completed_migrated_2026')) {
+    const renamed = {};
+    Object.entries(next).forEach(([id, value]) => {
+      renamed[LAB_ID_RENAME_2026[id] || id] = value;
+    });
+    next = renamed;
+    localStorage.setItem('aigoat_owasp_completed_migrated_2026', '1');
+  }
   localStorage.setItem(getCompletionKey(), JSON.stringify(next));
-  localStorage.setItem('aigoat_owasp_completed_migrated', '1');
   return next;
 };
 
@@ -81,14 +109,37 @@ const AttacksPage = () => {
   const statusFilter = searchParams.get('status') || '';
   const labFromQuery = searchParams.get('lab');
 
-  const { frameworks } = useFrameworks();
+  const { frameworks: frameworkList } = useFrameworks();
   const { framework } = useFramework(frameworkFilter);
-  const { labs, loading, error, refetch } = useLabs({
-    framework: frameworkFilter,
-    surface: surfaceFilter || undefined,
-    difficulty: difficultyFilter || undefined,
-    status: statusFilter || undefined,
-  });
+  const { labs: allLabs, loading, error, refetch } = useLabs();
+
+  const orderedFrameworks = useMemo(() => {
+    const sorted = sortFrameworks(frameworkList);
+    if (sorted.length) return sorted;
+    return FRAMEWORK_ORDER.map((id) => ({ id }));
+  }, [frameworkList]);
+
+  const scopedLabs = useMemo(() => allLabs.filter((lab) => {
+    if (surfaceFilter && lab.surface !== surfaceFilter) return false;
+    if (difficultyFilter && lab.difficulty !== difficultyFilter) return false;
+    if (statusFilter && lab.status !== statusFilter) return false;
+    return true;
+  }), [allLabs, surfaceFilter, difficultyFilter, statusFilter]);
+
+  const labs = useMemo(
+    () => scopedLabs.filter((lab) => labFrameworkId(lab) === frameworkFilter),
+    [scopedLabs, frameworkFilter],
+  );
+
+  const pillCounts = useMemo(() => {
+    const counts = {};
+    scopedLabs.forEach((lab) => {
+      const id = labFrameworkId(lab);
+      if (!id) return;
+      counts[id] = (counts[id] || 0) + 1;
+    });
+    return counts;
+  }, [scopedLabs]);
 
   const [activeTab, setActiveTab] = useState(0);
   const [expandedLab, setExpandedLab] = useState(null);
@@ -109,13 +160,14 @@ const AttacksPage = () => {
         code: risk.code,
         title: risk.title,
         riskId: risk.id,
-        labs: labs.filter((lab) => (lab.risks || []).includes(risk.id)),
+        labs: labs.filter((lab) => (lab.primary_risk || (lab.risks || [])[0]) === risk.id),
       }));
     }
     const grouped = new Map();
     labs.forEach((lab) => {
-      const code = riskCodeForLab(lab, frameworkFilter);
-      if (!grouped.has(code)) grouped.set(code, { code, title: code, riskId: null, labs: [] });
+      const primary = lab.primary_risk || (lab.risks || [])[0] || '';
+      const code = primary.includes(':') ? primary.split(':').slice(1).join(':') : riskCodeForLab(lab, frameworkFilter);
+      if (!grouped.has(code)) grouped.set(code, { code, title: code, riskId: primary || null, labs: [] });
       grouped.get(code).labs.push(lab);
     });
     return Array.from(grouped.values());
@@ -133,26 +185,27 @@ const AttacksPage = () => {
         idx = categories.findIndex((c) => c.labs.some((l) => l.id === hashedLab.id));
       }
     }
-    if (idx >= 0) setActiveTab(idx);
+      if (idx >= 0) setActiveTab(idx);
   }, [location.hash, categories, labs]);
 
   useEffect(() => {
-    if (!labFromQuery) return;
+    if (!labFromQuery || !allLabs.length) return;
+    const lab = allLabs.find((item) => item.id === labFromQuery);
+    if (!lab) return;
+    const fw = labFrameworkId(lab);
+    if (fw && fw !== frameworkFilter) {
+      const next = new URLSearchParams(searchParams);
+      next.set('framework', fw);
+      setSearchParams(next, { replace: true });
+      return;
+    }
     const idx = categories.findIndex((c) => c.labs.some((l) => l.id === labFromQuery));
     if (idx >= 0) {
       setActiveTab(idx);
       setExpandedLab(labFromQuery);
       localStorage.setItem('active_lab_id', labFromQuery);
     }
-  }, [labFromQuery, categories]);
-
-  const setFilter = (key, value) => {
-    const next = new URLSearchParams(searchParams);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setSearchParams(next);
-    setActiveTab(0);
-  };
+  }, [labFromQuery, allLabs, frameworkFilter, categories, searchParams, setSearchParams]);
 
   const toggleComplete = useCallback((labId) => {
     setCompleted((prev) => {
@@ -173,11 +226,26 @@ const AttacksPage = () => {
   const catLabs = cat.labs || [];
   const completedCount = catLabs.filter((l) => completed[l.id]).length;
 
-  const surfaces = useMemo(() => Array.from(new Set(labs.map((l) => l.surface).filter(Boolean))), [labs]);
-  const difficulties = useMemo(
-    () => Array.from(new Set(labs.map((l) => l.difficulty).filter(Boolean))),
-    [labs],
-  );
+  const selectFramework = (id) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('framework', id);
+    next.delete('lab');
+    setSearchParams(next, { replace: true });
+    setActiveTab(0);
+    setExpandedLab(null);
+  };
+
+  const handlePillKeyDown = (event) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    if (!orderedFrameworks.length) return;
+    const idx = orderedFrameworks.findIndex((fw) => fw.id === frameworkFilter);
+    if (idx < 0) return;
+    const next = event.key === 'ArrowRight'
+      ? (idx + 1) % orderedFrameworks.length
+      : (idx - 1 + orderedFrameworks.length) % orderedFrameworks.length;
+    selectFramework(orderedFrameworks[next].id);
+  };
 
   const handleTabKeyDown = (event) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
@@ -198,59 +266,6 @@ const AttacksPage = () => {
           subtitle="Hands-on exercises for each mapped risk. Try the example prompts, compare results across defense levels."
         />
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel id="lab-framework-label">Framework</InputLabel>
-            <Select
-              labelId="lab-framework-label"
-              label="Framework"
-              value={frameworkFilter}
-              onChange={(e) => setFilter('framework', e.target.value)}
-            >
-              {frameworks.map((fw) => (
-                <MenuItem key={fw.id} value={fw.id}>{fw.name} ({fw.version})</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="lab-surface-label">Surface</InputLabel>
-            <Select
-              labelId="lab-surface-label"
-              label="Surface"
-              value={surfaceFilter}
-              onChange={(e) => setFilter('surface', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {surfaces.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel id="lab-difficulty-label">Difficulty</InputLabel>
-            <Select
-              labelId="lab-difficulty-label"
-              label="Difficulty"
-              value={difficultyFilter}
-              onChange={(e) => setFilter('difficulty', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {difficulties.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel id="lab-status-label">Status</InputLabel>
-            <Select
-              labelId="lab-status-label"
-              label="Status"
-              value={statusFilter}
-              onChange={(e) => setFilter('status', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="coming_soon">Coming soon</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
         {error && (
           <Alert
             severity="error"
@@ -267,6 +282,63 @@ const AttacksPage = () => {
             <Skeleton variant="rounded" height={88} />
           </Box>
         )}
+
+        <Box
+          role="tablist"
+          aria-label="Security frameworks"
+          onKeyDown={handlePillKeyDown}
+          sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+        >
+          {orderedFrameworks.map((fw) => {
+            const selected = fw.id === frameworkFilter;
+            const count = pillCounts[fw.id] || 0;
+            return (
+              <Box
+                key={fw.id}
+                role="tab"
+                tabIndex={selected ? 0 : -1}
+                aria-selected={selected}
+                onClick={() => selectFramework(fw.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    selectFramework(fw.id);
+                  }
+                }}
+                sx={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  px: 2, py: 1.1, borderRadius: '999px', cursor: 'pointer',
+                  minWidth: isMobile ? 96 : 120, textAlign: 'center',
+                  transition: 'all 0.15s',
+                  bgcolor: selected
+                    ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
+                    : (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
+                  border: selected
+                    ? (t) => `1.5px solid ${t.palette.primary.main}`
+                    : (t) => `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
+                  '&:focus-visible': {
+                    outline: '2px solid',
+                    outlineColor: 'primary.main',
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                <Typography sx={{
+                  fontSize: '0.75rem', fontWeight: 700,
+                  color: selected ? 'primary.main' : 'text.primary', lineHeight: 1.2,
+                }}>
+                  {shortFrameworkLabel(fw)}
+                </Typography>
+                <Typography sx={{
+                  fontSize: '0.6rem', fontWeight: 600, mt: 0.2,
+                  color: selected ? 'primary.main' : 'text.secondary',
+                }}>
+                  {count} {count === 1 ? 'lab' : 'labs'}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
 
         <Box
           role="tablist"
@@ -325,6 +397,12 @@ const AttacksPage = () => {
                   opacity: hasLabs ? 1 : 0.7,
                 }}>
                   {c.title}
+                </Typography>
+                <Typography sx={{
+                  fontSize: '0.55rem', fontWeight: 600, mt: 0.35,
+                  color: isActive ? 'primary.main' : hasLabs ? 'text.secondary' : (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
+                }}>
+                  {c.labs.length} {c.labs.length === 1 ? 'lab' : 'labs'}
                 </Typography>
                 {!hasLabs && (
                   <Typography sx={{ fontSize: '0.5rem', color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', mt: 0.25, fontStyle: 'italic' }}>
@@ -403,7 +481,7 @@ const AttacksPage = () => {
                               event.stopPropagation();
                               const qualified = (lab.risks || []).find((r) => r.endsWith(`:${lab.owasp}`))
                                 || (lab.risks || [])[0]
-                                || `owasp-llm-2025:${lab.owasp}`;
+                                || `owasp-llm-2026:${lab.owasp}`;
                               navigate(riskPath(qualified));
                             }}
                           />
@@ -425,7 +503,7 @@ const AttacksPage = () => {
                                 {lab.objective}
                               </Typography>
                             </SectionCard>
-                          </Box>
+                        </Box>
                         )}
 
                         <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
@@ -485,18 +563,6 @@ const AttacksPage = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             Open MCP console
-                          </Button>
-                        )}
-                        {lab.surface === 'skill.runtime' && (
-                          <Button
-                            component={Link}
-                            to={`/labs/${lab.id}`}
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 2 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Open skill console
                           </Button>
                         )}
                       </Box>

@@ -3,7 +3,7 @@ import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 
 const LEVELS = {
-  0: { level: 0, name: 'Vulnerable', shortLabel: 'L0', color: '#ef4444', icon: '🔓', description: 'No protection — all attacks succeed' },
+  0: { level: 0, name: 'Vulnerable', shortLabel: 'L0', color: '#ef4444', icon: '🔓', description: 'No protection. All attacks succeed' },
   1: { level: 1, name: 'Hardened', shortLabel: 'L1', color: '#fbbf24', icon: '🛡️', description: 'Basic prompt hardening active' },
   2: { level: 2, name: 'Guardrailed', shortLabel: 'L2', color: '#4ade80', icon: '🔒', description: 'Input/output guardrails active' },
 };

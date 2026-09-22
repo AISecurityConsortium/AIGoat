@@ -281,7 +281,7 @@ const ChallengePage = () => {
         {/* ─ Body: two panels ─ */}
         <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
 
-          {/* Left — Instructions */}
+          {/* Left: Instructions */}
           <Box sx={{
             width: '50%', flexShrink: 0,
             display: 'flex', flexDirection: 'column',
@@ -377,7 +377,7 @@ const ChallengePage = () => {
             </Box>
           </Box>
 
-          {/* Right — Chat */}
+          {/* Right: Chat */}
           <Box sx={{ width: '50%', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
             <Box sx={{
               px: 2, py: 1,
@@ -422,7 +422,7 @@ const ChallengePage = () => {
           </Typography>
         </Box>
         <Typography sx={{ color: muted, mb: 3.5, fontSize: '0.9rem', maxWidth: 600 }}>
-          Exploit LLM vulnerabilities across 9 challenges. Each challenge has a dedicated chat environment — craft your attack, earn the flag, and submit it.
+          Exploit LLM vulnerabilities across 9 challenges. Each challenge has a dedicated chat environment. Craft your attack, earn the flag, and submit it.
         </Typography>
 
         {error && <Alert severity="warning" sx={{ mb: 3, borderRadius: '10px' }}>{error}</Alert>}

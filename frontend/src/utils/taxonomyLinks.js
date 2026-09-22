@@ -16,7 +16,7 @@ export function labPath(lab) {
   const id = typeof lab === 'string' ? lab : lab?.id;
   if (!id) return '/attacks';
   const surface = typeof lab === 'string' ? null : lab?.surface;
-  if (surface === 'agent.runner' || surface === 'mcp.client' || surface === 'skill.runtime') {
+  if (surface === 'agent.runner' || surface === 'mcp.client') {
     return `/labs/${encodeURIComponent(id)}`;
   }
   if (surface === 'rag.kb') {

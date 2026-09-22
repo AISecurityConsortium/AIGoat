@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" role="img" aria-labelledby="t d">
+  <title id="t">Threat modeling loop</title>
+  <desc id="d">Name surfaces, name assets and trust boundaries, walk threats, then record a control. Repeat.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #475569; }
+    .box { fill: none; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+    .accent { stroke: #6366f1; }
+    .lbl { font-size: 13px; font-weight: 700; }
+    .sub { font-size: 12px; }
+  </style>
+  <rect class="box" x="40" y="40" width="160" height="70"/>
+  <text class="lbl" x="120" y="70" text-anchor="middle">1. Surfaces</text>
+  <text class="sub" x="120" y="90" text-anchor="middle">chat, rag, agent, mcp</text>
+
+  <path d="M200 75 H260" stroke="#64748b" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect class="box" x="260" y="40" width="180" height="70"/>
+  <text class="lbl" x="350" y="70" text-anchor="middle">2. Assets and bounds</text>
+  <text class="sub" x="350" y="90" text-anchor="middle">prompt, chunks, tools, notes</text>
+
+  <path d="M440 75 H500" stroke="#64748b" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect class="box" x="500" y="40" width="180" height="70"/>
+  <text class="lbl" x="590" y="70" text-anchor="middle">3. Threats</text>
+  <text class="sub" x="590" y="90" text-anchor="middle">ATLAS then STRIDE then OWASP</text>
+
+  <path d="M590 110 V150 H120 V180" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect class="box accent" x="40" y="180" width="160" height="60"/>
+  <text class="lbl" x="120" y="206" text-anchor="middle" fill="#6366f1">4. Control</text>
+  <text class="sub" x="120" y="224" text-anchor="middle">L0 fail, L2 ship</text>
+
+  <path d="M200 210 H500" stroke="#6366f1" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#b)"/>
+  <text class="sub" x="350" y="204" text-anchor="middle" fill="#6366f1">pick one primary_risk, open a lab</text>
+
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#64748b"/>
+    </marker>
+    <marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+</svg>

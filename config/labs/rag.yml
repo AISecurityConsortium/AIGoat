@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────
-# AI Goat — RAG-surface labs (P7)
+# AI Goat: RAG-surface labs (P7)
 # ─────────────────────────────────────────────────────────────────────
 #
 # Nine rag.kb labs total: llm02-3 and llm08-1 stay in llm.yml (stable ids).
@@ -15,8 +15,8 @@ labs:
   challenge_evaluator: context poisoning
   description: Hide override instructions inside a knowledge-base document and let retrieval deliver them.
   risks:
-  - owasp-llm-2025:LLM01
   - owasp-llm-2026:LLM01
+  primary_risk: owasp-llm-2026:LLM01
   surface: rag.kb
   difficulty: intermediate
   objective: |
@@ -33,17 +33,17 @@ labs:
       Provenance shows the injected chunk was retrieved. Output moderation may mask URLs but the policy lie can still land.
     2: |
       retrieval.injection_scan drops chunks with instruction-override phrasing so the fake policy is not placed in context.
-- id: llm08-2
-  name: LLM08 - Retrieval Keyword Stuffing
-  owasp: LLM08
+- id: llm09-2
+  name: LLM09 - Retrieval Keyword Stuffing
+  owasp: LLM09
   status: active
   defense_override: 0
   prompt_file: rag_exploitation
   challenge_evaluator: rag manipulation
   description: Beat dense ranking by stuffing keywords, then compare the trace with hybrid BM25+RRF on.
   risks:
-  - owasp-llm-2025:LLM08
   - owasp-llm-2026:LLM09
+  primary_risk: owasp-llm-2026:LLM09
   surface: rag.kb
   difficulty: intermediate
   objective: |
@@ -60,17 +60,17 @@ labs:
       The trace still shows the stuffed chunk; provenance makes the win visible rather than blocking it.
     2: |
       Ranking is unchanged by ACL. Injection scan only fires if the stuffed text also contains override phrases.
-- id: llm08-3
-  name: LLM08 - Trust-Tier Spoofing
-  owasp: LLM08
+- id: llm09-3
+  name: LLM09 - Trust-Tier Spoofing
+  owasp: LLM09
   status: active
   defense_override: 0
   prompt_file: rag_exploitation
   challenge_evaluator: rag manipulation
   description: Label a user-written document as system/official metadata and watch it get cited.
   risks:
-  - owasp-llm-2025:LLM08
   - owasp-llm-2026:LLM09
+  primary_risk: owasp-llm-2026:LLM09
   surface: rag.kb
   difficulty: beginner
   objective: |
@@ -87,17 +87,17 @@ labs:
       Provenance displays trust_tier=system next to is_user_injected=true. The contradiction is visible; retrieval is not filtered on tier.
     2: |
       ACL does not fix spoofed tiers. Injection scan only helps if the body contains override phrases.
-- id: llm08-4
-  name: LLM08 - Context Flooding
-  owasp: LLM08
+- id: llm09-4
+  name: LLM09 - Context Flooding
+  owasp: LLM09
   status: active
   defense_override: 0
   prompt_file: rag_exploitation
   challenge_evaluator: null
   description: Fill the token budget with large chunks so the grounded policy is truncated out of context.
   risks:
-  - owasp-llm-2025:LLM08
   - owasp-llm-2026:LLM09
+  primary_risk: owasp-llm-2026:LLM09
   surface: rag.kb
   difficulty: intermediate
   objective: |
@@ -123,8 +123,8 @@ labs:
   challenge_evaluator: null
   description: Retrieve another user's private knowledge-base document. The index does not enforce ACL.
   risks:
-  - owasp-llm-2025:LLM02
   - owasp-llm-2026:LLM02
+  primary_risk: owasp-llm-2026:LLM02
   surface: rag.kb
   difficulty: intermediate
   objective: |
@@ -141,17 +141,17 @@ labs:
       Provenance shows owner_id. The chunk is still included in context. Retrieval is not yet authorization-aware.
     2: |
       retrieval.acl sets excluded_by_control on alice's chunk so it is not placed in the prompt.
-- id: llm08-5
-  name: LLM08 - Stale Knowledge
-  owasp: LLM08
+- id: llm09-5
+  name: LLM09 - Stale Knowledge
+  owasp: LLM09
   status: active
   defense_override: 0
   prompt_file: rag_exploitation
   challenge_evaluator: null
   description: A superseded policy with is_latest=false or valid_until in the past is still retrieved and cited.
   risks:
-  - owasp-llm-2025:LLM08
   - owasp-llm-2026:LLM09
+  primary_risk: owasp-llm-2026:LLM09
   surface: rag.kb
   difficulty: beginner
   objective: |
@@ -168,17 +168,17 @@ labs:
       Provenance shows valid_until and version. Freshness is visible, not enforced.
     2: |
       ACL and injection scan do not drop stale-but-benign policy text. The lesson is observability.
-- id: llm08-6
-  name: LLM08 - Cross-Document Instruction Assembly
-  owasp: LLM08
+- id: llm01-5
+  name: LLM01 - Cross-Document Instruction Assembly
+  owasp: LLM01
   status: active
   defense_override: 0
   prompt_file: rag_exploitation
   challenge_evaluator: context poisoning
   description: Split an injection across two chunks so neither alone trips a detector.
   risks:
-  - owasp-llm-2025:LLM08
   - owasp-llm-2026:LLM01
+  primary_risk: owasp-llm-2026:LLM01
   surface: rag.kb
   difficulty: advanced
   objective: |

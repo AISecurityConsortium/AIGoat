@@ -174,14 +174,13 @@ class TestExtendedLabSchema:
         assert lab is not None
         assert lab.owasp == "LLM01"
 
-    def test_owasp_synthesises_2025_risk(self):
+    def test_owasp_synthesises_2026_risk(self):
         lab = LabDefinition(id="synth-1", name="Synth", owasp="LLM01")
-        assert lab.risks == ("owasp-llm-2025:LLM01",)
+        assert lab.risks == ("owasp-llm-2026:LLM01",)
 
-    def test_llm01_maps_to_both_editions(self):
+    def test_llm01_maps_to_2026(self):
         lab = get_lab_by_id("llm01-1")
         assert lab is not None
-        assert "owasp-llm-2025:LLM01" in lab.risks
         assert "owasp-llm-2026:LLM01" in lab.risks
 
     def test_default_surface_is_chat_cracky(self):
@@ -190,7 +189,7 @@ class TestExtendedLabSchema:
         assert lab.surface == "chat.cracky"
 
     def test_llm03_defense_override_still_none(self):
-        lab = get_lab_by_id("llm03-1")
+        lab = get_lab_by_id("llm04-1")
         assert lab is not None
         assert lab.defense_override is None
 
@@ -258,17 +257,21 @@ _ORIGINAL_LAB_IDS = (
 )
 _P7_RAG_LAB_IDS = (
     "llm01-4",
-    "llm08-2",
-    "llm08-3",
-    "llm08-4",
+    "llm09-2",
+    "llm09-3",
+    "llm09-4",
     "llm02-4",
-    "llm08-5",
-    "llm08-6",
+    "llm09-5",
+    "llm01-5",
 )
 _P8_AGENT_LAB_IDS = (
-    "llm06-2",
-    "llm06-3",
+    "llm03-1",
+    "llm03-2",
     "asi09-1",
+)
+_D5_MEMORY_LAB_IDS = (
+    "asi06-1",
+    "asi06-2",
 )
 _P9_MCP_LAB_IDS = (
     "mcp03-1",
@@ -276,45 +279,28 @@ _P9_MCP_LAB_IDS = (
     "mcp01-1",
     "mcp09-1",
 )
-_P10_SKILL_LAB_IDS = (
-    "ast01-1",
-    "ast02-1",
-    "ast03-1",
-    "ast04-1",
-    "ast05-1",
-    "ast06-1",
-    "ast07-1",
-    "ast08-1",
-    "ast09-1",
-    "ast10-1",
-)
 _ALLOWED_DIFFICULTY = {"beginner", "intermediate", "advanced"}
 
 
 class TestMigratedLabContent:
     """T021: 21 frontend cards merged into the original 14 lab ids."""
 
-    def test_lab_count_is_fourteen_after_merge(self):
+    def test_lab_count_is_thirty(self):
         ids = {lab.id for lab in get_all_labs()}
         assert set(_ORIGINAL_LAB_IDS) <= ids
         assert set(_P7_RAG_LAB_IDS) <= ids
         assert set(_P8_AGENT_LAB_IDS) <= ids
         assert set(_P9_MCP_LAB_IDS) <= ids
-        assert set(_P10_SKILL_LAB_IDS) <= ids
-        assert len(ids) == (
-            len(_ORIGINAL_LAB_IDS)
-            + len(_P7_RAG_LAB_IDS)
-            + len(_P8_AGENT_LAB_IDS)
-            + len(_P9_MCP_LAB_IDS)
-            + len(_P10_SKILL_LAB_IDS)
-        )
+        assert set(_D5_MEMORY_LAB_IDS) <= ids
+        assert "llm03-3" in ids
+        assert len(ids) == 30
 
     def test_original_ids_still_resolve(self):
         for lab_id in _ORIGINAL_LAB_IDS:
             assert get_lab_by_id(lab_id) is not None, lab_id
 
     def test_p8_agent_labs_use_agent_runner_surface(self):
-        for lab_id in _P8_AGENT_LAB_IDS:
+        for lab_id in (*_P8_AGENT_LAB_IDS, *_D5_MEMORY_LAB_IDS):
             lab = get_lab_by_id(lab_id)
             assert lab is not None, lab_id
             assert lab.surface == "agent.runner", lab_id
@@ -325,14 +311,8 @@ class TestMigratedLabContent:
             assert lab is not None, lab_id
             assert lab.surface == "mcp.client", lab_id
 
-    def test_p10_skill_labs_use_skill_runtime_surface(self):
-        for lab_id in _P10_SKILL_LAB_IDS:
-            lab = get_lab_by_id(lab_id)
-            assert lab is not None, lab_id
-            assert lab.surface == "skill.runtime", lab_id
-
     def test_p7_rag_labs_use_rag_kb_surface(self):
-        for lab_id in ("llm02-3", "llm08-1", *_P7_RAG_LAB_IDS):
+        for lab_id in ("llm02-3", "llm09-1", *_P7_RAG_LAB_IDS):
             lab = get_lab_by_id(lab_id)
             assert lab is not None, lab_id
             assert lab.surface == "rag.kb", lab_id
@@ -361,26 +341,37 @@ class TestMigratedLabContent:
                 assert lab.prompt_file, lab.id
 
 
-class TestDualFrameworkMapping:
-    """T040: every lab maps to both the 2025 and 2026 LLM editions."""
+class TestLlm2026OnlyMapping:
+    """T071: AIGoat tracks OWASP LLM Top 10 2026 only; 2025 is retired."""
 
-    def test_every_lab_has_both_editions(self):
+    def test_every_lab_has_2026_risk(self):
         for lab in get_all_labs():
-            assert len(lab.risks) >= 2, lab.id
-            assert any(r.startswith("owasp-llm-2025:") for r in lab.risks), lab.id
             assert any(r.startswith("owasp-llm-2026:") for r in lab.risks), lab.id
+            assert not any(r.startswith("owasp-llm-2025:") for r in lab.risks), lab.id
 
-    def test_llm07_lab_maps_to_hidden_context_exposure(self):
-        lab = get_lab_by_id("llm07-1")
+    def test_llm08_lab_maps_to_hidden_context_exposure(self):
+        lab = get_lab_by_id("llm08-1")
         assert lab is not None
         assert "owasp-llm-2026:LLM08" in lab.risks
+        assert lab.primary_risk == "owasp-llm-2026:LLM08"
 
-    def test_llm06_lab_maps_to_excessive_agency_third(self):
-        lab = get_lab_by_id("llm06-1")
+    def test_llm03_labs_map_to_excessive_agency(self):
+        lab = get_lab_by_id("llm03-3")
         assert lab is not None
         assert "owasp-llm-2026:LLM03" in lab.risks
+        assert lab.primary_risk == "owasp-llm-2026:LLM03"
 
-    def test_legacy_owasp_alias_still_2025(self):
-        lab = get_lab_by_id("llm07-1")
+    def test_legacy_owasp_alias_is_2026(self):
+        lab = get_lab_by_id("llm08-1")
         assert lab is not None
-        assert lab.owasp == "LLM07"
+        assert lab.owasp == "LLM08"
+
+    def test_every_lab_has_primary_risk(self):
+        for lab in get_all_labs():
+            assert lab.primary_risk, lab.id
+            if lab.id.startswith("llm"):
+                assert lab.primary_risk.startswith("owasp-llm-2026:"), lab.id
+            elif lab.id.startswith("mcp"):
+                assert lab.primary_risk.startswith("owasp-mcp-2025:"), lab.id
+            elif lab.id.startswith("asi"):
+                assert lab.primary_risk.startswith("owasp-agentic-2026:"), lab.id

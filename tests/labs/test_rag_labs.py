@@ -4,15 +4,15 @@ from __future__ import annotations
 from app.core.lab_loader import get_lab_by_id
 
 _RAG_LABS = (
-    "llm08-1",
+    "llm09-1",
     "llm02-3",
     "llm01-4",
-    "llm08-2",
-    "llm08-3",
-    "llm08-4",
+    "llm09-2",
+    "llm09-3",
+    "llm09-4",
     "llm02-4",
-    "llm08-5",
-    "llm08-6",
+    "llm09-5",
+    "llm01-5",
 )
 
 

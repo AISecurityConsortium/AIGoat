@@ -3,8 +3,8 @@
 AIGoat is deliberately vulnerable at the AI-semantic layer: prompt injection, RAG
 poisoning, data leakage and weak demo credentials are the product. It must never
 become vulnerable at the operating-system layer. Upcoming work adds agent tool
-handlers, MCP servers and a skill runtime, all of which execute attacker-influenced
-instructions. These tests encode the boundary before that code exists.
+handlers and MCP servers, both of which execute attacker-influenced
+instructions. These tests encode the boundary before all of that code exists.
 
 The scanner uses ``ast`` rather than regular expressions so comments and string
 literals do not produce false positives.
@@ -28,7 +28,6 @@ GUARDED_DIRS = (
     "app/mcp_servers",
     "app/surfaces",
     "app/agent",
-    "app/skills",
 )
 
 FORBIDDEN_IMPORT_ROOTS = frozenset({
@@ -61,7 +60,7 @@ FORBIDDEN_CALL_NAMES = frozenset({
 })
 
 _WHY = (
-    "Shipped tool handlers, MCP servers and the skill runtime may be vulnerable at the "
+    "Shipped tool handlers and MCP servers may be vulnerable at the "
     "AI-semantic layer only, never at the OS layer. See SECURITY.md and "
     "agent-docs/INTENTIONAL_VULNERABILITY_NOTICE.md. Do not add an allowlist entry -- "
     "move the code out of the guarded directory instead."

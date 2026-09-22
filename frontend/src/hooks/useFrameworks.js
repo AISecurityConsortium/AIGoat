@@ -5,7 +5,7 @@ import API_CONFIG from '../config/api';
 const fetchPublic = (path) => apiClient.get(path);
 
 /**
- * List all frameworks. Taxonomy endpoints are public — do not send auth.
+ * List all frameworks. Taxonomy endpoints are public. Do not send auth.
  * @returns {{frameworks: Array, loading: boolean, error: Error|null, refetch: Function}}
  */
 export const useFrameworks = () => {

@@ -42,7 +42,7 @@ risks:
     title: "Agentic Supply Chain Vulnerabilities"
     summary: "Poisoned tool descriptors, typosquatted servers, and untrusted skill packs enter the agent the same way a dependency enters an app."
     description: "The agent does not need to be jailbroken if the catalogue it loads is already hostile. AIGoat uses local fake registries and decoy packages so learners can see a bad descriptor before any network call is made."
-    attack_surfaces: ["mcp.client", "skill.runtime"]
+    attack_surfaces: ["mcp.client"]
     related:
       - "owasp-llm-2026:LLM04"
   - code: "ASI05"

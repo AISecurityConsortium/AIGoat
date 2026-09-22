@@ -120,10 +120,73 @@ def test_upgrade_adds_agent_tables(tmp_path):
     cfg = _cfg(db_path)
     command.upgrade(cfg, "head")
     names = _table_names(db_path)
-    assert {"agent_runs", "agent_steps", "pending_approvals"} <= names
+    assert {"agent_runs", "agent_steps", "pending_approvals", "agent_memory"} <= names
     engine = create_engine(f"sqlite:///{db_path}")
     try:
         cols = {col["name"] for col in inspect(engine).get_columns("lab_sessions")}
+        memory_cols = {col["name"] for col in inspect(engine).get_columns("agent_memory")}
     finally:
         engine.dispose()
     assert {"surface", "session_token"} <= cols
+    assert {"id", "user_id", "lab_id", "key", "value", "created_at"} <= memory_cols
+
+
+def test_0005_renames_lab_ids_and_downgrades(tmp_path):
+    db_path = tmp_path / "rename.db"
+    cfg = _cfg(db_path)
+    command.upgrade(cfg, "0004")
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO users (username, email, password_hash, first_name, last_name, "
+                "is_staff, is_superuser, is_active, defense_level) "
+                "VALUES ('alice', 'a@b.c', 'h', '', '', 0, 0, 1, 0)"
+            )
+        )
+        uid = conn.execute(text("SELECT id FROM users WHERE username = 'alice'")).scalar()
+        conn.execute(
+            text("INSERT INTO lab_sessions (user_id, lab_id, reset_count) VALUES (:u, 'llm06-2', 0)"),
+            {"u": uid},
+        )
+        conn.execute(
+            text("INSERT INTO lab_sessions (user_id, lab_id, reset_count) VALUES (:u, 'llm03-1', 0)"),
+            {"u": uid},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO agent_runs (id, user_id, lab_id, goal) "
+                "VALUES ('run-1', :u, 'llm06-2', 'refund')"
+            ),
+            {"u": uid},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO agent_memory (user_id, lab_id, key, value) "
+                "VALUES (:u, 'llm06-2', 'note', 'x')"
+            ),
+            {"u": uid},
+        )
+    engine.dispose()
+
+    command.upgrade(cfg, "0005")
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.connect() as conn:
+        sessions = {row[0] for row in conn.execute(text("SELECT lab_id FROM lab_sessions"))}
+        run_lab = conn.execute(text("SELECT lab_id FROM agent_runs WHERE id = 'run-1'")).scalar()
+        mem_lab = conn.execute(text("SELECT lab_id FROM agent_memory WHERE key = 'note'")).scalar()
+    engine.dispose()
+    assert sessions == {"llm03-1", "llm04-1"}
+    assert run_lab == "llm03-1"
+    assert mem_lab == "llm03-1"
+
+    command.downgrade(cfg, "0004")
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.connect() as conn:
+        sessions = {row[0] for row in conn.execute(text("SELECT lab_id FROM lab_sessions"))}
+        run_lab = conn.execute(text("SELECT lab_id FROM agent_runs WHERE id = 'run-1'")).scalar()
+        mem_lab = conn.execute(text("SELECT lab_id FROM agent_memory WHERE key = 'note'")).scalar()
+    engine.dispose()
+    assert sessions == {"llm06-2", "llm03-1"}
+    assert run_lab == "llm06-2"
+    assert mem_lab == "llm06-2"

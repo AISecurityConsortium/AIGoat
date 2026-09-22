@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.agent.broker import IntentGate
 from app.agent.loop import ShopAgentLoop
+from app.agent.memory import format_memory_block, notes_for_prompt
 from app.agent.tools import SHOP_TOOL_NAMES, shop_tools
 from app.challenges.evaluator import EvalContext
 from app.challenges.registry import get_evaluator_by_title
@@ -29,7 +30,6 @@ from app.services.ollama_client import get_ollama_client
 from app.surfaces.transcript import Transcript
 
 SURFACE = "agent.runner"
-_SKILL_SURFACE = "skill.runtime"
 
 
 def resolve_agent_level(data: dict[str, Any], user: Any, lab_id: str | None) -> int:
@@ -94,6 +94,21 @@ def transcript_from_steps(
             )
         elif observation:
             transcript.add("tool_result", tool=action, content=observation)
+        if action == "remember" and decision == ControlAction.ALLOW.value:
+            stored = True
+            try:
+                payload = json.loads(observation) if observation else {}
+                if isinstance(payload, dict) and "stored" in payload:
+                    stored = bool(payload.get("stored"))
+            except json.JSONDecodeError:
+                stored = True
+            if stored:
+                transcript.add(
+                    "memory_write",
+                    key=str(arguments.get("key") or ""),
+                    content=str(arguments.get("value") or ""),
+                    raw=str(arguments.get("value") or ""),
+                )
     return transcript
 
 
@@ -119,7 +134,7 @@ def _evaluation(lab_id: str | None, goal: str, answer: str, transcript: list[dic
     }
 
 
-def _defense_dict(level: int, steps: list) -> dict[str, Any]:
+def _defense_dict(level: int, steps: list, notes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     profile = resolve_profile(SURFACE, level) if level >= 1 else None
     controls = list(profile.controls) if profile else []
     outcomes: list[dict[str, Any]] = []
@@ -134,6 +149,14 @@ def _defense_dict(level: int, steps: list) -> dict[str, Any]:
             "stage": "tool_call",
             "reason": None,
         })
+    excluded = [n for n in (notes or []) if not n.get("included", True)]
+    if excluded:
+        outcomes.append({
+            "control_id": "memory.scan",
+            "action": "transform",
+            "stage": "memory",
+            "reason": f"excluded {len(excluded)} planted note(s)",
+        })
     return {
         "level": level,
         "surface": SURFACE,
@@ -142,7 +165,41 @@ def _defense_dict(level: int, steps: list) -> dict[str, Any]:
     }
 
 
-def serialize_run(run: AgentRun, pending: PendingApproval | None = None) -> dict[str, Any]:
+def _memory_events(notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    ts = _now().isoformat()
+    for note in notes:
+        included = bool(note.get("included", True))
+        event: dict[str, Any] = {
+            "type": "memory_read",
+            "ts": ts,
+            "key": note.get("key"),
+            "content": note.get("value") if included else "",
+            "raw": note.get("raw") or note.get("value") or "",
+            "included": included,
+        }
+        if note.get("excluded_by_control"):
+            event["excluded_by_control"] = note["excluded_by_control"]
+        events.append(event)
+    return events
+
+
+def _insert_after_user_message(
+    events: list[dict[str, Any]], extra: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    if not extra:
+        return events
+    for i, event in enumerate(events):
+        if event.get("type") == "user_message":
+            return events[: i + 1] + extra + events[i + 1 :]
+    return extra + events
+
+
+async def serialize_run(
+    db: AsyncSession,
+    run: AgentRun,
+    pending: PendingApproval | None = None,
+) -> dict[str, Any]:
     steps = list(run.steps or [])
     agent_steps = [
         AgentStep(
@@ -157,16 +214,10 @@ def serialize_run(run: AgentRun, pending: PendingApproval | None = None) -> dict
     ]
     transcript = transcript_from_steps(run.goal, agent_steps, run.answer)
     api_transcript = transcript.to_api()
-    from app.skills.runtime import get_install, transcript_for_install
-
-    install = get_install(run.user_id, run.lab_id)
-    if install is not None:
-        skill_events = [
-            event for event in transcript_for_install(install) if event.get("type") == "skill_load"
-        ]
-        api_transcript = skill_events + api_transcript
-        for seq, event in enumerate(api_transcript):
-            event["seq"] = seq
+    notes = await notes_for_prompt(db, run.user_id, run.lab_id, run.defense_level)
+    api_transcript = _insert_after_user_message(api_transcript, _memory_events(notes))
+    for seq, event in enumerate(api_transcript):
+        event["seq"] = seq
     pending_out = None
     if pending is None:
         pending = next((p for p in (run.pending or []) if p.status == "pending"), None)
@@ -200,8 +251,9 @@ def serialize_run(run: AgentRun, pending: PendingApproval | None = None) -> dict
         ],
         "pending": pending_out,
         "transcript": api_transcript,
-        "defense": _defense_dict(run.defense_level, agent_steps),
+        "defense": _defense_dict(run.defense_level, agent_steps, notes),
         "evaluation": _evaluation(run.lab_id, run.goal, run.answer, api_transcript),
+        "memory": notes,
     }
 
 
@@ -304,19 +356,18 @@ async def _apply_result(
     await db.flush()
 
 
-def _build_loop(db: AsyncSession, user: User, run: AgentRun, lab) -> ShopAgentLoop:
-    from app.skills.runtime import get_install, overlay_allowlist, overlay_system
-
-    registry = shop_tools(db, user)
-    install = get_install(user.id, run.lab_id)
+async def _build_loop(db: AsyncSession, user: User, run: AgentRun, lab) -> ShopAgentLoop:
+    registry = shop_tools(db, user, lab_id=run.lab_id, level=run.defense_level)
     broker = IntentGate(
         registry,
         level=run.defense_level,
-        allowlist=overlay_allowlist(_allowlist_for(lab), install),
+        allowlist=_allowlist_for(lab),
         user_id=user.id,
     )
     settings = get_settings()
-    system = overlay_system(load_lab_prompt(run.lab_id) or "", install)
+    notes = await notes_for_prompt(db, user.id, run.lab_id, run.defense_level)
+    system = load_lab_prompt(run.lab_id) or ""
+    system = system + format_memory_block(notes)
     return ShopAgentLoop(
         registry,
         broker,
@@ -339,26 +390,14 @@ async def start_run(
     lab = get_lab_by_id(lab_id)
     if lab is None:
         raise NotFoundError(f"Lab {lab_id} not found")
-    if lab.surface not in {SURFACE, _SKILL_SURFACE}:
-        raise ValidationError(f"Lab {lab_id} is not an agent.runner or skill.runtime lab")
+    if lab.surface != SURFACE:
+        raise ValidationError(f"Lab {lab_id} is not an agent.runner lab")
     settings = get_settings()
     level = resolve_agent_level(
         {"defense_level": defense_level},
         user,
         lab_id,
     )
-    if lab.surface == _SKILL_SURFACE:
-        from app.skills.runtime import get_install, install_skill
-
-        if get_install(user.id, lab_id) is None:
-            skill_id = (lab.surface_config or {}).get("skill_id")
-            if skill_id:
-                await install_skill(
-                    user_id=user.id,
-                    lab_id=lab_id,
-                    skill_id=str(skill_id),
-                    level=level,
-                )
     run = AgentRun(
         id=str(uuid.uuid4()),
         user_id=user.id,
@@ -371,17 +410,17 @@ async def start_run(
     )
     db.add(run)
     await db.flush()
-    loop = _build_loop(db, user, run, lab)
+    loop = await _build_loop(db, user, run, lab)
     result = await loop.run(goal)
     await _apply_result(db, run, result, user)
     await db.commit()
     loaded = await _owned_run(db, run.id, user)
-    return serialize_run(loaded)
+    return await serialize_run(db, loaded)
 
 
 async def get_run(db: AsyncSession, user: User, run_id: str) -> dict[str, Any]:
     run = await _owned_run(db, run_id, user)
-    return serialize_run(run)
+    return await serialize_run(db, run)
 
 
 async def cancel_run(db: AsyncSession, user: User, run_id: str) -> dict[str, Any]:
@@ -395,7 +434,7 @@ async def cancel_run(db: AsyncSession, user: User, run_id: str) -> dict[str, Any
             pending.resolved_at = _now()
     await db.commit()
     loaded = await _owned_run(db, run_id, user)
-    return serialize_run(loaded)
+    return await serialize_run(db, loaded)
 
 
 async def resolve_approval(
@@ -415,7 +454,7 @@ async def resolve_approval(
     if pending is None or pending.step_seq != step_seq:
         raise ValidationError("no matching pending approval")
     lab = get_lab_by_id(run.lab_id)
-    loop = _build_loop(db, user, run, lab)
+    loop = await _build_loop(db, user, run, lab)
     loop.steps = _steps_from_rows(list(run.steps or []))
     pending.status = "approved" if decision == "approve" else "denied"
     pending.resolved_at = _now()
@@ -427,7 +466,7 @@ async def resolve_approval(
         result = await loop.run(run.goal)
         await _apply_result(db, run, result, user)
         await db.commit()
-        return serialize_run(await _owned_run(db, run_id, user))
+        return await serialize_run(db, await _owned_run(db, run_id, user))
 
     invoked = await loop.tools.invoke(pending.tool, pending.arguments or {})
     if loop.steps:
@@ -436,4 +475,4 @@ async def resolve_approval(
     result = await loop.run(run.goal)
     await _apply_result(db, run, result, user)
     await db.commit()
-    return serialize_run(await _owned_run(db, run_id, user))
+    return await serialize_run(db, await _owned_run(db, run_id, user))

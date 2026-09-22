@@ -377,7 +377,7 @@ const HeroSection = () => {
           loop
           muted
           playsInline
-          src="/media/landing-page-video.mp4"
+          src="/media/videos/landing-page-video.mp4"
           sx={{
             width: '100%',
             height: '100%',
@@ -463,7 +463,7 @@ const ProductList = () => {
   const applyFilters = () => {
     let filtered = [...products];
 
-    // Search query filter — match only product NAME (whole-word to avoid substrings like "cap" in "landscape")
+    // Search query filter: match only product NAME (whole-word to avoid substrings like "cap" in "landscape")
     if (filters.searchQuery) {
       const q = filters.searchQuery.toLowerCase().trim();
       if (q) {

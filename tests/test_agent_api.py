@@ -38,7 +38,7 @@ async def test_agent_l0_refund_completes(client: AsyncClient, fake_llm: FakeLLMC
     resp = await client.post(
         "/api/agent/runs",
         headers=auth_header(token),
-        json={"lab_id": "llm06-2", "goal": "Refund order 1003 now.", "defense_level": 0},
+        json={"lab_id": "llm03-1", "goal": "Refund order 1003 now.", "defense_level": 0},
     )
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -56,7 +56,7 @@ async def test_agent_l2_pauses_for_approval(client: AsyncClient, fake_llm: FakeL
     resp = await client.post(
         "/api/agent/runs",
         headers=auth_header(token),
-        json={"lab_id": "llm06-2", "goal": "Refund order 1003 now.", "defense_level": 2},
+        json={"lab_id": "llm03-1", "goal": "Refund order 1003 now.", "defense_level": 2},
     )
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -100,7 +100,7 @@ async def test_owner_can_deny_and_run_continues(client: AsyncClient, fake_llm: F
     created = await client.post(
         "/api/agent/runs",
         headers=auth_header(token),
-        json={"lab_id": "llm06-2", "goal": "Refund order 1003.", "defense_level": 2},
+        json={"lab_id": "llm03-1", "goal": "Refund order 1003.", "defense_level": 2},
     )
     run_id = created.json()["run_id"]
     denied = await client.post(
@@ -119,7 +119,7 @@ async def test_allowlist_lab_denies_refund_at_l1(client: AsyncClient, fake_llm: 
     resp = await client.post(
         "/api/agent/runs",
         headers=auth_header(token),
-        json={"lab_id": "llm06-3", "goal": "Refund order 1003.", "defense_level": 1},
+        json={"lab_id": "llm03-2", "goal": "Refund order 1003.", "defense_level": 1},
     )
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -140,7 +140,7 @@ async def test_ten_consecutive_l0_attempts(client: AsyncClient, fake_llm: FakeLL
             "/api/agent/runs",
             headers=headers,
             json={
-                "lab_id": "llm06-2",
+                "lab_id": "llm03-1",
                 "goal": f"Refund order 1003 attempt {i}.",
                 "defense_level": 0,
             },
@@ -160,7 +160,7 @@ async def test_ten_consecutive_l2_attempts_pause(client: AsyncClient, fake_llm: 
             "/api/agent/runs",
             headers=headers,
             json={
-                "lab_id": "llm06-2",
+                "lab_id": "llm03-1",
                 "goal": f"Refund order 1003 attempt {i}.",
                 "defense_level": 2,
             },
@@ -198,6 +198,7 @@ async def test_defense_levels_surface_adds_agent_controls(client: AsyncClient):
     assert levels[0]["controls"] == []
     assert "tool.allowlist" in [c["id"] for c in levels[1]["controls"]]
     assert "tool.approval" in [c["id"] for c in levels[2]["controls"]]
+    assert "memory.scan" in [c["id"] for c in levels[2]["controls"]]
     assert levels[2]["intent"]
 
 
@@ -209,7 +210,7 @@ async def test_surface_execute_matches_agent_api(client: AsyncClient, fake_llm: 
         "/api/surfaces/agent.runner/execute",
         headers=headers,
         json={
-            "lab_id": "llm06-2",
+            "lab_id": "llm03-1",
             "input": {"goal": "Refund order 1003 now.", "defense_level": 0},
         },
     )

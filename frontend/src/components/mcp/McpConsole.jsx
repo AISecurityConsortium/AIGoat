@@ -150,7 +150,7 @@ const McpConsole = ({ labId, lab }) => {
     <Box>
       <PageHeader
         title={lab?.name || 'MCP console'}
-        subtitle="Spec revision 2026-07-28 is stateless. There is no connect handshake. Each action spawns the stdio server, runs one RPC, and reaps it."
+        subtitle="Each click starts the server, runs one call, and stops it. There is no saved session."
       />
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>{String(error)}</Alert>
@@ -161,7 +161,10 @@ const McpConsole = ({ labId, lab }) => {
         </Alert>
       )}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <SectionCard title="Servers">
+      <SectionCard title="1. Pick the server">
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+          This lab is already pointed at the server it needs. The command below is the process that starts for this click.
+        </Typography>
         {servers.length === 0 ? (
           <EmptyState title="No MCP servers" description="The allowlist in config/mcp_servers.yml is empty." />
         ) : (
@@ -190,17 +193,22 @@ const McpConsole = ({ labId, lab }) => {
             <Chip size="small" label={selected.trust_tier} color={trustColor(selected.trust_tier)} sx={{ mr: 1 }} />
             <Chip size="small" label={selected.protocol_era} variant="outlined" />
             <Typography sx={{ mt: 1.5, fontSize: '0.75rem', fontWeight: 600 }}>
-              Launch command (SEP-1024, untruncated)
+              Command that starts the server
             </Typography>
             <CodeBlock code={(selected.command_display || []).join(' ')} language="bash" />
           </Box>
         )}
       </SectionCard>
 
-      <Box sx={{ display: 'flex', gap: 1, my: 2, flexWrap: 'wrap' }}>
-        <Button variant="contained" onClick={onDiscover} disabled={busy || !serverId}>Discover</Button>
-        <Button variant="outlined" onClick={onListTools} disabled={busy || !serverId}>List tools</Button>
-      </Box>
+      <SectionCard title="2. List tools">
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+          The description text is the attack surface. List tools first. Discover is optional identity.
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button variant="contained" onClick={onListTools} disabled={busy || !serverId}>List tools</Button>
+          <Button variant="outlined" onClick={onDiscover} disabled={busy || !serverId}>Discover</Button>
+        </Box>
+      </SectionCard>
 
       {discover && (
         <SectionCard title="server/discover">
@@ -212,7 +220,10 @@ const McpConsole = ({ labId, lab }) => {
       )}
 
       {tools.length > 0 && (
-        <SectionCard title="tools/list">
+        <SectionCard title="3. Read the description">
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1 }}>
+            Read this as attacker-controlled text. A second list can change it.
+          </Typography>
           <FormControlLabel
             control={<Switch checked={escaped} onChange={(e) => setEscaped(e.target.checked)} />}
             label="Show escaped"
@@ -256,7 +267,10 @@ const McpConsole = ({ labId, lab }) => {
       )}
 
       {tools.length > 0 && (
-        <SectionCard title="tools/call">
+        <SectionCard title="4. Call a tool">
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+            Only if this lab asks you to. A result can carry a decoy token.
+          </Typography>
           <TextField
             select
             fullWidth
@@ -296,10 +310,10 @@ const McpConsole = ({ labId, lab }) => {
         </SectionCard>
       )}
 
-      <SectionCard title="JSON-RPC transcript">
+      <SectionCard title="What the client sent">
         <TranscriptViewer
           events={transcript.filter((e) => e.type === 'mcp_request' || e.type === 'mcp_response')}
-          emptyDescription="Discover or list tools to record mcp_request / mcp_response events."
+          emptyDescription="List tools or discover to record what the client sent and what came back."
         />
       </SectionCard>
       </Box>
@@ -309,7 +323,7 @@ const McpConsole = ({ labId, lab }) => {
 
 McpConsole.propTypes = {
   labId: PropTypes.string.isRequired,
-  lab: PropTypes.object,
+  lab: PropTypes.object, // eslint-disable-line react/forbid-prop-types
 };
 
 export default McpConsole;

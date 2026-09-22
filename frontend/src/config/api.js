@@ -79,7 +79,7 @@ const API_CONFIG = {
     // Ollama Status
     OLLAMA_STATUS: '/api/ollama/status/',
 
-    // Taxonomy (public — no auth)
+    // Taxonomy (public, no auth)
     FRAMEWORKS: '/api/frameworks/',
     FRAMEWORK_DETAIL: (id) => `/api/frameworks/${id}`,
     RISKS: '/api/risks/',
@@ -99,17 +99,12 @@ const API_CONFIG = {
     AGENT_RUN: (id) => `/api/agent/runs/${id}`,
     AGENT_APPROVE: (id) => `/api/agent/runs/${id}/approve`,
     AGENT_CANCEL: (id) => `/api/agent/runs/${id}/cancel`,
+    AGENT_MEMORY: '/api/agent/memory',
 
     MCP_SERVERS: '/api/mcp/servers',
     MCP_DISCOVER: (id) => `/api/mcp/servers/${id}/discover`,
     MCP_TOOLS: (id) => `/api/mcp/servers/${id}/tools`,
     MCP_CALL: (id, tool) => `/api/mcp/servers/${id}/tools/${tool}/call`,
-
-    SKILLS: '/api/skills/',
-    SKILL_MANIFEST: (id) => `/api/skills/${id}/manifest`,
-    SKILL_INSTALL: (id) => `/api/skills/${id}/install`,
-    SKILL_EXTERNAL_DOC: (id) => `/api/skills/${id}/external-doc`,
-    SKILL_CONVERTER: '/api/skills/converter',
 
     // Workshop / Challenges
     CHALLENGES: '/api/workshop/challenges',

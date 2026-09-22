@@ -13,7 +13,6 @@ ALLOWED_SURFACES = {
     "rag.kb",
     "agent.runner",
     "mcp.client",
-    "skill.runtime",
     "api.raw",
 }
 
@@ -33,14 +32,12 @@ def _load_all() -> dict[str, dict]:
 
 
 class TestFrameworkManifestFiles:
-    def test_five_yaml_files_exist(self):
+    def test_three_yaml_files_exist(self):
         stems = {p.stem for p in _yml_files()}
         assert stems == {
             "owasp-llm-2026",
-            "owasp-llm-2025",
             "owasp-agentic-2026",
             "owasp-mcp-2025",
-            "owasp-skills-2026",
         }
 
     def test_every_file_parses_as_yaml(self):
@@ -77,7 +74,7 @@ class TestFrameworkRisks:
             assert len(codes) == 10, stem
             assert len(set(codes)) == 10, stem
             total += len(codes)
-        assert total == 50
+        assert total == 30
 
     def test_summaries_and_descriptions_are_non_empty(self):
         for stem, data in _load_all().items():
@@ -148,11 +145,11 @@ def _minimal_framework_yaml(
 
 
 class TestFrameworkLoader:
-    def test_get_all_frameworks_returns_five(self):
+    def test_get_all_frameworks_returns_three(self):
         from app.core.framework_loader import get_all_frameworks, reset_framework_cache
 
         reset_framework_cache()
-        assert len(get_all_frameworks()) == 5
+        assert len(get_all_frameworks()) == 3
 
     def test_get_framework_by_id_has_ten_risks(self):
         from app.core.framework_loader import get_framework_by_id, reset_framework_cache
@@ -177,11 +174,11 @@ class TestFrameworkLoader:
         reset_framework_cache()
         assert get_risk_by_id("nope:XX") is None
 
-    def test_get_all_risks_returns_fifty(self):
+    def test_get_all_risks_returns_thirty(self):
         from app.core.framework_loader import get_all_risks, reset_framework_cache
 
         reset_framework_cache()
-        assert len(get_all_risks()) == 50
+        assert len(get_all_risks()) == 30
 
     def test_env_path_loads_only_that_directory(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         from app.core.framework_loader import get_all_frameworks, reset_framework_cache

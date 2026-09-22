@@ -54,7 +54,7 @@ def get_evaluator_by_title_safe(key: str):
 
 
 # ---------------------------------------------------------------------------
-# LLM03 -- Supply chain (Modelfile backdoor), lab llm03-1
+# LLM04 -- Supply chain (Modelfile backdoor), lab llm04-1
 # ---------------------------------------------------------------------------
 
 class TestSupplyChain:

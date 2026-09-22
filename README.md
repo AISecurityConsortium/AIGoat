@@ -43,7 +43,7 @@ Unlike reading about AI security in theory, the AIGoat playground lets you explo
 
 The AI Goat platform provides a complete environment for learning LLM security through practice:
 
-- **17 Attack Labs** covering prompt injection, system prompt leakage, data exfiltration, supply chain attacks, excessive agency, RAG poisoning, misinformation, and unbounded consumption -- each mapped to a specific OWASP LLM Top 10 category
+- **30 Attack Labs** covering prompt injection, hidden context exposure, data exfiltration, supply chain attacks, excessive agency, RAG poisoning, misinformation, and unbounded consumption -- each mapped to a specific OWASP LLM Top 10 2026 category
 - **9 CTF Challenges** with dynamic flag generation -- earn points by successfully exploiting the chatbot in capture-the-flag exercises
 - **3 Progressive Defense Levels** -- start with a fully vulnerable system, then activate input validation, intent classification, output filtering, and NVIDIA NeMo Guardrails to see how defenses mitigate each attack
 - **Poisonable Knowledge Base** -- inject documents into the RAG pipeline and watch the LLM trust fabricated data, manipulate vector retrieval, and flood the context window
@@ -58,7 +58,7 @@ The AI Goat platform provides a complete environment for learning LLM security t
 
 AIGoat serves as a practical LLM security lab for a range of scenarios:
 
-- **Learning the OWASP LLM Top 10** -- work through real attack scenarios mapped to each category, from LLM01 (Prompt Injection) through LLM10 (Unbounded Consumption)
+- **Learning the OWASP LLM Top 10** -- work through real attack scenarios mapped to each 2026 category, from LLM01 (Prompt Injection) through LLM10 (Insecure Output Handling)
 - **AI Red Teaming Practice** -- develop adversarial techniques against a live LLM in a controlled, repeatable environment
 - **Security Workshops and Training** -- run instructor-led or self-paced labs for teams learning about AI security risks (see the [workshop guide](docs/workshop-guide.md))
 - **Research and Experimentation** -- test guardrail effectiveness, investigate prompt injection variants, or evaluate defensive strategies against a consistent target
@@ -75,7 +75,7 @@ AIGoat serves as a practical LLM security lab for a range of scenarios:
 | **Deployment** | Local, lightweight, single command | Often cloud-based or heavy provisioning |
 | **Learning Style** | Hands-on playground with guided labs | Documentation-heavy or setup-intensive |
 | **Accessibility** | Quick start -- clone, run, attack | Complex environment configuration |
-| **Attack Coverage** | Full OWASP LLM Top 10 with 17 labs | Partial coverage or narrow focus |
+| **Attack Coverage** | Full OWASP LLM Top 10 2026 with 30 labs | Partial coverage or narrow focus |
 | **Defense Progression** | 3 levels from vulnerable to guardrailed | Static difficulty or no defense comparison |
 | **CTF Integration** | 9 challenges with dynamic flag generation | Rarely integrated |
 | **RAG Attack Surface** | Intentionally poisonable knowledge base | Usually static context |
@@ -147,21 +147,20 @@ The Docker setup starts three containers: backend, frontend (Nginx), and Ollama.
 
 ## Attack Scenarios
 
-The AIGoat platform covers the full OWASP LLM Top 10 through guided attack labs.
-Labs are mapped to both the 2025 and 2026 editions.
+The AIGoat platform covers the full OWASP LLM Top 10 2026 through guided attack labs.
 
 | OWASP | Lab | Attack Scenario |
 |-------|-----|-----------------|
-| **LLM01:2026** | Prompt Injection (3 labs) | Override chatbot instructions, inject hidden commands, chain multi-turn attacks |
-| **LLM02:2026** | Sensitive Info Disclosure (3 labs) | Extract admin credentials, customer PII, internal configuration from the chatbot's context |
+| **LLM01:2026** | Prompt Injection (5 labs) | Override chatbot instructions, inject hidden commands, chain multi-turn attacks |
+| **LLM02:2026** | Sensitive Info Disclosure (4 labs) | Extract admin credentials, customer PII, internal configuration from the chatbot's context |
+| **LLM03:2026** | Excessive Agency (3 labs) | Steer tools and an overpowered assistant into unauthorized refunds, coupons, and exports |
 | **LLM04:2026** | Supply Chain -- Modelfile Backdoor | Discover hidden backdoor triggers in a community-contributed Ollama Modelfile |
-| **LLM05:2026** | Data Poisoning (3 labs) | Inject fake information through reviews and tips that the chatbot repeats as fact |
-| **LLM10:2026** | Insecure Output Handling (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
-| **LLM03:2026** | Excessive Agency -- Overpowered Assistant | Exploit a chatbot that confirms unauthorized actions without verification |
-| **LLM08:2026** | System Prompt Leakage (2 labs) | Extract the chatbot's hidden system instructions, including its confidential configuration block |
-| **LLM09:2026** | RAG / Vector Weaknesses (3 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
-| **LLM07:2026** | Misinformation (3 labs) | Trick the chatbot into fabricating certifications, endorsements, and safety data |
+| **LLM05:2026** | Data and Model Poisoning | Inject fake information that the chatbot repeats as fact |
 | **LLM06:2026** | Unbounded Consumption -- Token Flood | Cause excessive resource consumption through verbose output generation |
+| **LLM07:2026** | Misinformation | Trick the chatbot into fabricating certifications, endorsements, and safety data |
+| **LLM08:2026** | Hidden Context Exposure | Extract the chatbot's hidden system instructions, including its confidential configuration block |
+| **LLM09:2026** | Vector and Embedding Weaknesses (5 labs) | Poison the Knowledge Base, manipulate vector retrieval, flood the context window |
+| **LLM10:2026** | Insecure Output Handling (XSS) | Make the chatbot generate HTML/JavaScript that executes in the browser |
 
 Each lab provides example prompts, explains the attack technique, and shows expected results at each defense level.
 

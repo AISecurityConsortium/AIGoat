@@ -9,6 +9,7 @@ from tests.conftest import auth_header
 
 _NEW_KEYS = {
     "risks",
+    "primary_risk",
     "surface",
     "difficulty",
     "objective",
@@ -82,7 +83,7 @@ async def test_list_labs_risk_filter(client: AsyncClient):
     token = await _token(client, "labrisk")
     resp = await client.get(
         "/api/labs/",
-        params={"risk": "owasp-llm-2025:LLM01"},
+        params={"risk": "owasp-llm-2026:LLM01"},
         headers=auth_header(token),
     )
     assert resp.status_code == 200
@@ -90,11 +91,44 @@ async def test_list_labs_risk_filter(client: AsyncClient):
     assert {"llm01-1", "llm01-2", "llm01-3"} <= ids
 
 
+async def test_list_labs_primary_only_excludes_cross_tagged(client: AsyncClient):
+    token = await _token(client, "labprimary")
+    headers = auth_header(token)
+    all_llm01 = await client.get(
+        "/api/labs/",
+        params={"risk": "owasp-llm-2026:LLM01"},
+        headers=headers,
+    )
+    primary = await client.get(
+        "/api/labs/",
+        params={"risk": "owasp-llm-2026:LLM01", "primary_only": True},
+        headers=headers,
+    )
+    assert all_llm01.status_code == 200
+    assert primary.status_code == 200
+    all_ids = {item["id"] for item in all_llm01.json()}
+    primary_ids = {item["id"] for item in primary.json()}
+    assert {"llm01-1", "llm01-2", "llm01-3"} <= primary_ids
+    assert "mcp03-1" in all_ids
+    assert "mcp03-1" not in primary_ids
+    assert all(item["primary_risk"] == "owasp-llm-2026:LLM01" for item in primary.json())
+
+
 async def test_get_lab_detail(client: AsyncClient):
     token = await _token(client, "labone")
     resp = await client.get("/api/labs/llm01-1", headers=auth_header(token))
     assert resp.status_code == 200
     assert resp.json()["objective"]
+
+
+async def test_related_lab_ids_uncapped_and_excludes_self(client: AsyncClient):
+    token = await _token(client, "labrelated")
+    resp = await client.get("/api/labs/mcp03-1", headers=auth_header(token))
+    assert resp.status_code == 200
+    related = resp.json()["related_lab_ids"]
+    assert "mcp03-1" not in related
+    assert len(related) > 5
+    assert len(related) == len(set(related))
 
 
 async def test_get_lab_missing(client: AsyncClient):

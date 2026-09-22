@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" role="img" aria-labelledby="t d">
+  <title id="t">STRIDE on the shop-agent refund path</title>
+  <desc id="d">Spoofing hits the system prompt. Tampering hits retrieved chunks. Repudiation is a refund without an approval row. Information disclosure is an export. Denial of service is a token flood. Elevation is a poisoned MCP description.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #475569; }
+    .box { fill: none; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+    .lbl { font-size: 13px; font-weight: 700; }
+    .sub { font-size: 12px; }
+  </style>
+  <rect class="box" x="16" y="24" width="220" height="70"/>
+  <text class="lbl" x="126" y="50" text-anchor="middle">S Spoofing</text>
+  <text class="sub" x="126" y="70" text-anchor="middle">hidden prompt  llm08-1</text>
+
+  <rect class="box" x="250" y="24" width="220" height="70"/>
+  <text class="lbl" x="360" y="50" text-anchor="middle">T Tampering</text>
+  <text class="sub" x="360" y="70" text-anchor="middle">poisoned chunk  llm09-1</text>
+
+  <rect class="box" x="484" y="24" width="220" height="70"/>
+  <text class="lbl" x="594" y="50" text-anchor="middle">R Repudiation</text>
+  <text class="sub" x="594" y="70" text-anchor="middle">refund at L0  llm03-1</text>
+
+  <rect class="box" x="16" y="114" width="220" height="70"/>
+  <text class="lbl" x="126" y="140" text-anchor="middle">I Disclosure</text>
+  <text class="sub" x="126" y="160" text-anchor="middle">export_customer_data</text>
+
+  <rect class="box" x="250" y="114" width="220" height="70"/>
+  <text class="lbl" x="360" y="140" text-anchor="middle">D Denial of service</text>
+  <text class="sub" x="360" y="160" text-anchor="middle">token flood  llm06-1</text>
+
+  <rect class="box" x="484" y="114" width="220" height="70"/>
+  <text class="lbl" x="594" y="140" text-anchor="middle">E Elevation</text>
+  <text class="sub" x="594" y="160" text-anchor="middle">MCP description  mcp03-1</text>
+
+  <text class="sub" x="360" y="230" text-anchor="middle">Walk the refund goal once. Each letter is one lab, not a slide.</text>
+  <text class="sub" x="360" y="250" text-anchor="middle">LINDDUN lights up on the same export tool and on memory notes that outlive a session.</text>
+</svg>

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────
-# AI Goat — mcp.client labs (P9)
+# AI Goat: mcp.client labs (P9)
 # ─────────────────────────────────────────────────────────────────────
 #
 # Real MCP 2026-07-28 over stdio. Semantic vulns only (no OS-layer sinks).
@@ -15,10 +15,10 @@ labs:
   challenge_evaluator: mcp poisoning
   description: Read the injected instruction sitting in a tool description.
   risks:
-  - owasp-llm-2025:LLM01
   - owasp-llm-2026:LLM01
   - owasp-mcp-2025:MCP03
   - owasp-agentic-2026:ASI02
+  primary_risk: owasp-mcp-2025:MCP03
   surface: mcp.client
   surface_config:
     server_id: community_support
@@ -44,10 +44,10 @@ labs:
   challenge_evaluator: mcp rug pull
   description: List the same tool twice and watch the description change.
   risks:
-  - owasp-llm-2025:LLM01
   - owasp-llm-2026:LLM01
   - owasp-mcp-2025:MCP03
   - owasp-agentic-2026:ASI04
+  primary_risk: owasp-mcp-2025:MCP03
   surface: mcp.client
   surface_config:
     server_id: community_support
@@ -71,17 +71,17 @@ labs:
       The pin runs first, then description_scan redacts remaining injection phrasing.
 - id: mcp01-1
   name: MCP01 - Decoy Token in Tool Result
-  owasp: LLM02
+  owasp: LLM06
   status: active
   defense_override: 0
   prompt_file: mcp_client
   challenge_evaluator: mcp decoy
   description: Call read_internal_notes and watch a decoy token land in the result.
   risks:
-  - owasp-llm-2025:LLM02
   - owasp-llm-2026:LLM06
   - owasp-mcp-2025:MCP01
   - owasp-agentic-2026:ASI03
+  primary_risk: owasp-mcp-2025:MCP01
   surface: mcp.client
   surface_config:
     server_id: community_support
@@ -107,11 +107,11 @@ labs:
   challenge_evaluator: mcp shadow
   description: Pick the community mirror that reuses the official catalog's tool names.
   risks:
-  - owasp-llm-2025:LLM04
   - owasp-llm-2026:LLM04
   - owasp-mcp-2025:MCP09
   - owasp-mcp-2025:MCP04
   - owasp-agentic-2026:ASI04
+  primary_risk: owasp-mcp-2025:MCP09
   surface: mcp.client
   surface_config:
     server_id: shadow_shop

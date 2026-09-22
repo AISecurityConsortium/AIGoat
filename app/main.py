@@ -53,7 +53,6 @@ from app.api.mcp import router as mcp_router
 from app.api.profile import router as profile_router
 from app.api.rag import router as rag_router
 from app.api.shop import router as shop_router
-from app.api.skills import router as skills_router
 from app.api.surfaces import router as surfaces_router
 from app.api.system import router as system_router
 from app.api.taxonomy import router as taxonomy_router
@@ -72,4 +71,3 @@ app.include_router(taxonomy_router)
 app.include_router(surfaces_router)
 app.include_router(agent_router)
 app.include_router(mcp_router)
-app.include_router(skills_router)

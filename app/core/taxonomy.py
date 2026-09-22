@@ -29,7 +29,7 @@ def _challenge_risk_map() -> dict[int, tuple[str, ...]]:
             code = part.strip()
             if not code:
                 continue
-            qualified = f"owasp-llm-2025:{code}"
+            qualified = f"owasp-llm-2026:{code}"
             if get_risk_by_id(qualified) is None:
                 logger.warning("challenge %s owasp_ref %r does not resolve", challenge_id, qualified)
                 continue

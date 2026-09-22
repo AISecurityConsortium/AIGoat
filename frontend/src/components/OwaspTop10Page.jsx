@@ -13,8 +13,20 @@ import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-d
 import { useFrameworks, useFramework } from '../hooks/useFrameworks';
 import { PageHeader, SectionCard, RiskChip, EmptyState } from './common';
 import { attacksRiskPath, attacksSurfacePath } from '../utils/taxonomyLinks';
+import { DEFAULT_FRAMEWORK, sortFrameworks } from '../utils/frameworkOrder';
 
-const DEFAULT_FRAMEWORK = 'owasp-llm-2026';
+const LLM_2025_TO_2026 = [
+  { tag: 'Unchanged', hue: 'default', code: 'LLM01', title: 'Prompt Injection', note: 'same title and rank' },
+  { tag: 'Unchanged', hue: 'default', code: 'LLM02', title: 'Sensitive Information Disclosure', note: 'same title and rank' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM03', title: 'Excessive Agency', note: 'was LLM06' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM04', title: 'Supply Chain', note: 'was LLM03' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM05', title: 'Data and Model Poisoning', note: 'was LLM04' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM06', title: 'Unbounded Consumption', note: 'was LLM10' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM07', title: 'Misinformation', note: 'was LLM09' },
+  { tag: 'Renamed', hue: 'secondary', code: 'LLM08', title: 'Hidden Context Exposure', note: 'was LLM07 System Prompt Leakage' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM09', title: 'Vector and Embedding Weaknesses', note: 'was LLM08' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM10', title: 'Insecure Output Handling', note: 'was LLM05' },
+];
 
 const outboundButtonSx = {
   textTransform: 'none',
@@ -105,6 +117,7 @@ const OwaspTop10Page = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { frameworks, loading: listLoading, error: listError, refetch: refetchList } = useFrameworks();
+  const orderedFrameworks = useMemo(() => sortFrameworks(frameworks), [frameworks]);
   const selectedId = searchParams.get('framework') || DEFAULT_FRAMEWORK;
   const query = searchParams.get('q') || '';
   const { framework, loading: detailLoading, error: detailError, refetch: refetchDetail } = useFramework(selectedId);
@@ -151,6 +164,15 @@ const OwaspTop10Page = () => {
       <Button
         variant="outlined"
         size="small"
+        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.75rem !important' }} />}
+        onClick={() => navigate('/threat-modeling')}
+        sx={outboundButtonSx}
+      >
+        Threat modeling
+      </Button>
+      <Button
+        variant="outlined"
+        size="small"
         endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
         component="a"
         href="https://genai.owasp.org/"
@@ -177,14 +199,14 @@ const OwaspTop10Page = () => {
 
         {listLoading && !frameworks.length && (
           <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-            {[0, 1, 2, 3, 4].map((i) => (
+            {[0, 1, 2].map((i) => (
               <Skeleton key={i} variant="rounded" width={110} height={52} />
             ))}
           </Box>
         )}
 
-        {frameworks.length > 0 && (
-          <FrameworkTabs frameworks={frameworks} selectedId={selectedId} onSelect={setFrameworkId} />
+        {orderedFrameworks.length > 0 && (
+          <FrameworkTabs frameworks={orderedFrameworks} selectedId={selectedId} onSelect={setFrameworkId} />
         )}
 
         {error && (
@@ -217,6 +239,39 @@ const OwaspTop10Page = () => {
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '0.7rem', mt: 1 }}>
                 Source licence: {framework.source_license}
+              </Typography>
+            </SectionCard>
+          </Box>
+        )}
+
+        {selectedId === 'owasp-llm-2026' && (
+          <Box sx={{ mb: 3 }}>
+            <SectionCard title="What changed from 2025 to 2026">
+              <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.85rem', lineHeight: 1.6, mb: 2 }}>
+                OWASP re-ranked the LLM Top 10 for 2026 as agents, tools, and retrieval moved from side channels
+                to the default architecture. AIGoat maps labs to the 2026 list only. Titles below are OWASP labels;
+                the notes are AIGoat teaching commentary, not the official explanations.
+              </Typography>
+              <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {LLM_2025_TO_2026.map((row) => (
+                  <Box
+                    component="li"
+                    key={row.code}
+                    sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}
+                  >
+                    <Chip size="small" label={row.tag} color={row.hue} />
+                    <Typography sx={{ fontSize: '0.85rem', color: 'text.primary' }}>
+                      <Box component="span" sx={{ fontWeight: 700 }}>{row.code}</Box>
+                      {' '}{row.title}
+                      <Box component="span" sx={{ color: 'text.secondary' }}>
+                        {' '}({row.note})
+                      </Box>
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 2, lineHeight: 1.6 }}>
+                Nothing was added or removed. Agent-specific risks moved to the Agentic Applications list.
               </Typography>
             </SectionCard>
           </Box>

@@ -104,7 +104,6 @@ class SurfacesConfig(BaseModel):
             "api.raw",
             "agent.runner",
             "mcp.client",
-            "skill.runtime",
         ]
     )
 
@@ -119,10 +118,6 @@ class AgentConfig(BaseModel):
         if v <= 0:
             raise ValueError("agent.max_steps must be > 0")
         return v
-
-
-class SkillsConfig(BaseModel):
-    packs_path: str = "./skills"
 
 
 class McpConfig(BaseModel):
@@ -157,7 +152,6 @@ class Settings(BaseModel):
     surfaces: SurfacesConfig = Field(default_factory=SurfacesConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)
     mcp: McpConfig = Field(default_factory=McpConfig)
-    skills: SkillsConfig = Field(default_factory=SkillsConfig)
 
 
 def load_config(path: str | Path | None = None) -> Settings:
