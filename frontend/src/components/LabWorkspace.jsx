@@ -28,7 +28,7 @@ const LabWorkspace = () => {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }).then(({ data }) => {
       if (cancelled) return;
-      if (data.surface === 'agent.runner' || data.surface === 'mcp.client') {
+      if (data.surface === 'agent.runner' || data.surface === 'mcp.client' || data.surface === 'mcp.host') {
         setLab(data);
         setSeedGoal('');
         return;
@@ -66,7 +66,7 @@ const LabWorkspace = () => {
     );
   }
 
-  const back = lab.surface === 'mcp.client'
+  const back = lab.surface === 'mcp.client' || lab.surface === 'mcp.host'
     ? { to: '/mcp', label: 'Back to MCP' }
     : { to: '/agent', label: 'Back to Agent' };
 
@@ -98,7 +98,9 @@ const LabWorkspace = () => {
       <Box sx={{ mt: 2 }}>
         {lab.surface === 'mcp.client'
           ? <McpConsole labId={labId} lab={lab} />
-          : <AgentConsole labId={labId} lab={lab} seedGoal={seedGoal} />}
+          : lab.surface === 'mcp.host'
+            ? null
+            : <AgentConsole labId={labId} lab={lab} seedGoal={seedGoal} />}
       </Box>
     </Container>
   );

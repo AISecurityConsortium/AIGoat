@@ -18,7 +18,7 @@ risks:
     title: "Agent Goal Hijack"
     summary: "A crafted input can replace the agent's stated objective so later tool use serves the attacker instead of the user."
     description: "Once a model plans and acts, changing its goal is more damaging than changing a single reply. AIGoat shows how a poisoned document or chat turn rewrites the plan, then scores on the downstream action the broker was asked to take."
-    attack_surfaces: ["rag.kb", "agent.runner"]
+    attack_surfaces: ["rag.kb", "agent.runner", "mcp.host"]
     related:
       - "owasp-llm-2026:LLM01"
       - "owasp-llm-2026:LLM03"
@@ -42,6 +42,7 @@ risks:
     title: "Agentic Supply Chain Vulnerabilities"
     summary: "Poisoned tool descriptors, typosquatted servers, and untrusted skill packs enter the agent the same way a dependency enters an app."
     description: "The agent does not need to be jailbroken if the catalogue it loads is already hostile. AIGoat uses local fake registries and decoy packages so learners can see a bad descriptor before any network call is made."
+    writeup: "Agentic supply chain here is the same idea as MCP04 and MCP09. A lookalike server or a poisoned tool description is loaded because the client trusts the catalogue. Practice it on the MCP04 lookalike integration and the MCP09 shadow server. There is no separate package installer."
     attack_surfaces: ["mcp.client"]
     related:
       - "owasp-llm-2026:LLM04"
@@ -49,6 +50,7 @@ risks:
     title: "Unexpected Code Execution (RCE)"
     summary: "Planner output that is treated as code can reach an execution sink the product never meant to expose."
     description: "AIGoat never runs attacker-controlled OS commands. A fake executor parses, logs, and refuses the dangerous string so the lesson is reaching that sink, not obtaining a shell on the workshop host."
+    writeup: "Unexpected code execution would be planner text reaching a shell. The asi05-1 lab is the refused fake executor. The model can request run_shell. The tool records the command string and returns refused. No process is started at any defense level."
     attack_surfaces: ["agent.runner"]
     related:
       - "owasp-llm-2026:LLM01"

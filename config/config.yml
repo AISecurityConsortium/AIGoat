@@ -48,7 +48,7 @@ taxonomy:
   labs_path: "./config/labs"
 
 surfaces:
-  enabled: ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client"]
+  enabled: ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client", "mcp.host"]
 
 agent:
   max_steps: 8

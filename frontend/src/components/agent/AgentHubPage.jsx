@@ -1,61 +1,28 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { Alert, Box, Button, Container, Skeleton, Typography } from '@mui/material';
 import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLabs } from '../../hooks/useLabs';
-import { SectionCard, RiskChip, DifficultyChip, EmptyState } from '../common';
-
-const oneLine = (text) => String(text || '').split('\n').map((line) => line.trim()).filter(Boolean)[0] || '';
-
-const HubLabCard = ({ lab }) => {
-  const code = (lab.primary_risk || '').includes(':')
-    ? lab.primary_risk.split(':').slice(1).join(':')
-    : (lab.owasp || '');
-  return (
-    <SectionCard dense>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.75 }}>
-        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{lab.name}</Typography>
-        {code && <RiskChip code={code} />}
-        {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
-      </Box>
-      <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.5, mb: 1.5 }}>
-        {oneLine(lab.objective) || lab.description}
-      </Typography>
-      <Button
-        component={RouterLink}
-        to={`/labs/${lab.id}`}
-        size="small"
-        variant="outlined"
-        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
-        sx={{ textTransform: 'none', fontWeight: 600 }}
-      >
-        Open console
-      </Button>
-    </SectionCard>
-  );
-};
-
-HubLabCard.propTypes = {
-  lab: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string,
-    primary_risk: PropTypes.string,
-    owasp: PropTypes.string,
-    difficulty: PropTypes.string,
-    objective: PropTypes.string,
-    description: PropTypes.string,
-  }).isRequired,
-};
+import { SectionCard, EmptyState } from '../common';
+import HubLabCard from '../common/HubLabCard';
+import { AGENT_ORDER, sortLabs } from '../../utils/labTeaching';
 
 const AGENT_STEPS = [
-  'See how a run moves. The Intent Gate decides what actually runs.',
-  'Open a console and give the agent a goal.',
-  'Read the transcript. The tool_call is what happened.',
+  'The attack surface is the agent runner, and for Admin the same assistant.',
+  'The exploit is the accepted tool call. Prose does not score.',
+  'Level 0 runs the call. Level 1 checks the allowlist. Level 2 also asks you to approve refunds and exports, and scans memory.',
 ];
 
 const AgentHubPage = () => {
-  const { labs, loading, error, refetch } = useLabs({ surface: 'agent.runner' });
+  const runner = useLabs({ surface: 'agent.runner' });
+  const host = useLabs({ surface: 'mcp.host' });
+  const labs = sortLabs(
+    [...runner.labs, ...host.labs.filter((lab) => String(lab.id).startsWith('asi'))],
+    AGENT_ORDER,
+  );
+  const loading = runner.loading || host.loading;
+  const error = runner.error || host.error;
+  const refetch = () => { runner.refetch(); host.refetch(); };
   const first = labs[0];
 
   return (
@@ -81,7 +48,7 @@ const AgentHubPage = () => {
                 Shop agent
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '1rem', lineHeight: 1.65, mb: 2 }}>
-                Make the shop agent do something it should refuse. The planner can say anything. The tool call is what happened.
+                The attack surface is the shop agent. You give it a goal. It may call a tool. That tool call is the exploit. Attacker and victim labs start as Alice, who plants a ticket or review, then switch to Admin so the assistant acts on it.
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2.5 }}>
                 {AGENT_STEPS.map((step, index) => (
@@ -109,7 +76,7 @@ const AgentHubPage = () => {
                   endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
                 >
-                  {first ? 'Open the first lab' : 'Browse agentic labs'}
+                  {first ? 'Start with the refund' : 'Browse agentic labs'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -118,6 +85,15 @@ const AgentHubPage = () => {
                   sx={{ textTransform: 'none', fontWeight: 600 }}
                 >
                   Labs on this page
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/admin/assistant"
+                  variant="outlined"
+                  size="small"
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Open the admin assistant
                 </Button>
               </Box>
               {first && (
@@ -180,7 +156,11 @@ const AgentHubPage = () => {
         )}
 
         <Box id="agent-labs" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
-          {labs.map((lab) => <HubLabCard key={lab.id} lab={lab} />)}
+          <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Do these in order</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 0.5 }}>
+            A card that says "same idea" or "same note" is one attack seen again. ASI01 is the review version of the planted-ticket labs.
+          </Typography>
+          {labs.map((lab, index) => <HubLabCard key={lab.id} lab={lab} index={index + 1} />)}
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

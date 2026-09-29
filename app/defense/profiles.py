@@ -22,6 +22,7 @@ _SURFACES = (
     "rag.kb",
     "agent.runner",
     "mcp.client",
+    "mcp.host",
     "api.raw",
 )
 _LEVELS = (0, 1, 2)

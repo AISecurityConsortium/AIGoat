@@ -42,7 +42,7 @@ risks:
     title: "Software Supply Chain Attacks & Dependency Tampering"
     summary: "A typosquatted or substituted MCP server can impersonate a trusted tool host."
     description: "AIGoat uses a local fake registry. Learners pick a lookalike server name, inspect the advertised tools, and see that the client had no signed identity for the process it spawned."
-    attack_surfaces: ["mcp.client"]
+    attack_surfaces: ["mcp.client", "mcp.host"]
     related:
       - "owasp-agentic-2026:ASI04"
       - "owasp-mcp-2025:MCP09"
@@ -50,6 +50,7 @@ risks:
     title: "Command Injection & Execution"
     summary: "Tool arguments that reach a shell or eval sink would turn a teaching lab into platform RCE, so this entry is documentation-only."
     description: "AIGoat will not wire MCP tool handlers to an OS command interpreter. The page explains the sink, shows a refused fake executor, and points learners at Improper Output Handling and Unexpected Code Execution instead."
+    writeup: "Command injection would mean a tool argument reaches a shell. AIGoat does not ship that sink. The ASI05 lab asks the admin agent to call run_shell, and the tool returns refused without starting a process. Read the observation. That refusal is the whole exercise."
     attack_surfaces: ["mcp.client"]
     related:
       - "owasp-agentic-2026:ASI05"
@@ -58,7 +59,7 @@ risks:
     title: "Intent Flow Subversion"
     summary: "Payloads hidden in resources or tool text can divert the client's next planned call."
     description: "The same poisoned description that looks like Tool Poisoning also rewrites what the model intends to do next. Labs keep the JSON-RPC transcript visible so learners can point at the exact field that flipped the plan."
-    attack_surfaces: ["mcp.client"]
+    attack_surfaces: ["mcp.client", "mcp.host"]
     related:
       - "owasp-agentic-2026:ASI01"
       - "owasp-mcp-2025:MCP03"
@@ -89,7 +90,7 @@ risks:
     title: "Context Injection & Over-Sharing"
     summary: "Resources and sampling results dumped wholesale into context give the model more than the task needs, including attacker text."
     description: "Over-sharing is the confused-deputy cousin of Tool Poisoning: the client concatenates every resource into the next prompt. Learners compare a filtered fetch against a dump-everything client."
-    attack_surfaces: ["mcp.client"]
+    attack_surfaces: ["mcp.client", "mcp.host"]
     related:
       - "owasp-agentic-2026:ASI06"
       - "owasp-agentic-2026:ASI03"

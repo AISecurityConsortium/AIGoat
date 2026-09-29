@@ -28,6 +28,9 @@ import RiskDetailPage from './components/RiskDetailPage';
 import AttacksPage from './components/AttacksPage';
 import ChallengePage from './components/ChallengePage';
 import LabWorkspace from './components/LabWorkspace';
+import SupportPage from './components/SupportPage';
+import FeedbackManagement from './components/FeedbackManagement';
+import AdminAssistantPage from './components/admin/AdminAssistantPage';
 import AgentHubPage from './components/agent/AgentHubPage';
 import McpHubPage from './components/mcp/McpHubPage';
 import { SearchProvider } from './contexts/SearchContext';
@@ -159,9 +162,24 @@ function AppContent() {
                     <UserProfile />
                   </ProtectedRoute>
                 } />
+                <Route path="/support" element={
+                  <ProtectedRoute>
+                    <SupportPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin-dashboard" element={
                   <ProtectedRoute>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/feedback-management" element={
+                  <ProtectedRoute>
+                    <FeedbackManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/assistant" element={
+                  <ProtectedRoute>
+                    <AdminAssistantPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/user-management" element={

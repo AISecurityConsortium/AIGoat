@@ -16,3 +16,8 @@ servers:
   module: shadow_shop.py
   trust_tier: untrusted
   protocol_era: "2026-stateless"
+- id: internal_shop
+  name: Internal shop
+  module: internal_shop.py
+  trust_tier: official
+  protocol_era: "2026-stateless"

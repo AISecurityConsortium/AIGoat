@@ -13,6 +13,7 @@ ALLOWED_SURFACES = {
     "rag.kb",
     "agent.runner",
     "mcp.client",
+    "mcp.host",
     "api.raw",
 }
 

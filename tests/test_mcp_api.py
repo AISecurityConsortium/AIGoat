@@ -31,7 +31,7 @@ async def test_list_servers_includes_command_display(client: AsyncClient):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     ids = {row["id"] for row in body}
-    assert ids == {"shop_catalog", "community_support", "shadow_shop"}
+    assert ids == {"shop_catalog", "community_support", "shadow_shop", "internal_shop"}
     for row in body:
         assert row["transport"] == "stdio"
         assert isinstance(row["command_display"], list)

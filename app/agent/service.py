@@ -10,6 +10,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.agent.admin_tools import admin_tools, is_admin_lab
 from app.agent.broker import IntentGate
 from app.agent.loop import ShopAgentLoop
 from app.agent.memory import format_memory_block, notes_for_prompt
@@ -358,6 +359,12 @@ async def _apply_result(
 
 async def _build_loop(db: AsyncSession, user: User, run: AgentRun, lab) -> ShopAgentLoop:
     registry = shop_tools(db, user, lab_id=run.lab_id, level=run.defense_level)
+    if user.is_staff and is_admin_lab(run.lab_id):
+        extra = admin_tools(db, user, lab_id=run.lab_id, level=run.defense_level)
+        for meta in extra.list_tools():
+            tool = extra.get(meta["name"])
+            if tool is not None:
+                registry.register(tool)
     broker = IntentGate(
         registry,
         level=run.defense_level,

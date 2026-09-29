@@ -113,6 +113,23 @@ profiles:
         phrasing are redacted before they are shown as model-facing text.
       controls: ["mcp.tool_pin", "mcp.description_scan", "output.moderate"]
 
+  mcp.host:
+    0:
+      intent: >
+        No host controls. The admin assistant calls whatever tool the model
+        picks on the internal MCP server, including refunds and exports.
+      controls: []
+    1:
+      intent: >
+        Pinned tool descriptions are restored if a later listing drifts, and
+        tool results are moderated.
+      controls: ["mcp.tool_pin", "output.moderate"]
+    2:
+      intent: >
+        Everything Level 1 does, plus poisoned tool descriptions are redacted
+        and refund or export calls pause until the admin approves them.
+      controls: ["mcp.tool_pin", "mcp.description_scan", "tool.approval", "output.moderate"]
+
   api.raw:
     0:
       intent: >

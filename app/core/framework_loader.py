@@ -43,6 +43,7 @@ class Risk:
     description: str
     attack_surfaces: tuple[str, ...] = ()
     related: tuple[str, ...] = ()
+    writeup: str = ""
 
     @property
     def id(self) -> str:
@@ -126,6 +127,7 @@ def _parse_risk(raw: Any, framework_id: str, path: Path, seen_codes: set[str]) -
         description=str(raw["description"]).strip(),
         attack_surfaces=tuple(str(s) for s in surfaces),
         related=tuple(str(r) for r in related),
+        writeup=str(raw.get("writeup") or "").strip(),
     )
 
 
@@ -261,6 +263,7 @@ def get_framework_dict(framework_id: str) -> dict[str, Any] | None:
                 "description": risk.description,
                 "attack_surfaces": list(risk.attack_surfaces),
                 "related": list(risk.related),
+                "writeup": risk.writeup,
             }
             for risk in fw.risks
         ],

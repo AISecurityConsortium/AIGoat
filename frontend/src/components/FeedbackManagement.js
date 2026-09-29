@@ -1,552 +1,340 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Container,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Box,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Tooltip,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
   Avatar,
-  Pagination,
-  CircularProgress,
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Skeleton,
+  TextField,
+  Typography,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
-  Delete as DeleteIcon,
-  Visibility as VisibilityIcon,
-  Person as PersonIcon,
-  ShoppingBag as ProductIcon,
-  AttachFile as FileIcon,
+  ArrowBack as BackIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
-  Feedback as FeedbackIcon,
-  Analytics as AnalyticsIcon,
-  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { apiClient as axios } from '../config/api';
-import { getApiUrl } from '../config/api';
+import { apiClient as api } from '../config/api';
+import TicketThread, { threadOf } from './support/TicketThread';
+
+const authHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const errorText = (err, fallback) => {
+  const detail = err.response?.data?.detail;
+  if (typeof detail === 'string' && detail) return detail;
+  if (err.response?.status === 403) return 'Access denied. Admin privileges required.';
+  return fallback;
+};
+
+const relativeTime = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const mins = Math.round((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const previewOf = (ticket) => {
+  const last = threadOf(ticket).at(-1);
+  const text = (last?.body || ticket.body || '').replace(/\s+/g, ' ').trim();
+  return text.length > 80 ? `${text.slice(0, 80)}…` : text;
+};
+
+const waitingOnUs = (ticket) => {
+  if (ticket.status !== 'open') return false;
+  const last = threadOf(ticket).at(-1);
+  return (last?.username || ticket.username) !== 'admin';
+};
+
+const FILTERS = [
+  { id: 'open', label: 'Open' },
+  { id: 'waiting', label: 'Waiting' },
+  { id: 'closed', label: 'Closed' },
+  { id: 'all', label: 'All' },
+];
 
 const FeedbackManagement = () => {
-  const [tips, setTips] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const theme = useTheme();
+  const narrow = useMediaQuery(theme.breakpoints.down('md'));
+  const [tickets, setTickets] = useState([]);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('open');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [selectedTips, setSelectedTips] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, tip: null });
-  const [bulkDeleteDialog, setBulkDeleteDialog] = useState({ open: false, count: 0 });
-  const [filters, setFilters] = useState({
-    search: '',
-    product_id: '',
-    user_id: '',
-    has_file: ''
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    page_size: 20,
-    total_count: 0,
-    total_pages: 0,
-    has_next: false,
-    has_previous: false
-  });
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [mobileDetail, setMobileDetail] = useState(false);
+  const picked = useRef(false);
 
-  useEffect(() => {
-    fetchTips();
-    fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, filters]);
+  const load = useCallback(() => {
+    api.get('/api/admin/support/tickets/', { headers: authHeaders() })
+      .then((res) => {
+        const rows = Array.isArray(res.data) ? res.data : [];
+        setTickets(rows);
+        setError('');
+        setSelectedId((current) => {
+          if (current && rows.some((row) => row.id === current)) return current;
+          if (picked.current) return current;
+          return (rows.find((row) => row.status === 'open') || rows[0] || {}).id ?? null;
+        });
+      })
+      .catch((err) => {
+        setTickets([]);
+        setError(errorText(err, 'Could not load tickets.'));
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchTips = async () => {
+  useEffect(() => { load(); }, [load]);
+
+  const counts = useMemo(() => ({
+    open: tickets.filter((ticket) => ticket.status === 'open').length,
+    waiting: tickets.filter(waitingOnUs).length,
+    closed: tickets.filter((ticket) => ticket.status === 'closed').length,
+    all: tickets.length,
+  }), [tickets]);
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return tickets.filter((ticket) => {
+      if (filter === 'open' && ticket.status !== 'open') return false;
+      if (filter === 'closed' && ticket.status !== 'closed') return false;
+      if (filter === 'waiting' && !waitingOnUs(ticket)) return false;
+      if (!needle) return true;
+      return `${ticket.username} ${ticket.subject} ${ticket.body} ${previewOf(ticket)}`.toLowerCase().includes(needle);
+    });
+  }, [tickets, query, filter]);
+
+  const selected = tickets.find((ticket) => ticket.id === selectedId) || null;
+
+  const openTicket = (id) => {
+    picked.current = true;
+    setSelectedId(id);
+    setNotice('');
+    setMobileDetail(true);
+  };
+
+  const reply = async (text) => {
+    setError('');
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams({
-        page: pagination.page,
-        page_size: pagination.page_size,
-        ...filters
-      });
-
-      const response = await axios.get(`${getApiUrl()}/api/admin/feedback/?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setTips(response.data.tips);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Error fetching tips:', error);
-      if (error.response?.status === 403) {
-        setError('Access denied. Admin privileges required.');
-      } else if (error.response?.status === 401) {
-        setError('Authentication required. Please log in as admin.');
-      } else {
-        setError('Failed to fetch feedback data');
-      }
-    } finally {
-      setLoading(false);
+      const res = await api.post(
+        `/api/admin/support/tickets/${selected.id}/messages/`,
+        { body: text },
+        { headers: authHeaders() },
+      );
+      setTickets((rows) => rows.map((row) => (row.id === res.data.id ? res.data : row)));
+    } catch (err) {
+      setError(errorText(err, 'Could not send the reply.'));
+      throw err;
     }
   };
 
-  const fetchStats = async () => {
+  const setStatus = async (ticket, status) => {
+    setError('');
+    setNotice('');
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${getApiUrl()}/api/admin/feedback/stats/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+      const res = await api.patch(
+        `/api/admin/support/tickets/${ticket.id}/`,
+        { status },
+        { headers: authHeaders() },
+      );
+      setTickets((rows) => rows.map((row) => (row.id === ticket.id ? res.data : row)));
+      setNotice(status === 'closed' ? 'Ticket closed. The shopper can still read it.' : 'Ticket reopened.');
+    } catch (err) {
+      setError(errorText(err, 'Could not update the ticket.'));
     }
   };
 
-  const handleDeleteTip = (tip) => {
-    setDeleteDialog({ open: true, tip });
+  const showList = !narrow || !mobileDetail;
+  const showDetail = !narrow || mobileDetail;
+  const shell = {
+    border: 1,
+    borderColor: 'divider',
+    borderRadius: 3,
+    bgcolor: 'background.paper',
+    boxShadow: 'none',
+    minHeight: { xs: 420, md: 480 },
+    height: { md: 'calc(100vh - 280px)' },
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
   };
-
-  const handleBulkDelete = () => {
-    if (selectedTips.length === 0) {
-      setError('Please select tips to delete');
-      return;
-    }
-    setBulkDeleteDialog({ open: true, count: selectedTips.length });
-  };
-
-  const confirmDelete = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${getApiUrl()}/api/admin/feedback/${deleteDialog.tip.id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setSuccess('Tip deleted successfully');
-      setDeleteDialog({ open: false, tip: null });
-      fetchTips();
-      fetchStats();
-    } catch (error) {
-      console.error('Error deleting tip:', error);
-      setError('Failed to delete tip');
-      setDeleteDialog({ open: false, tip: null });
-    }
-  };
-
-  const confirmBulkDelete = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${getApiUrl()}/api/admin/feedback/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { tip_ids: selectedTips }
-      });
-
-      setSuccess(`Successfully deleted ${selectedTips.length} tips`);
-      setSelectedTips([]);
-      setBulkDeleteDialog({ open: false, count: 0 });
-      fetchTips();
-      fetchStats();
-    } catch (error) {
-      console.error('Error bulk deleting tips:', error);
-      setError('Failed to delete tips');
-      setBulkDeleteDialog({ open: false, count: 0 });
-    }
-  };
-
-  const handleSelectTip = (tipId) => {
-    setSelectedTips(prev => 
-      prev.includes(tipId) 
-        ? prev.filter(id => id !== tipId)
-        : [...prev, tipId]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedTips.length === tips.length) {
-      setSelectedTips([]);
-    } else {
-      setSelectedTips(tips.map(tip => tip.id));
-    }
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return 'N/A';
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="400px">
-          <CircularProgress size={60} />
-          <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
-            Loading feedback data...
-          </Typography>
-        </Box>
-      </Container>
-    );
-  }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          <FeedbackIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-          Feedback Management
+    <Box sx={{ maxWidth: 1120, mx: 'auto', px: { xs: 2, md: 3 }, pt: { xs: 3, md: 4 }, pb: 5 }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.6rem', md: '1.8rem' }, letterSpacing: '-0.03em' }}>
+          Feedback
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Manage user feedback, tips, and security reports
+        <Typography sx={{ color: 'text.secondary', mt: 0.5 }}>
+          Shopper requests. Reply here, or close a ticket when it is resolved.
         </Typography>
       </Box>
 
-      {/* Statistics Cards */}
-      {stats && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Total Tips
-                    </Typography>
-                    <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
-                      {stats.total_tips}
-                    </Typography>
-                  </Box>
-                  <AnalyticsIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+        {FILTERS.map((item) => (
+          <Chip
+            key={item.id}
+            label={`${item.label} ${counts[item.id]}`}
+            onClick={() => setFilter(item.id)}
+            color={filter === item.id ? 'primary' : 'default'}
+            variant={filter === item.id ? 'filled' : 'outlined'}
+            sx={{ fontWeight: 700 }}
+          />
+        ))}
+      </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice('')}>{notice}</Alert>}
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '340px 1fr' }, gap: 2 }}>
+        {showList && (
+          <Box sx={shell}>
+            <Box sx={{ p: 2, pb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography sx={{ fontWeight: 700, mb: 1.25 }}>Inbox</Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by shopper or subject"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} /> }}
+              />
+            </Box>
+            <Box sx={{ overflow: 'auto', flex: 1 }}>
+              {loading && [0, 1, 2].map((row) => (
+                <Box key={row} sx={{ px: 2, py: 1.5 }}>
+                  <Skeleton width="40%" />
+                  <Skeleton width="80%" />
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      With Files
-                    </Typography>
-                    <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
-                      {stats.tips_with_files}
-                    </Typography>
-                  </Box>
-                  <FileIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', color: 'white' }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Recent (7 days)
-                    </Typography>
-                    <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
-                      {stats.recent_tips}
-                    </Typography>
-                  </Box>
-                  <ScheduleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box display="flex" alignItems="center" mb={2}>
-          <FilterIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Filters</Typography>
-        </Box>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Search"
-              placeholder="Search tips, products, or users..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Has File</InputLabel>
-              <Select
-                value={filters.has_file}
-                onChange={(e) => handleFilterChange('has_file', e.target.value)}
-                label="Has File"
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="true">Yes</MenuItem>
-                <MenuItem value="false">No</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Bulk Actions */}
-      {selectedTips.length > 0 && (
-        <Alert 
-          severity="warning" 
-          sx={{ mb: 3 }}
-          action={
-            <Button color="error" onClick={handleBulkDelete} startIcon={<DeleteIcon />}>
-              Delete Selected ({selectedTips.length})
-            </Button>
-          }
-        >
-          {selectedTips.length} tip(s) selected for bulk action
-        </Alert>
-      )}
-
-      {/* Messages */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      )}
-
-      {/* Tips Table */}
-      <Paper sx={{ overflow: 'hidden' }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: 'grey.50' }}>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedTips.length === tips.length && tips.length > 0}
-                    indeterminate={selectedTips.length > 0 && selectedTips.length < tips.length}
-                    onChange={handleSelectAll}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    Product
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    User
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    Tip Text
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    File
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    Date
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    Actions
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {tips.map((tip) => (
-                <TableRow key={tip.id} hover>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedTips.includes(tip.id)}
-                      onChange={() => handleSelectTip(tip.id)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                        <ProductIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {tip.product_name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ID: {tip.product_id}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <Avatar sx={{ mr: 2, bgcolor: 'secondary.main' }}>
-                        <PersonIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {tip.user_name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ID: {tip.user}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        maxWidth: 200, 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {tip.tip_text || 'No text provided'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {tip.tip_file_url ? (
-                      <Box display="flex" alignItems="center">
-                        <FileIcon sx={{ mr: 1, color: 'primary.main' }} />
-                        <Box>
-                          <Button
-                            size="small"
-                            startIcon={<VisibilityIcon />}
-                            href={tip.tip_file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            View
-                          </Button>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {formatFileSize(tip.file_size)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No file
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatDate(tip.created_at)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Delete tip">
-                      <IconButton 
-                        color="error" 
-                        onClick={() => handleDeleteTip(tip)}
-                        size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        {pagination.total_pages > 1 && (
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-            <Pagination
-              count={pagination.total_pages}
-              page={pagination.page}
-              onChange={(event, page) => handlePageChange(page)}
-              color="primary"
-              showFirstButton
-              showLastButton
-            />
+              {!loading && visible.length === 0 && (
+                <Box sx={{ px: 2.5, py: 4 }}>
+                  <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Nothing in this queue</Typography>
+                  <Typography sx={{ color: 'text.secondary', fontSize: '0.92rem' }}>
+                    Try another filter, or wait for a shopper to write in.
+                  </Typography>
+                </Box>
+              )}
+              {visible.map((ticket) => {
+                const active = ticket.id === selectedId;
+                const needsReply = waitingOnUs(ticket);
+                return (
+                  <Box
+                    key={ticket.id}
+                    component="button"
+                    type="button"
+                    onClick={() => openTicket(ticket.id)}
+                    sx={{
+                      width: '100%',
+                      textAlign: 'left',
+                      border: 0,
+                      borderBottom: '1px solid',
+                      borderBottomColor: 'divider',
+                      borderLeft: '3px solid',
+                      borderLeftColor: active ? 'primary.main' : 'transparent',
+                      cursor: 'pointer',
+                      px: 2,
+                      py: 1.5,
+                      display: 'flex',
+                      gap: 1.25,
+                      bgcolor: active ? (t) => alpha(t.palette.primary.main, 0.12) : 'transparent',
+                      color: 'inherit',
+                      font: 'inherit',
+                      '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, active ? 0.14 : 0.06) },
+                    }}
+                  >
+                    <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'primary.main', flexShrink: 0 }}>
+                      {(ticket.username || '?').slice(0, 1).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }} noWrap>{ticket.username}</Typography>
+                        <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', flexShrink: 0 }}>
+                          {relativeTime(ticket.created_at)}
+                        </Typography>
+                      </Box>
+                      <Typography sx={{ fontWeight: 650, fontSize: '0.92rem' }} noWrap>{ticket.subject}</Typography>
+                      <Typography sx={{ fontSize: '0.82rem', color: 'text.secondary', mb: 0.75 }} noWrap>
+                        {previewOf(ticket)}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 0.75 }}>
+                        <Chip
+                          size="small"
+                          label={ticket.status === 'open' ? 'Open' : 'Closed'}
+                          sx={{
+                            height: 22,
+                            fontWeight: 700,
+                            bgcolor: (t) => alpha(ticket.status === 'open' ? t.palette.warning.main : t.palette.text.secondary, 0.14),
+                            color: ticket.status === 'open' ? 'warning.main' : 'text.secondary',
+                          }}
+                        />
+                        {needsReply && (
+                          <Chip size="small" label="Needs reply" color="primary" sx={{ height: 22, fontWeight: 700 }} />
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
         )}
-      </Paper>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, tip: null })}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this tip from <strong>{deleteDialog.tip?.user_name}</strong>?
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, tip: null })}>
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Bulk Delete Confirmation Dialog */}
-      <Dialog open={bulkDeleteDialog.open} onClose={() => setBulkDeleteDialog({ open: false, count: 0 })}>
-        <DialogTitle>Confirm Bulk Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete <strong>{bulkDeleteDialog.count}</strong> selected tips?
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBulkDeleteDialog({ open: false, count: 0 })}>
-            Cancel
-          </Button>
-          <Button onClick={confirmBulkDelete} color="error" variant="contained">
-            Delete All
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+        {showDetail && (
+          <Box sx={shell}>
+            {!selected ? (
+              <Box sx={{ p: 3 }}>
+                <Typography sx={{ fontWeight: 700 }}>Select a request</Typography>
+                <Typography sx={{ color: 'text.secondary' }}>The conversation opens here.</Typography>
+              </Box>
+            ) : (
+              <>
+                <Box sx={{ px: 2.5, py: 1.75, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'flex-start', gap: 1, flexShrink: 0 }}>
+                  {narrow && (
+                    <IconButton aria-label="Back to inbox" onClick={() => setMobileDetail(false)} sx={{ mt: -0.5 }}>
+                      <BackIcon />
+                    </IconButton>
+                  )}
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: '1.15rem' }} noWrap>{selected.subject}</Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                      {selected.username} · Request #{selected.id} · {relativeTime(selected.created_at)}
+                    </Typography>
+                  </Box>
+                  {selected.status === 'open' ? (
+                    <Button size="small" variant="outlined" onClick={() => setStatus(selected, 'closed')}>
+                      Close
+                    </Button>
+                  ) : (
+                    <Button size="small" variant="outlined" onClick={() => setStatus(selected, 'open')}>
+                      Reopen
+                    </Button>
+                  )}
+                </Box>
+                <TicketThread
+                  ticket={selected}
+                  canReply={selected.status === 'open'}
+                  onReply={reply}
+                  fill
+                  closedNote="This ticket is closed. Reopen it to reply."
+                />
+              </>
+            )}
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 };
 

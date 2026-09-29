@@ -104,6 +104,7 @@ class SurfacesConfig(BaseModel):
             "api.raw",
             "agent.runner",
             "mcp.client",
+            "mcp.host",
         ]
     )
 

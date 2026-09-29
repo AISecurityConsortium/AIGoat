@@ -23,6 +23,7 @@ ALLOWED_SURFACES = frozenset(
         "rag.kb",
         "agent.runner",
         "mcp.client",
+        "mcp.host",
         "api.raw",
     }
 )

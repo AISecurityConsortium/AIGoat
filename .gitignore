@@ -68,3 +68,6 @@ agent-docs/*
 # Promo files
 media/promo
 media/promo/*
+
+# Support attachments (generated names, not public)
+support_uploads/

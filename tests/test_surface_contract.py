@@ -10,7 +10,7 @@ from app.surfaces.transcript import EVENT_TYPES, Event, Transcript, validate_eve
 def test_registered_surfaces_implement_the_contract():
     ensure_registered()
     ids = {s.id for s in all_surfaces()}
-    assert ids == {"chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client"}
+    assert ids == {"chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client", "mcp.host"}
     for surface in all_surfaces():
         schema = surface.config_schema()
         assert isinstance(schema, dict)

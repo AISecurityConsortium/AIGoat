@@ -193,14 +193,23 @@ const AdminDashboard = () => {
             Admin Dashboard
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchDashboardStats}
-          disabled={loading}
-        >
-          Refresh Data
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<AIIcon />}
+            onClick={() => navigate('/admin/assistant')}
+          >
+            Assistant
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchDashboardStats}
+            disabled={loading}
+          >
+            Refresh Data
+          </Button>
+        </Box>
       </Box>
 
       {error && (

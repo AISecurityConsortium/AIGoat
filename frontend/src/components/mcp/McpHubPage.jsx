@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
 import { Alert, Box, Button, Chip, Collapse, Container, Skeleton, Typography } from '@mui/material';
 import { ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLabs } from '../../hooks/useLabs';
-import { SectionCard, RiskChip, DifficultyChip, EmptyState } from '../common';
+import { SectionCard, EmptyState } from '../common';
+import HubLabCard from '../common/HubLabCard';
+import { MCP_ORDER, sortLabs } from '../../utils/labTeaching';
 import { apiClient } from '../../config/api';
 import API_CONFIG from '../../config/api';
 
@@ -13,62 +14,28 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const oneLine = (text) => String(text || '').split('\n').map((line) => line.trim()).filter(Boolean)[0] || '';
-
 const trustColor = (tier) => {
   if (tier === 'official') return 'success';
   if (tier === 'untrusted') return 'error';
   return 'warning';
 };
 
-const HubLabCard = ({ lab }) => {
-  const code = (lab.primary_risk || '').includes(':')
-    ? lab.primary_risk.split(':').slice(1).join(':')
-    : (lab.owasp || '');
-  return (
-    <SectionCard dense>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.75 }}>
-        <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{lab.name}</Typography>
-        {code && <RiskChip code={code} />}
-        {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
-      </Box>
-      <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.5, mb: 1.5 }}>
-        {oneLine(lab.objective) || lab.description}
-      </Typography>
-      <Button
-        component={RouterLink}
-        to={`/labs/${lab.id}`}
-        size="small"
-        variant="outlined"
-        endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
-        sx={{ textTransform: 'none', fontWeight: 600 }}
-      >
-        Open console
-      </Button>
-    </SectionCard>
-  );
-};
-
-HubLabCard.propTypes = {
-  lab: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string,
-    primary_risk: PropTypes.string,
-    owasp: PropTypes.string,
-    difficulty: PropTypes.string,
-    objective: PropTypes.string,
-    description: PropTypes.string,
-  }).isRequired,
-};
-
 const MCP_STEPS = [
-  'Every action spawns a server, runs one call, and stops it.',
-  'Open a console, pick a server, and list its tools.',
-  'Read the tool description before you trust the result.',
+  'The attack surface is the MCP client console, and for Admin the assistant at /admin/assistant.',
+  'Tool descriptions and ticket text are attacker-controlled. Do not treat them as instructions.',
+  'Defense levels change pinning and redaction. Level 2 also pauses refund and export calls.',
 ];
 
 const McpHubPage = () => {
-  const { labs, loading, error, refetch } = useLabs({ surface: 'mcp.client' });
+  const clientLabs = useLabs({ surface: 'mcp.client' });
+  const hostLabs = useLabs({ surface: 'mcp.host' });
+  const labs = sortLabs(
+    [...clientLabs.labs, ...hostLabs.labs.filter((lab) => String(lab.id).startsWith('mcp'))],
+    MCP_ORDER,
+  );
+  const loading = clientLabs.loading || hostLabs.loading;
+  const error = clientLabs.error || hostLabs.error;
+  const refetch = () => { clientLabs.refetch(); hostLabs.refetch(); };
   const first = labs[0];
   const [servers, setServers] = useState([]);
   const [serversError, setServersError] = useState(null);
@@ -114,7 +81,7 @@ const McpHubPage = () => {
                 MCP client
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '1rem', lineHeight: 1.65, mb: 2 }}>
-                Tool descriptions come from the server. Read them as attacker-controlled text, then decide whether to call the tool.
+                The attack surface is this MCP client. Each action spawns an allowlisted server, runs one call, and stops it. Tool descriptions are written by whoever shipped the server. Admins also have an assistant that is an MCP client for the internal shop server.
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2.5 }}>
                 {MCP_STEPS.map((step, index) => (
@@ -142,7 +109,7 @@ const McpHubPage = () => {
                   endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
                 >
-                  {first ? 'Open the first lab' : 'Browse MCP labs'}
+                  {first ? 'Start with the decoy token' : 'Browse MCP labs'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -280,7 +247,11 @@ const McpHubPage = () => {
         )}
 
         <Box id="mcp-labs" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
-          {labs.map((lab) => <HubLabCard key={lab.id} lab={lab} />)}
+          <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Do these in order</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 0.5 }}>
+            A card that says "same idea" is one attack seen again, not a new topic.
+          </Typography>
+          {labs.map((lab, index) => <HubLabCard key={lab.id} lab={lab} index={index + 1} />)}
         </Box>
 
         <Button

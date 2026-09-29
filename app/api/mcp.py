@@ -4,11 +4,15 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin as _require_admin
+from app.mcp.host import host_turn, integration_rows, set_addon
 from app.mcp.service import execute_mcp, list_servers
 from app.models import User
-from app.schemas.mcp import McpToolCallIn
+from app.schemas.mcp import McpHostIntegrationIn, McpHostTurnIn, McpToolCallIn
 
 router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
@@ -65,4 +69,38 @@ async def call_tool(
             "defense_level": body.defense_level,
             "tool_description": body.tool_description,
         },
+    )
+
+
+@router.get("/host/integrations")
+async def host_integrations(user: Annotated[User, Depends(get_current_user)]) -> list[dict[str, Any]]:
+    _require_admin(user)
+    return integration_rows(user.id)
+
+
+@router.post("/host/integrations")
+async def host_set_integration(
+    body: McpHostIntegrationIn,
+    user: Annotated[User, Depends(get_current_user)],
+) -> list[dict[str, Any]]:
+    _require_admin(user)
+    set_addon(user.id, body.server_id, body.enabled)
+    return integration_rows(user.id)
+
+
+@router.post("/host/turn")
+async def host_turn_route(
+    body: McpHostTurnIn,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    _require_admin(user)
+    return await host_turn(
+        db,
+        user,
+        body.message,
+        lab_id=body.lab_id or "",
+        defense_level=0 if body.defense_level is None else body.defense_level,
+        run_id=body.run_id,
+        decision=body.decision,
     )

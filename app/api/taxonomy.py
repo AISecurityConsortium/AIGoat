@@ -31,7 +31,7 @@ def _challenge_title(challenge_id: int) -> str:
     return f"Challenge {challenge_id}"
 
 
-def _risk_out(risk_id: str, *, code: str, title: str, summary: str, attack_surfaces: tuple[str, ...], related: tuple[str, ...]) -> RiskOut:
+def _risk_out(risk_id: str, *, code: str, title: str, summary: str, attack_surfaces: tuple[str, ...], related: tuple[str, ...], writeup: str = "") -> RiskOut:
     return RiskOut(
         id=risk_id,
         code=code,
@@ -41,6 +41,7 @@ def _risk_out(risk_id: str, *, code: str, title: str, summary: str, attack_surfa
         lab_ids=list(labs_for_risk(risk_id)),
         challenge_ids=list(challenges_for_risk(risk_id)),
         related=list(related),
+        writeup=writeup,
     )
 
 
@@ -98,6 +99,7 @@ async def get_framework(framework_id: str) -> FrameworkDetailOut:
             summary=risk.summary,
             attack_surfaces=risk.attack_surfaces,
             related=risk.related,
+            writeup=risk.writeup,
         )
         for risk in fw.risks
     ]
@@ -143,6 +145,7 @@ async def list_risks(
                 summary=risk.summary,
                 attack_surfaces=risk.attack_surfaces,
                 related=risk.related,
+                writeup=risk.writeup,
             )
         )
     return out
@@ -182,6 +185,7 @@ async def get_risk(risk_id: str) -> RiskDetailOut:
         summary=risk.summary,
         attack_surfaces=risk.attack_surfaces,
         related=risk.related,
+        writeup=risk.writeup,
     )
     return RiskDetailOut(
         **base.model_dump(),

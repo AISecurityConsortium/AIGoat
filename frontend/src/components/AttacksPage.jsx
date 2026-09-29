@@ -18,6 +18,7 @@ import {
   CodeBlock, EmptyState, ProgressBar, SectionCard, RelatedMap,
 } from './common';
 import { riskPath } from '../utils/taxonomyLinks';
+import { LAB_SERIES } from '../utils/labTeaching';
 import {
   DEFAULT_FRAMEWORK, FRAMEWORK_ORDER, sortFrameworks, shortFrameworkLabel, labFrameworkId,
 } from '../utils/frameworkOrder';
@@ -603,6 +604,11 @@ const AttacksPage = () => {
                               <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
                                 {lab.objective}
                               </Typography>
+                              {LAB_SERIES[lab.id] && (
+                                <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mt: 1 }}>
+                                  {LAB_SERIES[lab.id]}
+                                </Typography>
+                              )}
                             </SectionCard>
                           </Box>
                         )}
@@ -655,6 +661,18 @@ const AttacksPage = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             Open MCP console
+                          </Button>
+                        )}
+                        {lab.surface === 'mcp.host' && (
+                          <Button
+                            component={Link}
+                            to={`/labs/${lab.id}`}
+                            variant="outlined"
+                            size="small"
+                            sx={{ mt: 2 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Start the two-step lab
                           </Button>
                         )}
                       </Box>

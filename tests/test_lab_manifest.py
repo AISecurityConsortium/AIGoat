@@ -293,7 +293,7 @@ class TestMigratedLabContent:
         assert set(_P9_MCP_LAB_IDS) <= ids
         assert set(_D5_MEMORY_LAB_IDS) <= ids
         assert "llm03-3" in ids
-        assert len(ids) == 30
+        assert len(ids) == 42
 
     def test_original_ids_still_resolve(self):
         for lab_id in _ORIGINAL_LAB_IDS:

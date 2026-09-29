@@ -1,9 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Button, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useDefense } from '../../contexts/DefenseContext';
+import { apiClient } from '../../config/api';
 import DefenseLevelChip from './DefenseLevelChip';
 import SectionCard from './SectionCard';
+import { HOST_STEPS } from '../../utils/labTeaching';
 
 const DIAGRAM = {
   'agent.runner': {
@@ -19,11 +22,24 @@ const DIAGRAM = {
 const WATCH = {
   'agent.runner': 'The transcript tool_call is the evidence, not model prose.',
   'mcp.client': 'Read the tool description as untrusted text.',
+  'mcp.host': 'The score is the tool the assistant calls, not the sentence it writes.',
 };
 
 const expectedAt = (expected, level) => {
   if (!expected || typeof expected !== 'object') return '';
   return expected[String(level)] || expected[level] || '';
+};
+
+const switchPersona = async (alicePath) => {
+  const current = localStorage.getItem('username');
+  const target = current === 'admin' ? 'alice' : 'admin';
+  if (current !== 'alice' && current !== 'admin') return;
+  const res = await apiClient.get('/api/auth/demo-users/');
+  const match = (res.data.users || []).find((row) => row.username === target);
+  if (!match?.demo_token) return;
+  localStorage.setItem('token', match.demo_token);
+  localStorage.setItem('username', target);
+  window.location.assign(target === 'admin' ? '/admin/assistant' : alicePath);
 };
 
 const LabPrimer = ({ lab, onTryPayload }) => {
@@ -54,6 +70,31 @@ const LabPrimer = ({ lab, onTryPayload }) => {
             alt={diagram.alt}
             sx={{ width: '100%', maxWidth: 560, display: 'block', mx: 'auto' }}
           />
+        </SectionCard>
+      )}
+
+      {lab.surface === 'mcp.host' && (
+        <SectionCard title="Two steps" dense>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, mb: 1 }}>
+            {(HOST_STEPS[lab.id] || {}).step1 || 'Step 1 is described in the objective below.'}
+          </Typography>
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, mb: 1.5 }}>
+            {(HOST_STEPS[lab.id] || {}).step2 || 'Step 2 as Admin: open the assistant. The tool call is the result.'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {(HOST_STEPS[lab.id] || {}).plant && (
+              <Button
+                variant="outlined"
+                onClick={() => switchPersona((HOST_STEPS[lab.id] || {}).plant === 'review' ? '/home' : '/support')}
+                sx={{ textTransform: 'none' }}
+              >
+                Switch persona
+              </Button>
+            )}
+            <Button component={RouterLink} to={`/admin/assistant?lab=${lab.id}`} variant="contained" sx={{ textTransform: 'none' }}>
+              Open assistant
+            </Button>
+          </Box>
         </SectionCard>
       )}
 
@@ -124,6 +165,7 @@ const LabPrimer = ({ lab, onTryPayload }) => {
 
 LabPrimer.propTypes = {
   lab: PropTypes.shape({
+    id: PropTypes.string,
     surface: PropTypes.string,
     description: PropTypes.string,
     objective: PropTypes.string,

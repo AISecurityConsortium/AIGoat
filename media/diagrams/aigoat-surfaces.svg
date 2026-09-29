@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" role="img" aria-labelledby="t d">
   <title id="t">AIGoat surfaces and trust boundaries</title>
-  <desc id="d">Browser talks to FastAPI. Four live surfaces sit behind the API: chat.cracky, rag.kb, agent.runner, mcp.client. They reach Ollama, Chroma, SQLite, and stdio MCP children. Anything typed in the browser is untrusted.</desc>
+  <desc id="d">Browser talks to FastAPI. Live surfaces sit behind the API: chat.cracky, rag.kb, agent.runner, mcp.client, and mcp.host. They reach Ollama, Chroma, SQLite, and stdio MCP children. Anything typed in the browser is untrusted.</desc>
   <style>
     text { font-family: system-ui, sans-serif; fill: #475569; }
     .box { fill: none; stroke: #64748b; stroke-width: 1.5; rx: 8; }
@@ -60,7 +60,12 @@
   <path d="M443 172 V220" stroke="#64748b" stroke-width="1.2"/>
   <path d="M607 172 V220" stroke="#64748b" stroke-width="1.2"/>
 
-  <text class="sub" x="360" y="312" text-anchor="middle">Dashed red is a trust boundary. Typed input never becomes trusted by crossing it.</text>
+  <rect class="box accent" x="286" y="292" width="150" height="52"/>
+  <text class="lbl" x="361" y="314" text-anchor="middle" fill="#6366f1">mcp.host</text>
+  <text class="sub" x="361" y="330" text-anchor="middle">admin assistant</text>
+  <path d="M607 172 V250 H361 V292" fill="none" stroke="#64748b" stroke-width="1.2"/>
+
+  <text class="sub" x="360" y="372" text-anchor="middle">Dashed red is a trust boundary. Typed input never becomes trusted by crossing it.</text>
 
   <defs>
     <marker id="d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">

@@ -17,7 +17,7 @@ import sys
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session, init_db
@@ -32,6 +32,8 @@ from app.models import (
     Payment,
     Product,
     Review,
+    SupportMessage,
+    SupportTicket,
     User,
     UserProfile,
 )
@@ -302,6 +304,104 @@ async def seed_reviews(session: AsyncSession, users: list[User], products: list[
     await session.commit()
 
 
+# Benign shop requests. Learners still plant their own payloads as Alice.
+SUPPORT_TICKET_FIXTURES = (
+    {
+        "username": "alice",
+        "subject": "Where is my hoodie?",
+        "status": "open",
+        "messages": (
+            ("alice", "Hi, I ordered the red team hoodie last week and have not seen a shipping update."),
+        ),
+    },
+    {
+        "username": "bob",
+        "subject": "Coupon code did not apply",
+        "status": "open",
+        "messages": (
+            ("bob", "SAVE10 was rejected at checkout. The cart was over the minimum."),
+            ("admin", "Thanks. What is the order number on the confirmation page?"),
+            ("bob", "It never confirmed. The cart still shows the full price."),
+        ),
+    },
+    {
+        "username": "charlie",
+        "subject": "Can I exchange a tee for a larger size?",
+        "status": "open",
+        "messages": (
+            ("charlie", "The Jailbreak Whisperer tee fits small. Can I exchange the medium for a large?"),
+        ),
+    },
+    {
+        "username": "frank",
+        "subject": "Sticker pack sent to the wrong address",
+        "status": "closed",
+        "messages": (
+            ("frank", "The sticker pack went to my old apartment. Can you send another to the address on my profile?"),
+            ("admin", "A replacement shipped today. Closing this ticket."),
+        ),
+    },
+    {
+        "username": "alice",
+        "subject": "Order arrived, thank you",
+        "status": "closed",
+        "messages": (
+            ("alice", "The poster set arrived and looks right. Thank you."),
+            ("admin", "Glad it got there. We will close this one."),
+        ),
+    },
+)
+
+
+async def seed_support_tickets(session: AsyncSession, users: list[User]) -> None:
+    """Insert the demo inbox if those subjects are missing. Safe to run again."""
+    by_name = {user.username: user for user in users}
+    for spec in SUPPORT_TICKET_FIXTURES:
+        owner = by_name.get(spec["username"])
+        if owner is None:
+            continue
+        found = await session.execute(
+            select(SupportTicket).where(
+                SupportTicket.user_id == owner.id,
+                SupportTicket.subject == spec["subject"],
+            )
+        )
+        ticket = found.scalar_one_or_none()
+        if ticket is None:
+            ticket = SupportTicket(
+                user_id=owner.id,
+                subject=spec["subject"],
+                body=spec["messages"][0][1],
+                status=spec["status"],
+            )
+            session.add(ticket)
+            await session.flush()
+        message_count = await session.scalar(
+            select(func.count()).select_from(SupportMessage).where(SupportMessage.ticket_id == ticket.id)
+        )
+        if message_count:
+            continue
+        for author_name, text in spec["messages"]:
+            author = by_name.get(author_name)
+            if author is None:
+                continue
+            session.add(SupportMessage(
+                ticket_id=ticket.id,
+                user_id=author.id,
+                body=text,
+            ))
+    await session.commit()
+
+
+async def sync_support_tickets() -> None:
+    import app.models as _models  # noqa: F401 — register models with Base.metadata
+    assert _models
+    await init_db()
+    async with async_session() as session:
+        result = await session.execute(select(User))
+        await seed_support_tickets(session, list(result.scalars().all()))
+
+
 async def seed_orders(session: AsyncSession, users: list[User], products: list[Product]) -> None:
     demo_users = [u for u in users if u.username in ("alice", "bob", "charlie", "frank")]
     statuses = ["delivered"] * 4 + ["cancelled"] * 1 + ["shipped"] * 1 + ["pending", "processing"]
@@ -458,6 +558,7 @@ async def run_seed() -> None:
         users = list(users_map.values())
         products = await seed_products(session)
         await seed_reviews(session, users, products)
+        await seed_support_tickets(session, users)
         await seed_orders(session, users, products)
         await seed_coupon(session)
         await seed_challenges(session)
@@ -468,5 +569,7 @@ async def run_seed() -> None:
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--sync-challenges":
         asyncio.run(run_sync_challenges())
+    elif len(sys.argv) > 1 and sys.argv[1] == "--sync-support":
+        asyncio.run(sync_support_tickets())
     else:
         asyncio.run(run_seed())

@@ -20,7 +20,7 @@ const MODELS = [
     name: 'MITRE ATLAS',
     official: 'https://atlas.mitre.org/',
     question: 'What would an attacker do next?',
-    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client'],
+    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       'ATLAS is an attacker story: reconnaissance, access, execution, persistence, exfiltration.',
       'Reach for it when you need a named next move, not a control to toggle.',
@@ -33,7 +33,7 @@ const MODELS = [
     name: 'MAESTRO',
     official: 'https://cloudsecurityalliance.org/artifacts/agentic-ai-threat-modeling-framework-maestro',
     question: 'Which agent layer failed?',
-    surfaces: ['agent.runner', 'mcp.client'],
+    surfaces: ['agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       'CSA model for stacked agent systems: model, data, framework, tools, memory.',
       'Use it when a failure only appears after a tool result is written back into the next prompt.',
@@ -46,7 +46,7 @@ const MODELS = [
     name: 'NIST AI RMF and Generative AI Profile',
     official: 'https://www.nist.gov/itl/ai-risk-management-framework',
     question: 'Can we prove we measured it?',
-    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client'],
+    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       'GOVERN, MAP, MEASURE, and MANAGE, plus a generative-AI profile for leakage, plugins, and resource abuse.',
       'Use it when someone asks whether you measured the risk and who owns the response.',
@@ -59,7 +59,7 @@ const MODELS = [
     name: 'Google SAIF',
     official: 'https://safety.google/cybersecurity-advancements/saif/',
     question: 'Would the lifecycle catch this?',
-    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client'],
+    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       "Google's secure-by-default AI product lifecycle: foundations, detection, automation, shared baseline.",
       'Use it for engineering conversations: filters, output handling, plugin review, logging.',
@@ -72,12 +72,12 @@ const MODELS = [
     name: 'STRIDE and LINDDUN',
     official: 'https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats',
     question: 'What fails on each arrow?',
-    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client'],
+    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       'STRIDE is the per-element mnemonic on prompts, chunks, tools, memory, and MCP descriptors.',
       'Use STRIDE when you have a data-flow diagram. Use LINDDUN when the flow carries personal data.',
       'Forces every arrow to answer six questions that a Top 10 list will skip.',
-      'The worked mapping is in the shop-agent example below.',
+      'The worked mapping is in the shop-agent example above.',
     ],
   },
   {
@@ -85,7 +85,7 @@ const MODELS = [
     name: 'OWASP AI Exchange',
     official: 'https://owaspai.org/',
     question: 'Which OWASP doc am I holding?',
-    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client'],
+    surfaces: ['chat.cracky', 'rag.kb', 'agent.runner', 'mcp.client', 'mcp.host'],
     bullets: [
       'Crosswalk among OWASP AI projects. The Testing Guide is how you probe and record evidence.',
       'Start here when a stakeholder says they follow OWASP and you need to know which document.',
@@ -98,20 +98,21 @@ const MODELS = [
 const EXAMPLE_STEPS = [
   {
     title: '1. Draw the real surfaces',
-    body: 'AIGoat looks like a shop assistant. The threat model is four runtimes: chat.cracky, rag.kb, agent.runner, and mcp.client. api.raw is a stub and stays out.',
+    body: 'AIGoat looks like a shop assistant. The threat model is five runtimes: chat.cracky, rag.kb, agent.runner, mcp.client, and mcp.host. api.raw is a stub and stays out.',
     labs: [
-      { id: 'llm01-1', label: 'llm01-1 Prompt Injection' },
+      { id: 'llm01-1', label: 'llm01-1 Prompt injection' },
       { id: 'llm09-1', label: 'llm09-1 Vector poisoning' },
       { id: 'llm03-1', label: 'llm03-1 Tool refund' },
-      { id: 'mcp03-1', label: 'mcp03-1 Tool shadowing' },
+      { id: 'mcp03-1', label: 'mcp03-1 Description poisoning' },
     ],
   },
   {
     title: '2. Name assets and trust boundaries',
-    body: 'Assets: customer rows, HMAC flags, the system prompt, retrieved chunks, per-user memory, MCP descriptors. Typed input sits on the untrusted side of every arrow.',
+    body: 'Assets: customer rows, HMAC flags, the system prompt, retrieved chunks, per-user memory, MCP descriptors, and the catalogue that names a server. Typed input sits on the untrusted side of every arrow.',
     labs: [
       { id: 'llm08-1', label: 'llm08-1 Hidden context' },
       { id: 'asi06-1', label: 'asi06-1 Memory poison' },
+      { id: 'mcp09-1', label: 'mcp09-1 Shadow server' },
     ],
   },
   {
@@ -126,19 +127,29 @@ const EXAMPLE_STEPS = [
     title: '4. Record the control you would ship',
     body: 'L0 is the failing test. L1 is cheap filters. L2 is Guardrails plus allowlists and approvals. Watch the same goal succeed at L0 and stall at L2.',
     labs: [
-      { id: 'llm03-2', label: 'llm03-2 Allowlist / HITL' },
-      { id: 'mcp01-1', label: 'mcp01-1 Token flood via MCP' },
+      { id: 'llm03-2', label: 'llm03-2 Allowlist' },
+      { id: 'asi09-1', label: 'asi09-1 Approval dialog' },
+      { id: 'mcp01-1', label: 'mcp01-1 Decoy token' },
     ],
   },
 ];
 
 const STRIDE_ROWS = [
-  { threat: 'Spoofing', where: 'hidden system prompt', lab: 'llm08-1' },
-  { threat: 'Tampering', where: 'retrieved chunks', lab: 'llm09-1' },
+  { threat: 'Spoofing', where: 'shadow server claims to be shop_catalog', lab: 'mcp09-1' },
+  { threat: 'Tampering', where: 'poisoned tool description', lab: 'mcp03-1' },
   { threat: 'Repudiation', where: 'refund at L0 with no approval row', lab: 'llm03-1' },
-  { threat: 'Disclosure', where: 'export_customer_data', lab: 'llm03-1' },
+  { threat: 'Disclosure', where: 'hidden system prompt', lab: 'llm08-1' },
   { threat: 'Denial of service', where: 'token flood', lab: 'llm06-1' },
-  { threat: 'Elevation', where: 'poisoned MCP description', lab: 'mcp03-1' },
+  { threat: 'Elevation', where: 'export another customer', lab: 'asi03-1' },
+];
+
+const WORKSHEET = [
+  'Asset you are protecting',
+  'Trust boundary the text crosses',
+  'One STRIDE letter',
+  'One OWASP code',
+  'The lab that shows it',
+  'The control you would ship at Level 2',
 ];
 
 const outboundButtonSx = {
@@ -206,7 +217,7 @@ const ThreatModelingPage = () => {
         <PageHeader
           icon={<ThreatModelIcon sx={{ fontSize: 36, color: 'primary.main' }} />}
           title="Threat modeling for LLM systems"
-          subtitle="Six ways to ask what can go wrong, then one pass over the AIGoat shop agent. Titles are upstream labels. The notes are AIGoat teaching commentary."
+          subtitle="Start with one refund on the AIGoat shop. Then use six models when you need a different question. Titles are upstream labels. The notes are AIGoat teaching commentary."
           actions={(
             <Button
               variant="outlined"
@@ -230,8 +241,61 @@ const ThreatModelingPage = () => {
           </SectionCard>
         </Box>
 
+        <SectionCard title="Worked example: refund someone else's order">
+          <Typography sx={{ fontSize: '1rem', lineHeight: 1.65, mb: 2, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+            Refund someone else's order without standing at the till. One sentence. The model is five surfaces, a handful of tools, and a defense toggle.
+          </Typography>
+          <Diagram
+            src="/media/diagrams/aigoat-surfaces.svg"
+            alt="Browser, FastAPI, chat, retrieval, the shop agent, the MCP client, and the admin assistant, with trust boundaries drawn."
+          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, my: 3 }}>
+            {EXAMPLE_STEPS.map((step) => (
+              <Box key={step.title}>
+                <Typography sx={{ fontWeight: 700, fontSize: '1rem', mb: 0.5 }}>{step.title}</Typography>
+                <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
+                  {step.body}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                  {step.labs.map((lab) => <LabChip key={lab.id} lab={lab} />)}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+          <Diagram
+            src="/media/diagrams/stride-shop-agent.svg"
+            alt="STRIDE letters mapped onto the shop-agent refund path with lab ids."
+          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2, mb: 3 }}>
+            {STRIDE_ROWS.map((row) => (
+              <Box key={row.threat} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', minWidth: 130 }}>{row.threat}</Typography>
+                <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary' }}>{row.where}</Typography>
+                <LabChip lab={{ id: row.lab, label: row.lab }} />
+              </Box>
+            ))}
+          </Box>
+          <SectionCard title="Write this down" dense>
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1 }}>
+              One refund. Six lines. Then open llm03-1 and check your control against Level 2.
+            </Typography>
+            <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
+              {WORKSHEET.map((line) => (
+                <Typography key={line} component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.5 }}>
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          </SectionCard>
+          <SectionCard tone="info" title="What a real shop would ship" dense>
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
+              Pin tools, scan memory, require approval on refunds and exports, and never render model HTML.
+            </Typography>
+          </SectionCard>
+        </SectionCard>
+
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-          Start here: pick by the question you are answering
+          When you need a different question
         </Typography>
         <Diagram
           src="/media/diagrams/framework-picker.svg"
@@ -246,7 +310,7 @@ const ThreatModelingPage = () => {
             mt: 1,
           }}
         >
-          {MODELS.map((model) => (
+          {filtered.map((model) => (
             <Box
               key={model.id}
               role="button"
@@ -355,46 +419,6 @@ const ThreatModelingPage = () => {
           ))}
         </Box>
 
-        <SectionCard title="Worked example: refund someone else's order">
-          <Typography sx={{ fontSize: '1rem', lineHeight: 1.65, mb: 2, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
-            Refund someone else's order without standing at the till. One sentence. The model is four surfaces, a handful of tools, and a defense toggle.
-          </Typography>
-          <Diagram
-            src="/media/diagrams/aigoat-surfaces.svg"
-            alt="Browser, FastAPI, four live surfaces, Ollama, Chroma, SQLite, and MCP children, with trust boundaries drawn."
-          />
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, my: 3 }}>
-            {EXAMPLE_STEPS.map((step) => (
-              <Box key={step.title}>
-                <Typography sx={{ fontWeight: 700, fontSize: '1rem', mb: 0.5 }}>{step.title}</Typography>
-                <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
-                  {step.body}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                  {step.labs.map((lab) => <LabChip key={lab.id} lab={lab} />)}
-                </Box>
-              </Box>
-            ))}
-          </Box>
-          <Diagram
-            src="/media/diagrams/stride-shop-agent.svg"
-            alt="STRIDE letters mapped onto the shop-agent refund path with lab ids."
-          />
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 2, mb: 3 }}>
-            {STRIDE_ROWS.map((row) => (
-              <Box key={row.threat} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', minWidth: 130 }}>{row.threat}</Typography>
-                <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary' }}>{row.where}</Typography>
-                <LabChip lab={{ id: row.lab, label: row.lab }} />
-              </Box>
-            ))}
-          </Box>
-          <SectionCard tone="info" title="What a real shop would ship" dense>
-            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
-              Pin tools, scan memory, require approval on refunds and exports, and never render model HTML.
-            </Typography>
-          </SectionCard>
-        </SectionCard>
       </Container>
     </Box>
   );

@@ -5,6 +5,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useRisk } from '../hooks/useFrameworks';
 import { PageHeader, SectionCard, RiskChip, EmptyState } from './common';
 import { attacksRiskPath, attacksSurfacePath, challengePath, labPath } from '../utils/taxonomyLinks';
+import { PRACTICE_LABS } from '../utils/labTeaching';
 
 const RiskDetailPage = () => {
   const { frameworkId, riskCode } = useParams();
@@ -87,6 +88,28 @@ const RiskDetailPage = () => {
               {risk.description}
             </Typography>
           </SectionCard>
+
+          {risk.writeup && (
+            <SectionCard title="How this works">
+              <Typography sx={{ fontSize: '1rem', lineHeight: 1.7, whiteSpace: 'pre-line', mb: (PRACTICE_LABS[risk.id] || []).length ? 1.5 : 0 }}>
+                {risk.writeup}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {(PRACTICE_LABS[risk.id] || []).map((lab) => (
+                  <Button
+                    key={lab.id}
+                    component={RouterLink}
+                    to={labPath(lab.id)}
+                    variant="contained"
+                    size="small"
+                    sx={{ textTransform: 'none' }}
+                  >
+                    {lab.label}
+                  </Button>
+                ))}
+              </Box>
+            </SectionCard>
+          )}
 
           <SectionCard title="Attack surfaces">
             <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>

@@ -27,6 +27,11 @@ async def lifespan(app: FastAPI):
     init_flag_engine(settings.app.secret_key)
     logger.info("Flag engine initialized")
 
+    if os.environ.get("AIGOAT_SKIP_STARTUP_SEED") != "1":
+        from scripts.seed import sync_support_tickets
+        await sync_support_tickets()
+        logger.info("Support tickets seeded")
+
     yield
     logger.info("Shutting down AI Goat backend")
 
@@ -53,12 +58,14 @@ from app.api.mcp import router as mcp_router
 from app.api.profile import router as profile_router
 from app.api.rag import router as rag_router
 from app.api.shop import router as shop_router
+from app.api.support import router as support_router
 from app.api.surfaces import router as surfaces_router
 from app.api.system import router as system_router
 from app.api.taxonomy import router as taxonomy_router
 
 app.include_router(auth_router)
 app.include_router(shop_router)
+app.include_router(support_router)
 app.include_router(profile_router)
 app.include_router(admin_router)
 app.include_router(system_router)

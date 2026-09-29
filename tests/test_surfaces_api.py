@@ -26,7 +26,7 @@ async def test_list_surfaces_returns_enabled(client: AsyncClient):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     ids = [s["id"] for s in body]
-    assert ids == ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client"]
+    assert ids == ["chat.cracky", "rag.kb", "api.raw", "agent.runner", "mcp.client", "mcp.host"]
     by_id = {s["id"]: s for s in body}
     assert by_id["chat.cracky"]["available"] is True
     assert by_id["rag.kb"]["available"] is True

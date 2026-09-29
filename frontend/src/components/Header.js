@@ -47,6 +47,7 @@ import {
   AccountBalanceWallet as WalletIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
+  SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSearch } from '../contexts/SearchContext';
@@ -236,6 +237,26 @@ const Header = () => {
     navigate(path);
   };
 
+  const personaName = localStorage.getItem('username') || userProfile?.username || '';
+  const canSwitchPersona = personaName === 'alice' || personaName === 'admin';
+
+  const switchPersona = useCallback(async () => {
+    const current = localStorage.getItem('username');
+    const target = current === 'admin' ? 'alice' : 'admin';
+    if (current !== 'alice' && current !== 'admin') return;
+    setProfileAnchorEl(null);
+    try {
+      const res = await axios.get('/api/auth/demo-users/');
+      const match = (res.data.users || []).find((row) => row.username === target);
+      if (!match?.demo_token) return;
+      localStorage.setItem('token', match.demo_token);
+      localStorage.setItem('username', target);
+      window.location.assign(target === 'admin' ? '/admin/assistant' : '/home');
+    } catch (error) {
+      console.error('Persona switch failed', error);
+    }
+  }, []);
+
   const handleSearchChange = (value) => {
     setSearchBarQuery(value);
     if (location.pathname !== '/home') {
@@ -284,7 +305,7 @@ const Header = () => {
       >
         Shop
       </Box>
-      {isLoggedIn && !isShopper && (
+      {isLoggedIn && (
         <NavMenu
           label="Learn"
           items={[
@@ -305,6 +326,18 @@ const Header = () => {
           { to: '/threat-modeling', label: 'Threat Modeling', icon: <ThreatModelIcon fontSize="small" /> },
         ]}
       />
+      {(isAdmin || personaName === 'admin') && (
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<AIIcon sx={{ fontSize: '1rem !important' }} />}
+          onClick={() => navigate('/admin/assistant')}
+          aria-current={location.pathname.startsWith('/admin/assistant') ? 'page' : undefined}
+          sx={{ ml: 0.5, flexShrink: 0, px: 1.5, py: 0.6 }}
+        >
+          Assistant
+        </Button>
+      )}
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
@@ -449,11 +482,24 @@ const Header = () => {
               <ListItemText>Profile</ListItemText>
             </MenuItem>
 
-            {!isAdmin && (
-              <MenuItem onClick={() => handleProfileMenuClick('/orders')} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
-                <ListItemIcon><ShoppingBagIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
-                <ListItemText>Orders</ListItemText>
+            {canSwitchPersona && (
+              <MenuItem onClick={switchPersona} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
+                <ListItemIcon><SwapHorizIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
+                <ListItemText>{personaName === 'admin' ? 'Switch to Alice' : 'Switch to Admin'}</ListItemText>
               </MenuItem>
+            )}
+
+            {!isAdmin && (
+              <>
+                <MenuItem onClick={() => handleProfileMenuClick('/support')} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
+                  <ListItemIcon><FeedbackIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
+                  <ListItemText>Contact support</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={() => handleProfileMenuClick('/orders')} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
+                  <ListItemIcon><ShoppingBagIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
+                  <ListItemText>Orders</ListItemText>
+                </MenuItem>
+              </>
             )}
 
             <MenuItem onClick={() => handleProfileMenuClick('/coupons')} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
@@ -624,7 +670,7 @@ const Header = () => {
 
       <Divider sx={{ borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
 
-      {isLoggedIn && !isShopper && (
+      {isLoggedIn && (
         <MobileSection title="Learn">
           <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
           <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
@@ -658,6 +704,7 @@ const Header = () => {
 
       {isAdmin && (
         <MobileSection title="Account">
+          <MobileNavItem to="/admin/assistant" icon={<AIIcon />} label="Assistant" />
           <MobileNavItem to="/admin-dashboard" icon={<AdminIcon />} label="Dashboard" />
           <MobileNavItem to="/user-management" icon={<PeopleIcon />} label="User Management" />
           <MobileNavItem to="/order-management" icon={<OrderManagementIcon />} label="Order Management" />
@@ -729,6 +776,16 @@ const Header = () => {
             </IconButton>
           </>
         )}
+        {(isAdmin || localStorage.getItem('username') === 'admin') && (
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => navigate('/admin/assistant')}
+            sx={{ px: 1.25, py: 0.4, minWidth: 0 }}
+          >
+            Assistant
+          </Button>
+        )}
         {showShopTools && (
           <IconButton
             onClick={() => navigate('/cart')}
@@ -774,6 +831,16 @@ const Header = () => {
         {isMobile ? renderMobileToolbar() : renderDesktopNav()}
       </AppBar>
       {isMobile && renderMobileDrawer()}
+      {isLoggedIn && canSwitchPersona && (
+        <Box sx={{ px: 2, py: 0.5, bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderBottom: (t) => `1px solid ${t.palette.divider}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Typography sx={{ fontSize: '0.78rem', fontWeight: 600 }}>
+            You are {personaName === 'admin' ? 'Admin' : 'Alice'} (shopper).
+          </Typography>
+          <Button size="small" onClick={switchPersona} startIcon={<SwapHorizIcon />} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
+            {personaName === 'admin' ? 'Switch to Alice' : 'Switch to Admin'}
+          </Button>
+        </Box>
+      )}
     </>
   );
 };

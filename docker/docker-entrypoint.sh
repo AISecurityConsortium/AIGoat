@@ -115,6 +115,10 @@ else
     ok "Database already has required data"
 fi
 
+info "Syncing support tickets..."
+python -m scripts.seed --sync-support
+ok "Support tickets ready"
+
 # Refresh challenge title/description/owasp_ref/hints/etc. from CHALLENGE_DEFINITIONS
 # without wiping ChallengeAttempt (full seed deletes attempts; this sync does not).
 info "Syncing challenge metadata..."

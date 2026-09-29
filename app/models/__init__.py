@@ -10,12 +10,14 @@ from app.models.lab import LabSession
 from app.models.order import Order, OrderItem, Payment
 from app.models.product import Product
 from app.models.review import Review
+from app.models.support_ticket import SupportMessage, SupportTicket
 from app.models.telemetry import DefenseTelemetry
 from app.models.user import User, UserProfile
 
 __all__ = [
     "User", "UserProfile", "Product", "Cart", "CartItem",
     "Order", "OrderItem", "Payment", "Coupon", "CouponUsage", "Review",
+    "SupportTicket", "SupportMessage",
     "Challenge", "ChallengeAttempt", "ChatMessage", "KnowledgeBaseEntry",
     "LabSession", "DefenseTelemetry",
     "AgentRun", "AgentStepRow", "PendingApproval", "AgentMemory",

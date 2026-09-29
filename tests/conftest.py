@@ -7,7 +7,10 @@ real database.
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import AsyncIterator
+
+os.environ.setdefault("AIGOAT_SKIP_STARTUP_SEED", "1")
 
 import pytest
 import pytest_asyncio

@@ -175,6 +175,11 @@ else
     ok "Database already has required data"
 fi
 
+# Demo inbox is idempotent, so a normal start and --fresh both end with the same tickets.
+info "Syncing support tickets..."
+python3 -m scripts.seed --sync-support 2>/dev/null
+ok "Support tickets ready"
+
 # Refresh challenge title/description/owasp_ref/hints/etc. from CHALLENGE_DEFINITIONS
 # without wiping ChallengeAttempt (full seed deletes attempts; this sync does not).
 info "Syncing challenge metadata..."

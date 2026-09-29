@@ -48,7 +48,7 @@ def test_payload_strings_are_copied_into_servers():
 
 def test_every_shipped_server_declares_2026_stateless():
     specs = list_server_specs()
-    assert {s.id for s in specs} == {"shop_catalog", "community_support", "shadow_shop"}
+    assert {s.id for s in specs} == {"shop_catalog", "community_support", "shadow_shop", "internal_shop"}
     for spec in specs:
         assert spec.protocol_era == "2026-stateless"
         assert spec.script_path.is_file()

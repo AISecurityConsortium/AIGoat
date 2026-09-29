@@ -29,6 +29,7 @@ class RiskOut(BaseModel):
     lab_ids: list[str]
     challenge_ids: list[int]
     related: list[str]
+    writeup: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 

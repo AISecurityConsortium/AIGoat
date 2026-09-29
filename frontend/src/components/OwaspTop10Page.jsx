@@ -240,6 +240,16 @@ const OwaspTop10Page = () => {
               <Typography sx={{ color: 'text.secondary', fontSize: '0.8125rem', mt: 1 }}>
                 Source licence: {framework.source_license}
               </Typography>
+              {framework.id === 'owasp-mcp-2025' && (
+                <Button component={RouterLink} to="/mcp" sx={{ mt: 1.5, textTransform: 'none' }}>
+                  Practice on the MCP page
+                </Button>
+              )}
+              {framework.id === 'owasp-agentic-2026' && (
+                <Button component={RouterLink} to="/agent" sx={{ mt: 1.5, textTransform: 'none' }}>
+                  Practice on the Agent page
+                </Button>
+              )}
             </SectionCard>
           </Box>
         )}
@@ -326,7 +336,10 @@ const OwaspTop10Page = () => {
                   {risk.title}
                 </Typography>
                 <Typography sx={{ color: 'text.secondary', fontSize: '0.8125rem', mr: 1 }}>
-                  {(risk.lab_ids || []).length} labs · {(risk.challenge_ids || []).length} challenges
+                  {(risk.lab_ids || []).length} labs
+                  {risk.writeup ? ' · writeup' : ''}
+                  {' · '}
+                  {(risk.challenge_ids || []).length} challenges
                 </Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>

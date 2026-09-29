@@ -29,6 +29,7 @@ def test_all_surfaces_are_the_five_known():
         "rag.kb",
         "agent.runner",
         "mcp.client",
+        "mcp.host",
         "api.raw",
     )
 

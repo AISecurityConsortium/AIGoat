@@ -20,6 +20,7 @@ The following are part of the educational design and should NOT be reported as s
 | **RAG Weaknesses** (LLM09 Vector and Embedding Weaknesses) | Poisoning the Knowledge Base, manipulating vector retrieval, context flooding |
 | **Misinformation** (LLM07) | Inducing the chatbot to fabricate certifications, endorsements, or specifications |
 | **Weak Credentials** | Default demo accounts (`admin/admin123`, `alice/password123`, etc.) |
+| **Persona switch** | The account menu swaps Alice and Admin by reusing tokens already returned by `GET /api/auth/demo-users/`. It is training-only and demo-token-scoped. It does not bypass login for any other account. |
 | **Context Override & Role Confusion** | Making the chatbot abandon its role or follow injected instructions |
 | **Guardrail Bypass** | Successfully bypassing Level 1 or Level 2 defenses with creative prompts |
 
