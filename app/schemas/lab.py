@@ -17,6 +17,7 @@ class LabOut(BaseModel):
     risks: list[str] = Field(default_factory=list)
     primary_risk: str = ""
     surface: str
+    recommended_server_id: str = ""
     difficulty: str
     objective: str = ""
     prerequisites: list[str] = Field(default_factory=list)
@@ -30,6 +31,15 @@ class LabOut(BaseModel):
     references: list[str] = Field(default_factory=list)
     challenge_id: int | None = None
     related_lab_ids: list[str] = Field(default_factory=list)
+    briefing: str = ""
+    hint_count: int = 0
+    hints_revealed: int = 0
+    ui: dict = Field(default_factory=dict)
+    stages: list[dict] = Field(default_factory=list)
+    submission_fields: list[str] = Field(default_factory=list)
+    solution_revealed: bool = False
+    servers: list[str] = Field(default_factory=list)
+    has_fixture: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

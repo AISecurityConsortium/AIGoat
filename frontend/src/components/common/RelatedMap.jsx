@@ -15,26 +15,52 @@ import RiskChip from './RiskChip';
  * @property {boolean} [dense]
  */
 
-const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense = false }) => {
+const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense = false, maxLabs }) => {
   const navigate = useNavigate();
   const { labs: catalog } = useLabs();
   const names = Object.fromEntries((catalog || []).map((lab) => [lab.id, lab.name]));
   const labItems = labs.length
     ? labs
     : relatedLabIds.map((id) => ({ id, name: names[id] }));
+  const visibleLabs = Number.isInteger(maxLabs) ? labItems.slice(0, maxLabs) : labItems;
+  const hiddenLabCount = labItems.length - visibleLabs.length;
   const hasRisks = risks.length > 0;
-  const hasLabs = labItems.length > 0;
+  const hasLabs = visibleLabs.length > 0;
   const hasSurface = Boolean(surface);
   if (!hasRisks && !hasLabs && !hasSurface) return null;
 
+  const headingSx = {
+    fontSize: dense ? '0.6875rem' : '0.8125rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    lineHeight: dense ? '24px' : 1.4,
+    color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
+    ...(dense
+      ? { width: 96, flexShrink: 0, whiteSpace: 'nowrap', mb: 0 }
+      : { mb: 0.75 }),
+  };
+  const rowSx = dense
+    ? { display: 'flex', alignItems: 'flex-start', gap: 0.75 }
+    : undefined;
+  const chipsSx = { display: 'flex', gap: dense ? 0.5 : 0.75, flexWrap: 'wrap', minWidth: 0, alignItems: 'center' };
+  const denseChipSx = {
+    height: 24,
+    maxWidth: '100%',
+    textDecoration: 'none',
+    fontWeight: 700,
+    fontSize: '0.75rem',
+    '& .MuiChip-label': { px: 0.75, whiteSpace: 'nowrap' },
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: dense ? 0 : 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: dense ? 0.5 : 1.5, mt: dense ? 0 : 2 }}>
       {hasRisks && (
-        <Box>
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+        <Box sx={rowSx}>
+          <Typography sx={headingSx}>
             Risks
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={chipsSx}>
             {risks.map((qualified) => {
               const code = String(qualified).includes(':') ? String(qualified).split(':').slice(1).join(':') : qualified;
               const fw = String(qualified).includes(':') ? String(qualified).split(':')[0] : undefined;
@@ -54,50 +80,54 @@ const RelatedMap = ({ risks = [], surface, labs = [], relatedLabIds = [], dense 
         </Box>
       )}
       {hasSurface && (
-        <Box>
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+        <Box sx={rowSx}>
+          <Typography sx={headingSx}>
             Surface
           </Typography>
-          <Chip
-            component={RouterLink}
-            to={attacksSurfacePath(surface)}
-            label={surface}
-            size="small"
-            clickable
-            sx={{ textDecoration: 'none' }}
-          />
+          <Box sx={chipsSx}>
+            <Chip
+              component={RouterLink}
+              to={attacksSurfacePath(surface)}
+              label={surface}
+              size="small"
+              clickable
+              sx={dense ? denseChipSx : { textDecoration: 'none' }}
+            />
+          </Box>
         </Box>
       )}
       {hasLabs && (
-        <Box>
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}>
+        <Box sx={rowSx}>
+          <Typography sx={headingSx}>
             Related labs
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-            {labItems.map((item) => {
+          <Box sx={chipsSx}>
+            {visibleLabs.map((item) => {
               const id = typeof item === 'string' ? item : item.id;
               const name = (typeof item === 'string' ? names[item] : item.name) || names[id];
               const chip = (
                 <Chip
                   component={RouterLink}
                   to={labPath(item)}
-                  label={name || id}
+                  label={dense ? id : (name || id)}
                   size="small"
                   clickable
                   onClick={(event) => event.stopPropagation()}
-                  sx={{
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                  }}
+                  sx={dense ? denseChipSx : { textDecoration: 'none', fontWeight: 600 }}
                 />
               );
               return (
-                <Tooltip key={id} title={id}>
+                <Tooltip key={id} title={dense ? (name || id) : id}>
                   <Box component="span">{chip}</Box>
                 </Tooltip>
               );
             })}
           </Box>
+          {hiddenLabCount > 0 && (
+            <Typography sx={{ mt: 0.75, fontSize: '0.8125rem', color: 'text.secondary' }}>
+              {`Showing ${visibleLabs.length} of ${labItems.length}`}
+            </Typography>
+          )}
         </Box>
       )}
     </Box>
@@ -110,6 +140,7 @@ RelatedMap.propTypes = {
   labs: PropTypes.array,
   relatedLabIds: PropTypes.arrayOf(PropTypes.string),
   dense: PropTypes.bool,
+  maxLabs: PropTypes.number,
 };
 
 export default RelatedMap;

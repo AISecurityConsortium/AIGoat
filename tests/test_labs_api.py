@@ -164,3 +164,22 @@ async def test_start_lab_missing(client: AsyncClient):
     token = await _token(client, "labstartmiss")
     resp = await client.post("/api/labs/nope/start", headers=auth_header(token))
     assert resp.status_code == 404
+
+
+async def test_mcp_client_lab_names_its_server_without_pins(client: AsyncClient):
+    token = await _token(client, "mcpserver")
+    headers = auth_header(token)
+    expected = {
+        "mcp01-1": "community_support",
+        "mcp08-1": "",
+        "mcp09-1": "",
+        "mcp03-1": "community_support",
+        "mcp03-2": "community_support",
+    }
+    for lab_id, server_id in expected.items():
+        resp = await client.get(f"/api/labs/{lab_id}", headers=headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["recommended_server_id"] == server_id
+        assert "surface_config" not in body
+        assert "pinned_descriptions" not in resp.text

@@ -51,6 +51,25 @@ class LabDefinition(BaseModel):
     remediation: str = ""
     references: tuple[str, ...] = ()
     challenge_id: int | None = None
+    briefing: str = ""
+    hints: tuple[str, ...] = ()
+    solution: dict[str, Any] = Field(default_factory=dict)
+    design_note: dict[str, Any] = Field(default_factory=dict)
+    completion: dict[str, Any] = Field(default_factory=dict)
+    ui: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _completion_ready(self) -> "LabDefinition":
+        if self.hints and len(self.hints) != 5:
+            raise ValueError(f"lab {self.id}: hints must be exactly 5 tiers")
+        if self.completion:
+            if not self.briefing.strip():
+                raise ValueError(f"lab {self.id}: completion requires a briefing")
+            if not self.design_note:
+                raise ValueError(f"lab {self.id}: completion requires a design_note")
+            if not self.solution:
+                raise ValueError(f"lab {self.id}: completion requires a solution")
+        return self
 
     @model_validator(mode="before")
     @classmethod

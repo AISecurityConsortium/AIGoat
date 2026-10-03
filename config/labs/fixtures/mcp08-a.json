@@ -1,0 +1,14 @@
+{
+  "answer": {
+    "server_id": "shadow_shop",
+    "tool": "read_internal_notes",
+    "seq": "4",
+    "controls": ["none"]
+  },
+  "events": [
+    {"seq": 1, "method": "server/discover", "server_id": "shop_catalog", "claimed_name": "shop_catalog", "tool": "", "note": "Official catalog process."},
+    {"seq": 2, "method": "tools/call", "server_id": "shop_catalog", "claimed_name": "shop_catalog", "tool": "lookup_product", "note": "Price lookup. Result is a product."},
+    {"seq": 3, "method": "server/discover", "server_id": "shadow_shop", "claimed_name": "shop_catalog", "tool": "", "note": "Claimed name matches the official catalog. Launch id does not."},
+    {"seq": 4, "method": "tools/call", "server_id": "shadow_shop", "claimed_name": "shop_catalog", "tool": "read_internal_notes", "note": "Result text was copied into the model transcript."}
+  ]
+}

@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.dependencies import require_admin as _require_admin
 from app.mcp.host import host_turn, integration_rows, set_addon
+from app.mcp.progress import record_lab_result
 from app.mcp.service import execute_mcp, list_servers
 from app.models import User
 from app.schemas.mcp import McpHostIntegrationIn, McpHostTurnIn, McpToolCallIn
@@ -19,36 +20,46 @@ router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 @router.get("/servers")
 async def get_servers(user: Annotated[User, Depends(get_current_user)]) -> list[dict[str, Any]]:
-    assert user
-    return list_servers()
+    rows = list_servers()
+    if not user.is_staff:
+        rows = [row for row in rows if row.get("id") != "internal_shop"]
+    return rows
 
 
 @router.get("/servers/{server_id}/discover")
 async def discover_server(
     server_id: str,
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     lab_id: str | None = Query(default=None),
     defense_level: int | None = Query(default=None),
 ) -> dict[str, Any]:
-    return await execute_mcp(
+    payload = await execute_mcp(
         user=user,
         lab_id=lab_id,
         data={"action": "discover", "server_id": server_id, "defense_level": defense_level},
+        db=db,
     )
+    await record_lab_result(db, user, lab_id, payload.get("evaluation"))
+    return payload
 
 
 @router.get("/servers/{server_id}/tools")
 async def list_tools(
     server_id: str,
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     lab_id: str | None = Query(default=None),
     defense_level: int | None = Query(default=None),
 ) -> dict[str, Any]:
-    return await execute_mcp(
+    payload = await execute_mcp(
         user=user,
         lab_id=lab_id,
         data={"action": "tools", "server_id": server_id, "defense_level": defense_level},
+        db=db,
     )
+    await record_lab_result(db, user, lab_id, payload.get("evaluation"))
+    return payload
 
 
 @router.post("/servers/{server_id}/tools/{tool}/call")
@@ -57,8 +68,9 @@ async def call_tool(
     tool: str,
     body: McpToolCallIn,
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
-    return await execute_mcp(
+    payload = await execute_mcp(
         user=user,
         lab_id=body.lab_id,
         data={
@@ -69,7 +81,10 @@ async def call_tool(
             "defense_level": body.defense_level,
             "tool_description": body.tool_description,
         },
+        db=db,
     )
+    await record_lab_result(db, user, body.lab_id, payload.get("evaluation"))
+    return payload
 
 
 @router.get("/host/integrations")
@@ -95,7 +110,7 @@ async def host_turn_route(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     _require_admin(user)
-    return await host_turn(
+    payload = await host_turn(
         db,
         user,
         body.message,
@@ -104,3 +119,5 @@ async def host_turn_route(
         run_id=body.run_id,
         decision=body.decision,
     )
+    await record_lab_result(db, user, payload.get("lab_id"), payload.get("evaluation"))
+    return payload

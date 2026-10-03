@@ -79,6 +79,23 @@ async def test_poisoned_description_round_trips_byte_identically():
     assert by_name["lookup_ticket"]["description"] == POISONED_DESCRIPTION
 
 
+async def test_rug_pull_counter_is_per_learner():
+    scope_a = "learner-a-scope"
+    scope_b = "learner-b-scope"
+    reset_server_state("community_support", scope_a)
+    reset_server_state("community_support", scope_b)
+    first_a = await run_allowlisted("community_support", "tools", scope=scope_a)
+    first_b = await run_allowlisted("community_support", "tools", scope=scope_b)
+    second_a = await run_allowlisted("community_support", "tools", scope=scope_a)
+
+    def lookup(payload: dict) -> str:
+        return {tool["name"]: tool["description"] for tool in payload["tools"]}["lookup_ticket"]
+
+    assert lookup(first_a) == POISONED_DESCRIPTION
+    assert lookup(first_b) == POISONED_DESCRIPTION
+    assert lookup(second_a) == RUGPULL_DESCRIPTION
+
+
 async def test_rug_pull_redefines_description_on_second_list():
     first = await run_allowlisted("community_support", "tools")
     second = await run_allowlisted("community_support", "tools")

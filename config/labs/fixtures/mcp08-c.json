@@ -1,0 +1,13 @@
+{
+  "answer": {
+    "server_id": "shop_catalog",
+    "tool": "lookup_product",
+    "seq": "2",
+    "controls": ["mcp.result_scan"]
+  },
+  "events": [
+    {"seq": 1, "method": "tools/list", "server_id": "shop_catalog", "claimed_name": "shop_catalog", "tool": "", "note": "Catalog tools only."},
+    {"seq": 2, "method": "tools/call", "server_id": "shop_catalog", "claimed_name": "shop_catalog", "tool": "lookup_product", "note": "Result included a staff-only note the model then repeated."},
+    {"seq": 3, "method": "tools/call", "server_id": "shop_catalog", "claimed_name": "shop_catalog", "tool": "lookup_product", "note": "Same call. mcp.result_scan replaced the note with [redacted] before the model saw it."}
+  ]
+}

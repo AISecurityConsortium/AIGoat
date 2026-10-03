@@ -75,6 +75,7 @@ const ChatBot = () => {
   const streamAbortRef = useRef(null);
 
   const isLoggedIn = !!localStorage.getItem('token');
+  const isAdmin = localStorage.getItem('username') === 'admin';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -473,7 +474,7 @@ const ChatBot = () => {
     );
   };
 
-  if (!isLoggedIn) return null;
+  if (!isLoggedIn || isAdmin) return null;
 
   return (
     <>

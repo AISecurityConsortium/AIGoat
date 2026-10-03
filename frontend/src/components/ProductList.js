@@ -37,8 +37,8 @@ import { getApiUrl } from '../config/api';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useSearch } from '../contexts/SearchContext';
 import { StartHerePanel } from './common';
+import TrainingOffer from './common/TrainingOffer';
 import { formatUsd } from '../utils/money';
-import { getStartHereDismissedKey, START_HERE_SHOW_EVENT } from '../config/learningPath';
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -47,18 +47,6 @@ const HeroSection = () => {
   const isLearner = isLoggedIn && localStorage.getItem('username') && localStorage.getItem('username') !== 'admin';
   const { mode } = useThemeMode();
   const isDark = mode === 'dark';
-  const startLabs = () => {
-    try {
-      localStorage.removeItem(getStartHereDismissedKey());
-    } catch {
-      /* ignore */
-    }
-    window.dispatchEvent(new CustomEvent(START_HERE_SHOW_EVENT));
-    window.setTimeout(() => {
-      document.getElementById('start-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
-  };
-
   return (
     <Box
       sx={{
@@ -112,7 +100,7 @@ const HeroSection = () => {
             fontSize: '0.95rem',
           }}
         >
-          Your hands-on lab for LLM, RAG, MCP, and agentic security. Attack and defend
+          One stop for all your AI security learning. Your hands-on lab for LLM, RAG, MCP, and agentic security. Attack and defend
           AI systems through real-world exercises mapped to the OWASP Top 10 for LLM, MCP, and Agentic Applications.
         </Typography>
         {/* Vulnerable app warning */}
@@ -167,14 +155,14 @@ const HeroSection = () => {
               <Button
                 variant="contained"
                 size="small"
-                onClick={startLabs}
+                onClick={() => navigate('/challenges')}
                 sx={{
                   bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
                   fontWeight: 600, px: 2.5, py: 0.8, borderRadius: '8px', textTransform: 'none', fontSize: '0.8rem',
                   '&:hover': { bgcolor: (t) => t.palette.primary.dark },
                 }}
               >
-                Start the labs
+                Start the Challenges
               </Button>
               <Button
                 variant="outlined"
@@ -237,6 +225,7 @@ const HeroSection = () => {
         <Typography variant="caption" sx={{ color: isDark ? '#64748b' : '#94a3b8', fontSize: '0.65rem', display: 'block' }}>
           Built &amp; maintained by <strong>Farooq</strong> and <strong>Nal</strong>.
         </Typography>
+        <TrainingOffer />
       </Box>
 
       {isDark ? (

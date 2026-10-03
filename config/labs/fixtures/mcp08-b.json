@@ -1,0 +1,14 @@
+{
+  "answer": {
+    "server_id": "community_support",
+    "tool": "export_orders",
+    "seq": "3",
+    "controls": ["mcp.tool_allowlist"]
+  },
+  "events": [
+    {"seq": 1, "method": "server/discover", "server_id": "community_support", "claimed_name": "community_support", "tool": "", "note": "Support process."},
+    {"seq": 2, "method": "tools/list", "server_id": "community_support", "claimed_name": "community_support", "tool": "", "note": "List adds export_orders, which was not in the previous list."},
+    {"seq": 3, "method": "tools/call", "server_id": "community_support", "claimed_name": "community_support", "tool": "export_orders", "note": "Full order export returned to the model."},
+    {"seq": 4, "method": "tools/call", "server_id": "community_support", "claimed_name": "community_support", "tool": "export_orders", "note": "Denied by mcp.tool_allowlist before the process started."}
+  ]
+}

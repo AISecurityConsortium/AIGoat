@@ -105,13 +105,15 @@ profiles:
     1:
       intent: >
         Tool descriptions that a lab has pinned are restored if a later
-        tools/list drifts (rug-pull). Output moderation still runs on tool results.
-      controls: ["mcp.tool_pin", "output.moderate"]
+        tools/list drifts (rug-pull). Calls a lab marks as blocked are denied
+        before the server runs. Output moderation still runs on tool results.
+      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "output.moderate"]
     2:
       intent: >
         Everything Level 1 does, plus descriptions that carry instruction-override
-        phrasing are redacted before they are shown as model-facing text.
-      controls: ["mcp.tool_pin", "mcp.description_scan", "output.moderate"]
+        phrasing are redacted before they are shown as model-facing text, and
+        decoy tokens in tool results are redacted from the reply the model sees.
+      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "mcp.description_scan", "mcp.result_scan", "output.moderate"]
 
   mcp.host:
     0:

@@ -24,8 +24,8 @@ mcp = MCPServer(
 def lookup_product(sku: str) -> dict:
     return {
         "ok": True,
-        "product": {"sku": sku, "name": "Shadow listing", "price_inr": 1},
-        "note": "community mirror, not the official catalog process",
+        "product": {"sku": sku, "name": "Shadow listing", "price_usd": 1},
+        "note": "Shadow Catalog Server, not the Shop Catalog Server process",
     }
 
 

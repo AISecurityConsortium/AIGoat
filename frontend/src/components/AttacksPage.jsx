@@ -8,7 +8,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   CheckCircle as CheckIcon,
   RadioButtonUnchecked as UncheckedIcon,
-  BugReport as BugIcon,
 } from '@mui/icons-material';
 import { useLocation, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useLabs } from '../hooks/useLabs';
@@ -298,7 +297,6 @@ const AttacksPage = () => {
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
       <Container maxWidth="lg">
         <PageHeader
-          icon={<BugIcon sx={{ fontSize: 36, color: 'primary.main' }} />}
           title="Attack Labs"
           subtitle="Hands-on exercises for each mapped risk. Try the example prompts, compare results across defense levels."
         />
@@ -380,7 +378,7 @@ const AttacksPage = () => {
                 <Typography sx={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.2, color: 'inherit' }}>
                   {shortFrameworkLabel(fw)}
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'inherit', opacity: selected ? 0.92 : 0.75, whiteSpace: 'nowrap' }}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'inherit', opacity: selected ? 0.92 : 0.75, flexShrink: 0 }}>
                   {count} {count === 1 ? 'lab' : 'labs'}
                 </Typography>
               </Box>
@@ -411,7 +409,7 @@ const AttacksPage = () => {
             const isActive = activeTab === i;
             const labLabel = hasLabs
               ? `${c.labs.length} ${c.labs.length === 1 ? 'lab' : 'labs'}`
-              : 'Soon';
+              : (c.code === 'MCP05' ? 'Refused' : 'Soon');
             return (
               <Box
                 key={c.code}
@@ -482,7 +480,6 @@ const AttacksPage = () => {
                 <Typography sx={{
                   fontSize: '0.8125rem',
                   fontWeight: 700,
-                  whiteSpace: 'nowrap',
                   color: (t) => (hasLabs ? toneColors(activeTone, t).ink : (t.palette.custom?.text?.muted ?? 'text.secondary')),
                   fontStyle: hasLabs ? 'normal' : 'italic',
                 }}>
@@ -506,10 +503,22 @@ const AttacksPage = () => {
         )}
 
         {!loading && !error && catLabs.length === 0 ? (
-          <EmptyState
-            title="Coming Soon"
-            description={cat.code ? `Labs for ${cat.code} are under development.` : 'No labs match these filters.'}
-          />
+          cat.code === 'MCP05' ? (
+            <EmptyState
+              title="We refused to build this"
+              description="Command injection would mean a tool argument reaches a shell. Practice the refusal in the executor lab."
+              action={(
+                <Button component={Link} to="/labs/asi05-1" variant="outlined" sx={{ textTransform: 'none' }}>
+                  Open the refused executor lab
+                </Button>
+              )}
+            />
+          ) : (
+            <EmptyState
+              title="Coming Soon"
+              description={cat.code ? `Labs for ${cat.code} are under development.` : 'No labs match these filters.'}
+            />
+          )
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {catLabs.map((lab) => {

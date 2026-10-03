@@ -45,6 +45,30 @@ def parse_json_tool(text: str) -> tuple[str, str, dict[str, Any]] | None:
     return None
 
 
+def parse_literal_call(text: str) -> tuple[str, str, dict[str, Any]] | None:
+    """A single snake_case call with literal arguments, such as issue_refund(order_id=9)."""
+    blob = (text or "").strip()
+    fenced = re.search(r"```(?:python|py)?\s*(.*?)```", blob, re.S)
+    if fenced:
+        source = fenced.group(1)
+    elif re.fullmatch(r"[a-z][a-z0-9]*_[a-z0-9_]+\s*\([^)]*\)", blob):
+        source = blob
+    else:
+        return None
+    named = re.search(
+        r"\b([a-z][a-z0-9]*_[a-z0-9_]+)\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\d+|\"[^\"]*\"|'[^']*')\s*\)",
+        source,
+    )
+    if named:
+        raw = named.group(3)
+        value: Any = int(raw) if raw.isdigit() else raw.strip("'\"")
+        return ("", named.group(1), {named.group(2): value})
+    empty = re.search(r"\b([a-z][a-z0-9]*_[a-z0-9_]+)\s*\(\s*\)", source)
+    if empty:
+        return ("", empty.group(1), {})
+    return None
+
+
 def _observation_text(outcome: BrokerOutcome) -> str:
     try:
         return json.dumps(outcome.observation, default=str)
@@ -90,7 +114,7 @@ class GatedAgentLoop(AgentLoop):
             if not isinstance(args, dict):
                 args = {}
             return (turn.content or "", str(first.get("name") or ""), args)
-        parsed = parse_json_tool(turn.content)
+        parsed = parse_json_tool(turn.content) or parse_literal_call(turn.content)
         if parsed:
             _thought, name, args = parsed
             return (turn.content or "", name, args)

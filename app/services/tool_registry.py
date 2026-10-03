@@ -38,6 +38,7 @@ class Tool:
     handler: ToolHandler
     requires_approval: bool = False
     parameter_schema: dict[str, Any] = field(default_factory=dict)
+    origin: str = ""
 
 
 class ToolRegistry:

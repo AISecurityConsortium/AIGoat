@@ -73,6 +73,9 @@ async def run_stdio(
     tool: str | None = None,
     arguments: dict[str, Any] | None = None,
     timeout: float | None = None,
+    scope: str | None = None,
+    lab_id: str | None = None,
+    level: int | None = None,
 ) -> dict[str, Any]:
     """Launch a stdio server, run one operation, reap. Used by tests and production."""
     if op not in {"discover", "tools", "call"}:
@@ -81,7 +84,7 @@ async def run_stdio(
         raise ValidationError("tool is required for MCP call")
     settings = get_settings()
     limit = float(timeout if timeout is not None else settings.mcp.spawn_timeout)
-    env = build_child_env(server_id, server_data_dir(server_id), op)
+    env = build_child_env(server_id, server_data_dir(server_id, scope), op, lab_id, level)
     logger.info("mcp spawn server_id=%s op=%s argv=%s", server_id, op, [command, *args])
     transcript: list[dict[str, Any]] = []
     payload: dict[str, Any] = {"server_id": server_id, "op": op}
@@ -150,6 +153,9 @@ async def run_allowlisted(
     tool: str | None = None,
     arguments: dict[str, Any] | None = None,
     timeout: float | None = None,
+    scope: str | None = None,
+    lab_id: str | None = None,
+    level: int | None = None,
 ) -> dict[str, Any]:
     spec = get_server_spec(server_id)
     command, script = spec.command_display()
@@ -161,4 +167,7 @@ async def run_allowlisted(
         tool=tool,
         arguments=arguments,
         timeout=timeout,
+        scope=scope,
+        lab_id=lab_id,
+        level=level,
     )

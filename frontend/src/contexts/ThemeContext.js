@@ -369,6 +369,7 @@ export const ThemeToggleProvider = ({ children }) => {
     const saved = localStorage.getItem('aigoat-theme');
     return saved || 'dark';
   });
+  const [liquidGlass, setLiquidGlass] = useState(() => localStorage.getItem('aigoat_liquid_glass') !== '0');
 
   const toggleTheme = () => {
     setMode((prev) => {
@@ -378,10 +379,24 @@ export const ThemeToggleProvider = ({ children }) => {
     });
   };
 
-  const theme = useMemo(() => (mode === 'dark' ? darkTheme : lightTheme), [mode]);
+  const toggleLiquidGlass = () => {
+    setLiquidGlass((prev) => {
+      const next = !prev;
+      localStorage.setItem('aigoat_liquid_glass', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const theme = useMemo(() => {
+    const base = mode === 'dark' ? darkTheme : lightTheme;
+    if (!liquidGlass) return base;
+    return createTheme(base, {
+      palette: { background: { default: 'transparent' } },
+    });
+  }, [mode, liquidGlass]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme, theme }}>
+    <ThemeContext.Provider value={{ mode, toggleTheme, liquidGlass, toggleLiquidGlass, theme }}>
       {children}
     </ThemeContext.Provider>
   );

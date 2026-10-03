@@ -28,6 +28,7 @@ from app.challenges.evaluators.mcp_protocol import (
     McpDecoyEvaluator,
     McpPoisoningEvaluator,
     McpRugPullEvaluator,
+    McpSchemaDriftEvaluator,
     McpShadowEvaluator,
 )
 from app.challenges.evaluators.memory_poison import MemoryPoisonEvaluator
@@ -59,6 +60,7 @@ _REGISTRY: dict[str, ChallengeEvaluator] = {
     "mcp rug pull": McpRugPullEvaluator(),
     "mcp decoy": McpDecoyEvaluator(),
     "mcp shadow": McpShadowEvaluator(),
+    "mcp schema drift": McpSchemaDriftEvaluator(),
     "mcp host goal hijack": McpHostGoalHijackEvaluator(),
     "mcp host oversharing": McpHostOversharingEvaluator(),
     "mcp host intent subversion": McpHostIntentSubversionEvaluator(),
