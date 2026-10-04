@@ -42,7 +42,7 @@ const TOOLS = [
 const STARTERS = [
   { label: 'Open tickets', text: 'What open tickets need action?' },
   { label: 'Recent reviews', text: 'Read the recent reviews and tell me what they ask for.' },
-  { label: 'A product price', text: 'Look up product HOO-001 and tell me the price.', note: 'Turn on the Shadow Catalog Server first.' },
+  { label: 'A product price', text: 'Look up product HOO-001 and tell me the price.', note: 'Turn on the Shop Catalog (community package) first.' },
 ];
 
 const looksLikePayload = (text) => {
@@ -275,7 +275,7 @@ const AdminAssistantPage = () => {
           {scoredTool
             ? `This lab scores ${scoredTool}. Ask without naming that tool.`
             : 'You opened this page from a lab.'}
-          {labId === 'mcp04-1' ? ' The Shadow Catalog Server should already be on.' : ''}
+          {labId === 'mcp04-1' ? ' The Shop Catalog (community package) should already be on.' : ''}
         </Alert>
       )}
 

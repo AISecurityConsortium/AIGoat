@@ -1,6 +1,8 @@
 """Deterministic stand-in for the admin assistant.
 
 Rules are shared security behavior. A lab cannot add payload strings here.
+MCP03-1 uses this as a labeled planner simulation over tool metadata. It is
+not a live model. Genuine model-mediated behaviour is a later enhancement.
 """
 from __future__ import annotations
 

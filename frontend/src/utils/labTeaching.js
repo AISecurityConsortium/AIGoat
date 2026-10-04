@@ -12,20 +12,30 @@ export const MCP_ORDER = [
   'mcp08-1',
 ];
 
-/** Fixed left-to-right order for the lab switcher. Do not sort this at render time. */
-export const MCP_NAV_ORDER = [
-  'mcp01-1',
-  'mcp02-1',
-  'mcp03-1',
-  'mcp03-2',
-  'mcp03-3',
-  'mcp04-1',
-  'mcp06-1',
-  'mcp07-1',
-  'mcp08-1',
-  'mcp09-1',
-  'mcp10-1',
+/**
+ * Lab switcher groups, following the OWASP MCP Top 10 risk each lab exercises.
+ * `series` groups are meant to be taken in order; navigation is never blocked.
+ */
+export const MCP_NAV_GROUPS = [
+  { id: 'access', label: 'Credentials & Access', labs: ['mcp01-1', 'mcp02-1', 'mcp07-1'] },
+  {
+    id: 'metadata',
+    label: 'Tool Metadata',
+    series: true,
+    labs: ['mcp03-1', 'mcp03-2', 'mcp03-3'],
+    steps: {
+      'mcp03-1': 'Description poisoning',
+      'mcp03-2': 'Redefinition (rug pull)',
+      'mcp03-3': 'Schema drift',
+    },
+  },
+  { id: 'trust', label: 'Trust & Integrations', labs: ['mcp09-1', 'mcp04-1'] },
+  { id: 'host', label: 'Agent / Host', labs: ['mcp06-1', 'mcp10-1'] },
+  { id: 'ops', label: 'Security Operations', labs: ['mcp08-1'] },
 ];
+
+/** Fixed left-to-right order for the lab switcher. Do not sort this at render time. */
+export const MCP_NAV_ORDER = MCP_NAV_GROUPS.flatMap((group) => group.labs);
 
 export const AGENT_ORDER = [
   'llm03-1',
@@ -68,7 +78,7 @@ export const LAB_SERIES = {
   'mcp02-1': 'Same decision, different screen. A later tool list asks for a stronger call.',
   'mcp03-2': 'Same decision, different screen. The description changes on the second list.',
   'mcp03-3': 'Same decision, different screen. The arguments change on the second list.',
-  'mcp04-1': 'Same decision, different screen. Turn on the Shadow Catalog Server.',
+  'mcp04-1': 'Same decision, different screen. Turn on the Shop Catalog (community package).',
   'mcp07-1': 'Same decision, different screen. Any listed tool can be called.',
   'mcp10-1': 'Same decision, different screen. The score here is the export, not the refund.',
   'asi06-2': 'Same note as ASI06. This pass is what Level 2 does with it.',
@@ -81,7 +91,7 @@ export const LAB_SERIES = {
 export const HOST_STEPS = {
   'mcp04-1': {
     step1: 'Stay as Admin. Alice does not plant anything for this lab.',
-    step2: 'Open the assistant, turn on the Shadow Catalog Server, and ask for a product lookup.',
+    step2: 'Open the assistant, turn on the Shop Catalog (community package), and ask for a product lookup.',
     plant: null,
   },
   'mcp06-1': {
@@ -106,7 +116,7 @@ export const PRACTICE_LABS = {
     { id: 'asi05-1', label: 'Open the refused executor lab' },
   ],
   'owasp-agentic-2026:ASI04': [
-    { id: 'mcp09-1', label: 'Open the shadow server lab' },
+    { id: 'mcp09-1', label: 'Open the identity lab' },
     { id: 'mcp04-1', label: 'Open the lookalike integration' },
   ],
 };
@@ -186,19 +196,19 @@ export const MCP_FLOWS = {
     ],
   },
   'mcp01-1': {
-    caption: 'The decoy is in the tool result. It is not a real credential.',
+    caption: 'A tool result is copied into the client as text.',
     steps: [
-      { title: 'Call', detail: 'read_internal_notes' },
-      { title: 'Result', detail: 'a decoy token', warn: true },
+      { title: 'Call', detail: 'a support tool' },
+      { title: 'Result', detail: 'read the reply', warn: true },
       { title: 'Context', detail: 'the model can read it' },
     ],
   },
   'mcp03-1': {
-    caption: 'The description is an instruction. Doing what it says is the attack.',
+    caption: 'Tool descriptions are copied into the client. Read them as text.',
     steps: [
-      { title: 'tools/list', detail: 'read lookup_ticket' },
-      { title: 'Instruction', detail: 'call read_internal_notes', warn: true },
-      { title: 'You call it', detail: 'that call is the score' },
+      { title: 'tools/list', detail: 'read each description' },
+      { title: 'Instruction', detail: 'one description gives an order', warn: true },
+      { title: 'Effect', detail: 'show what that order does' },
     ],
   },
   'mcp03-2': {
@@ -218,19 +228,19 @@ export const MCP_FLOWS = {
     ],
   },
   'mcp02-1': {
-    caption: 'The tool text tells you to call export_orders. You still have to press Run.',
+    caption: 'A tool list advertises capabilities. It does not authorize them.',
     steps: [
-      { title: 'Tools load', detail: 'export_orders is already there' },
-      { title: 'Click again', detail: 'lookup_ticket text changes', warn: true },
-      { title: 'Run', detail: 'export_orders' },
+      { title: 'First list', detail: 'note the names' },
+      { title: 'List again', detail: 'compare the names', warn: true },
+      { title: 'Run', detail: 'only to show the impact' },
     ],
   },
   'mcp09-1': {
-    caption: 'Trust the process that ran, not the name in the reply.',
+    caption: 'Compare the name a server claims with the integration this client launched.',
     steps: [
-      { title: 'You picked', detail: 'Shadow Catalog Server' },
-      { title: 'It claims', detail: 'Shop Catalog Server', warn: true },
-      { title: 'What ran', detail: 'a different process' },
+      { title: 'Identify', detail: 'who it says it is' },
+      { title: 'Launch', detail: 'which integration started', warn: true },
+      { title: 'Reply', detail: 'compare the same question' },
     ],
   },
   'mcp07-1': {
@@ -252,7 +262,7 @@ export const MCP_FLOWS = {
   'mcp04-1': {
     caption: 'Alice does not plant anything. The mirror answers because you turned it on.',
     steps: [
-      { title: 'Add-on', detail: 'Shadow Catalog Server' },
+      { title: 'Add-on', detail: 'Shop Catalog (community package)' },
       { title: 'Ask', detail: 'look up a product' },
       { title: 'Tool', detail: 'lookup_product on the mirror', warn: true },
     ],

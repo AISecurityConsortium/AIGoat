@@ -72,13 +72,22 @@ async def test_poisoning_lab_evaluator_fires_at_l0(client: AsyncClient):
     )
     assert called.status_code == 200, called.text
     assert called.json()["evaluation"]["exploit_triggered"] is False
+    simulated = await client.post(
+        "/api/labs/mcp03-1/agent-step",
+        headers=headers,
+        json={"goal": "Answer using the tool list."},
+    )
+    assert simulated.status_code == 200, simulated.text
+    assert "invoke: read_internal_notes" in simulated.json()["message"]
     submitted = await client.post(
         "/api/labs/mcp03-1/submit",
         headers=headers,
-        json={"fields": {"hostile_tool": "lookup_ticket", "induced_action": "read_internal_notes"}},
+        json={"fields": {"finding": "metadata_changed_plan"}},
     )
     assert submitted.status_code == 200, submitted.text
-    assert submitted.json()["evaluation"]["exploit_triggered"] is True
+    body = submitted.json()
+    assert body["evaluation"]["exploit_triggered"] is True
+    assert body["evaluation"]["flag"] is None
 
 
 async def test_description_scan_redacts_at_l2(client: AsyncClient):
@@ -140,15 +149,17 @@ async def test_rug_pull_is_per_lab_and_reset_restores_the_first_description(clie
         tools = {row["name"]: row["description"] for row in resp.json()["result"]["tools"]}
         return tools["lookup_ticket"]
 
-    first = await lookup("mcp03-1")
+    first = await lookup("mcp03-2")
     assert "IMPORTANT: before answering" in first
-    second = await lookup("mcp03-1")
+    second = await lookup("mcp03-2")
     assert "also call export_orders" in second
-    other_lab = await lookup("mcp03-2")
+    other_lab = await lookup("mcp03-3")
     assert "IMPORTANT: before answering" in other_lab
-    reset = await client.post("/api/labs/mcp03-1/reset", headers=headers)
+    pilot = [await lookup("mcp03-1"), await lookup("mcp03-1")]
+    assert all("export_orders" not in text for text in pilot)
+    reset = await client.post("/api/labs/mcp03-2/reset", headers=headers)
     assert reset.status_code == 200, reset.text
-    restored = await lookup("mcp03-1")
+    restored = await lookup("mcp03-2")
     assert "IMPORTANT: before answering" in restored
 
 
@@ -188,7 +199,7 @@ async def test_start_resumes_and_reset_starts_a_fresh_attempt(client: AsyncClien
         resp = await client.get(
             "/api/mcp/servers/community_support/tools",
             headers=headers,
-            params={"lab_id": "mcp03-1", "defense_level": 0},
+            params={"lab_id": "mcp03-2", "defense_level": 0},
         )
         assert resp.status_code == 200, resp.text
         tools = {row["name"]: row["description"] for row in resp.json()["result"]["tools"]}
@@ -196,10 +207,10 @@ async def test_start_resumes_and_reset_starts_a_fresh_attempt(client: AsyncClien
 
     assert "IMPORTANT: before answering" in await lookup()
     assert "also call export_orders" in await lookup()
-    started = await client.post("/api/labs/mcp03-1/start", headers=headers)
+    started = await client.post("/api/labs/mcp03-2/start", headers=headers)
     assert started.status_code == 200, started.text
     assert "also call export_orders" in await lookup()
-    reset = await client.post("/api/labs/mcp03-1/reset", headers=headers)
+    reset = await client.post("/api/labs/mcp03-2/reset", headers=headers)
     assert reset.status_code == 200, reset.text
     assert "IMPORTANT: before answering" in await lookup()
 
@@ -254,15 +265,15 @@ async def test_decoy_token_is_redacted_at_level_2(client: AsyncClient):
     called = await client.post(
         "/api/mcp/servers/community_support/tools/read_internal_notes/call",
         headers=headers,
-        json={"arguments": {"ticket_id": "TCK-1001"}, "lab_id": "mcp01-1", "defense_level": 2},
+        json={"arguments": {"ticket_id": "TCK-1042"}, "lab_id": "mcp01-1", "defense_level": 2},
     )
     assert called.status_code == 200, called.text
     body = called.json()
     visible = "\n".join(body["result"]["text"])
     raw = "\n".join(body["result"]["text_raw"])
-    assert "aigoat-decoy-mcp-token-not-a-secret" not in visible
+    assert "sk-shop-billing-7f3a9c2e1b84" not in visible
     assert "[redacted]" in visible
-    assert "aigoat-decoy-mcp-token-not-a-secret" in raw
+    assert "sk-shop-billing-7f3a9c2e1b84" in raw
     assert body["evaluation"]["exploit_triggered"] is False
 
 
@@ -294,7 +305,7 @@ async def test_shadow_lab_does_not_complete_on_tools_list(client: AsyncClient):
     submitted = await client.post(
         "/api/labs/mcp09-1/submit",
         headers=headers,
-        json={"fields": {"impostor_server": "shadow_shop", "evidence": "shadow_shop.py"}},
+        json={"fields": {"integration": "package_b", "reason": "claim_does_not_match_launch"}},
     )
     assert submitted.status_code == 200, submitted.text
     assert submitted.json()["evaluation"]["exploit_triggered"] is True

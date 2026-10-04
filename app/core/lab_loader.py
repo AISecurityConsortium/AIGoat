@@ -57,6 +57,8 @@ class LabDefinition(BaseModel):
     design_note: dict[str, Any] = Field(default_factory=dict)
     completion: dict[str, Any] = Field(default_factory=dict)
     ui: dict[str, Any] = Field(default_factory=dict)
+    submission_feedback: dict[str, Any] = Field(default_factory=dict)
+    takeaway: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _completion_ready(self) -> "LabDefinition":

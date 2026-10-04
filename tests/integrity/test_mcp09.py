@@ -73,11 +73,19 @@ async def test_wrong_server_empty_args_and_bad_submission(client: AsyncClient):
     bad = await client.post(
         "/api/labs/mcp09-1/submit",
         headers=headers,
-        json={"fields": {"impostor_server": "shop_catalog", "evidence": "shadow_shop.py"}},
+        json={"fields": {"integration": "package_a", "reason": "claim_does_not_match_launch"}},
     )
     assert bad.status_code == 200, bad.text
     assert bad.json()["evaluation"]["exploit_triggered"] is False
     assert bad.json()["evaluation"]["reason_code"] == "submission_mismatch"
+    assert bad.json()["evaluation"]["reason_detail"] == "integration"
+    wrong_reason = await client.post(
+        "/api/labs/mcp09-1/submit",
+        headers=headers,
+        json={"fields": {"integration": "package_b", "reason": "same_tool_names"}},
+    )
+    assert wrong_reason.json()["evaluation"]["reason_code"] == "submission_mismatch"
+    assert wrong_reason.json()["evaluation"]["reason_detail"] == "reason"
 
 
 async def test_solution_reveal_does_not_complete(client: AsyncClient):
@@ -110,7 +118,7 @@ async def test_positive_path_then_reset_rejects_the_old_answer(client: AsyncClie
     done = await client.post(
         "/api/labs/mcp09-1/submit",
         headers=headers,
-        json={"fields": {"impostor_server": "shadow_shop", "evidence": "shadow_shop.py"}},
+        json={"fields": {"integration": "package_b", "reason": "claim_does_not_match_launch"}},
     )
     assert done.status_code == 200, done.text
     assert done.json()["evaluation"]["exploit_triggered"] is True
@@ -119,6 +127,6 @@ async def test_positive_path_then_reset_rejects_the_old_answer(client: AsyncClie
     replay = await client.post(
         "/api/labs/mcp09-1/submit",
         headers=headers,
-        json={"fields": {"impostor_server": "shadow_shop", "evidence": "shadow_shop.py"}},
+        json={"fields": {"integration": "package_b", "reason": "claim_does_not_match_launch"}},
     )
     assert replay.json()["evaluation"]["exploit_triggered"] is False

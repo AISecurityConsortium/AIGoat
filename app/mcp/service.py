@@ -173,12 +173,8 @@ async def _evaluation(
             refs[f"{server}.command_display"] = shown_command
             refs[f"{server}.module"] = spec.module
         verdict = evaluate(lab, events, refs)
-        if verdict.get("exploit_triggered"):
-            from app.challenges.engine import compute_lab_flag
-            from app.mcp.evidence import current_attempt
-
-            attempt = await current_attempt(db, user_id, lab_id or "")
-            verdict["flag"] = compute_lab_flag(lab_id or "", user_id, attempt)
+        # MCP training labs record a finding. They do not award CTF flags.
+        verdict["flag"] = None
         return verdict
     key = lab.challenge_evaluator if lab else None
     if not key:
@@ -358,13 +354,16 @@ async def execute_mcp(
                 transformed = True
         visible_text = moderated
         if transformed:
-            decoy = "aigoat-decoy-mcp-token-not-a-secret"
-            removed_decoy = any(decoy in chunk for chunk in raw_text) and not any(decoy in chunk for chunk in moderated)
+            from app.defense.controls.mcp_result_scan import text_has_exposed_secret
+
+            removed_secret = any(text_has_exposed_secret(chunk) for chunk in raw_text) and not any(
+                text_has_exposed_secret(chunk) for chunk in moderated
+            )
             outcomes.append({
-                "control_id": "mcp.result_scan" if removed_decoy else "output.moderate",
+                "control_id": "mcp.result_scan" if removed_secret else "output.moderate",
                 "action": "transform",
                 "stage": "output",
-                "reason": "redacted decoy token in tool result" if removed_decoy else None,
+                "reason": "redacted credential in tool result" if removed_secret else None,
             })
 
     transcript = _Transcript()

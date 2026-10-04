@@ -10,22 +10,7 @@ from app.challenges.predicates import All, Event, Match, Seq, Submit
 
 
 def _event(spec: dict[str, Any]) -> Event:
-    ok = spec.get("ok")
-    if ok is True:
-        ok_flag: bool | None = True
-    elif ok is False:
-        ok_flag = False
-    else:
-        ok_flag = None
-    return Event(
-        kind=str(spec.get("event") or ""),
-        server=spec.get("server"),
-        tool=spec.get("tool"),
-        decision=spec.get("decision"),
-        ok=ok_flag,
-        args=spec.get("args") if isinstance(spec.get("args"), dict) else None,
-        shown_contains=spec.get("shown_contains") if isinstance(spec.get("shown_contains"), dict) else None,
-    )
+    return Event.from_spec(spec)
 
 
 def _predicate(spec: dict[str, Any]) -> Any:
@@ -88,7 +73,8 @@ def evaluate(lab: Any, events: list[EvidenceEvent], refs: dict[str, Any] | None 
             if shown.get("field"):
                 known[f"{spec.get('id')}.field"] = shown.get("field")
             if shown.get("capture") == "token":
-                found = re.search(r"aigoat-decoy-[A-Za-z0-9-]+", json.dumps(match.event.shown, default=str))
+                pattern = str(shown.get("pattern") or r"aigoat-decoy-[A-Za-z0-9-]+")
+                found = re.search(pattern, json.dumps(match.event.shown, default=str))
                 known[f"{spec.get('id')}.token"] = found.group(0) if found else ""
         stage_rows.append({
             "id": spec.get("id"),
@@ -100,10 +86,12 @@ def evaluate(lab: Any, events: list[EvidenceEvent], refs: dict[str, Any] | None 
             reason = reason or match.reason or "stage_incomplete"
     met = bool(stage_rows) and all(row["met"] for row in stage_rows)
     public = [{"id": row["id"], "label": row["label"], "met": row["met"]} for row in stage_rows]
+    code, _, detail = ("" if met else reason).partition(":")
     return {
         "exploit_triggered": met,
         "evaluator": "completion",
         "flag": None,
         "stages": public,
-        "reason_code": "" if met else reason,
+        "reason_code": code,
+        "reason_detail": detail,
     }

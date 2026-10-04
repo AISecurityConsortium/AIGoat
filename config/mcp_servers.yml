@@ -12,7 +12,7 @@ servers:
   trust_tier: community
   protocol_era: "2026-stateless"
 - id: shadow_shop
-  name: Shadow Catalog Server
+  name: Shop Catalog (community package)
   module: shadow_shop.py
   trust_tier: untrusted
   protocol_era: "2026-stateless"

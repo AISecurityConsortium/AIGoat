@@ -89,6 +89,15 @@ async def test_result_scan_redacts_the_decoy_token():
     assert outcome.action is ControlAction.TRANSFORM
     assert "aigoat-decoy-mcp-token-not-a-secret" not in outcome.payload
     assert "[redacted]" in outcome.payload
+    billing = DefenseDecision(
+        surface="mcp.client",
+        stage=DefenseStage.OUTPUT,
+        payload="Credential: sk-shop-billing-7f3a9c2e1b84",
+        level=2,
+    )
+    redacted = await get_control("mcp.result_scan").evaluate(billing)
+    assert redacted.action is ControlAction.TRANSFORM
+    assert "sk-shop-billing-" not in redacted.payload
 
 
 async def test_description_scan_redacts_poison():

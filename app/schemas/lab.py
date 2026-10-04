@@ -40,6 +40,10 @@ class LabOut(BaseModel):
     solution_revealed: bool = False
     servers: list[str] = Field(default_factory=list)
     has_fixture: bool = False
+    takeaway: dict = Field(
+        default_factory=dict,
+        description="Security takeaway. Empty until the lab is completed or its solution is revealed.",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

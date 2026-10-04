@@ -1,8 +1,19 @@
 from __future__ import annotations
 
+import re
+
 from app.defense.control import ControlAction, ControlOutcome, DefenseControl, DefenseDecision, DefenseStage
 
 _DECOY = "aigoat-decoy-mcp-token-not-a-secret"
+_BILLING = re.compile(r"sk-shop-billing-[a-f0-9]+")
+
+
+def text_has_exposed_secret(text: str) -> bool:
+    return _DECOY in text or _BILLING.search(text) is not None
+
+
+def redact_exposed_secrets(text: str) -> str:
+    return _BILLING.sub("[redacted]", text.replace(_DECOY, "[redacted]"))
 
 
 class McpResultScanControl(DefenseControl):
@@ -15,7 +26,7 @@ class McpResultScanControl(DefenseControl):
 
     async def _evaluate(self, decision: DefenseDecision) -> ControlOutcome:
         text = decision.payload or ""
-        if _DECOY not in text:
+        if not text_has_exposed_secret(text):
             return ControlOutcome(
                 action=ControlAction.ALLOW,
                 payload=decision.payload,
@@ -23,7 +34,7 @@ class McpResultScanControl(DefenseControl):
             )
         return ControlOutcome(
             action=ControlAction.TRANSFORM,
-            payload=text.replace(_DECOY, "[redacted]"),
+            payload=redact_exposed_secrets(text),
             control_id=self.id,
-            reason="redacted decoy token in tool result",
+            reason="redacted credential in tool result",
         )

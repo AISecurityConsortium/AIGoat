@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography,
+  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Typography,
 } from '@mui/material';
 import { apiClient } from '../../config/api';
 import API_CONFIG from '../../config/api';
@@ -11,13 +11,14 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const REASON = {
+export const REASON = {
   stage_incomplete: 'That step is not finished yet.',
   wrong_server: 'That call reached a different server than this step needs.',
   empty_args: 'The call had an empty argument.',
   call_failed: 'That call failed on the server.',
   submission_missing: 'Submit your finding to finish.',
   submission_mismatch: 'One of the answers does not match this attempt.',
+  evidence_mismatch: 'The evidence you selected does not support that conclusion.',
 };
 
 export function LabBriefing({ text }) {
@@ -87,16 +88,21 @@ export function HintLadder({ labId }) {
   );
 }
 
-export function EvidenceSubmission({ lab, onEvaluation }) {
+export function EvidenceSubmission({ lab, onEvaluation, onCancel }) {
   const fields = lab.submission_fields || [];
+  const labels = lab.ui?.submission_labels || {};
+  const choices = lab.ui?.submission_choices || {};
+  const serverLabels = lab.ui?.server_labels || {};
   const [values, setValues] = useState({});
   const [note, setNote] = useState('');
+  const [guidance, setGuidance] = useState('');
   const [busy, setBusy] = useState(false);
   if (!fields.length) return null;
 
   const submit = async () => {
     setBusy(true);
     setNote('');
+    setGuidance('');
     try {
       const { data } = await apiClient.post(
         API_CONFIG.ENDPOINTS.LAB_SUBMIT(lab.id),
@@ -105,7 +111,9 @@ export function EvidenceSubmission({ lab, onEvaluation }) {
       );
       if (onEvaluation) onEvaluation(data.evaluation);
       const code = data.evaluation?.reason_code;
-      setNote(data.evaluation?.exploit_triggered ? 'Finding recorded.' : (REASON[code] || 'Not yet.'));
+      const recorded = Boolean(data.evaluation?.exploit_triggered);
+      setNote(recorded ? 'Evidence verified. Lab complete.' : (REASON[code] || 'That finding does not match this attempt.'));
+      setGuidance(recorded ? '' : (data.guidance || ''));
     } catch (err) {
       setNote(err.response?.data?.detail || err.message);
     } finally {
@@ -115,17 +123,49 @@ export function EvidenceSubmission({ lab, onEvaluation }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1.5 }}>
-      {fields.map((name) => (
-        <TextField
-          key={name}
-          size="small"
-          label={name.replace(/_/g, ' ')}
-          value={values[name] || ''}
-          onChange={(event) => setValues((prev) => ({ ...prev, [name]: event.target.value }))}
-        />
-      ))}
-      <Button size="small" variant="contained" disabled={busy} onClick={submit}>Submit finding</Button>
+      {lab.ui?.submit_help && (
+        <Typography sx={{ fontSize: '0.75rem', lineHeight: 1.4, color: 'text.secondary' }}>
+          {lab.ui.submit_help}
+        </Typography>
+      )}
+      {fields.map((name) => {
+        const options = Array.isArray(choices[name]) ? choices[name] : null;
+        const optionValue = (option) => (option && typeof option === 'object' ? option.id : option);
+        const optionLabel = (option) => (
+          option && typeof option === 'object' ? option.label : (serverLabels[option] || option)
+        );
+        return (
+          <TextField
+            key={name}
+            select={Boolean(options)}
+            size="small"
+            label={labels[name] || name.replace(/_/g, ' ')}
+            value={values[name] || ''}
+            onChange={(event) => setValues((prev) => ({ ...prev, [name]: event.target.value }))}
+          >
+            {options ? [
+              <MenuItem key="none" value="">Choose</MenuItem>,
+              ...options.map((option) => (
+                <MenuItem key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</MenuItem>
+              )),
+            ] : undefined}
+          </TextField>
+        );
+      })}
+      {onCancel ? (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Button size="small" variant="text" disabled={busy} onClick={onCancel} sx={{ textTransform: 'none' }}>Cancel</Button>
+          <Button size="small" variant="contained" disabled={busy} onClick={submit} sx={{ textTransform: 'none' }}>Submit evidence</Button>
+        </Box>
+      ) : (
+        <Button size="small" variant="contained" disabled={busy} onClick={submit}>Submit evidence</Button>
+      )}
       {note && <Typography sx={{ fontSize: '0.75rem' }}>{note}</Typography>}
+      {guidance && (
+        <Alert severity="info" sx={{ py: 0.5 }}>
+          <Typography sx={{ fontSize: '0.75rem' }}>{guidance}</Typography>
+        </Alert>
+      )}
     </Box>
   );
 }
@@ -209,14 +249,15 @@ export function IncidentLog({ labId, enabled }) {
 
 export default function LabGuide({ lab, evaluation }) {
   const [revealed, setRevealed] = useState(Boolean(lab.solution_revealed));
+  const learnerFirst = Boolean(lab?.ui?.learner_first);
   if (!lab?.briefing) return null;
   return (
     <Box sx={{ mb: 2 }}>
-      <LabBriefing text={lab.briefing} />
+      {!learnerFirst && <LabBriefing text={lab.briefing} />}
       <IncidentLog labId={lab.id} enabled={Boolean(lab.has_fixture)} />
       <LabProgress stages={evaluation?.stages || lab.stages} />
       <OutcomeBanner evaluation={evaluation} solvedAfterReveal={revealed && evaluation?.exploit_triggered} />
-      {lab.ui?.agent_mode && (
+      {!learnerFirst && lab.ui?.agent_mode && (
         <Button
           size="small"
           sx={{ mb: 1 }}
@@ -232,8 +273,8 @@ export default function LabGuide({ lab, evaluation }) {
           Ask the planner
         </Button>
       )}
-      <HintLadder labId={lab.id} />
-      <SolutionReveal labId={lab.id} revealed={revealed} onRevealed={() => setRevealed(true)} />
+      {!learnerFirst && <HintLadder labId={lab.id} />}
+      {!learnerFirst && <SolutionReveal labId={lab.id} revealed={revealed} onRevealed={() => setRevealed(true)} />}
     </Box>
   );
 }
@@ -251,6 +292,7 @@ EvidenceSubmission.propTypes = {
     submission_fields: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   onEvaluation: PropTypes.func,
+  onCancel: PropTypes.func,
 };
 SolutionReveal.propTypes = {
   labId: PropTypes.string.isRequired,

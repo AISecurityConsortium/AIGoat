@@ -6,6 +6,7 @@ theoretical extra. Do not add predicates until a migrated lab needs them.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -25,6 +26,19 @@ def _norm(value: Any) -> str:
 
 
 class Event:
+    @classmethod
+    def from_spec(cls, spec: dict[str, Any]) -> Event:
+        ok = spec.get("ok")
+        return cls(
+            kind=str(spec.get("event") or ""),
+            server=spec.get("server"),
+            tool=spec.get("tool"),
+            decision=spec.get("decision"),
+            ok=True if ok is True else (False if ok is False else None),
+            args=spec.get("args") if isinstance(spec.get("args"), dict) else None,
+            shown_contains=spec.get("shown_contains") if isinstance(spec.get("shown_contains"), dict) else None,
+        )
+
     def __init__(
         self,
         kind: str,
@@ -138,11 +152,19 @@ class Seq:
 
 
 class Submit:
+    """Score the latest submission after ``after_seq``.
+
+    ``any_of`` lists alternative field sets. An ``evidence`` rule names an event
+    spec; the submitted value is a seq that must point at a matching event of
+    this attempt, recorded before the submission. With ``auto: true`` nothing is
+    submitted and the latest matching event is used. Evidence is checked first so
+    a capture from that event can feed ``equals_ref: evidence.<name>``.
+    """
+
     def __init__(self, fields: dict[str, Any]) -> None:
         self.fields = fields
 
     def eval(self, events: list[EvidenceEvent], after_seq: int = 0, refs: dict[str, Any] | None = None) -> Match:
-        refs = refs or {}
         submission = None
         seq = 0
         for event in events:
@@ -152,16 +174,49 @@ class Submit:
             seq = event.seq
         if not isinstance(submission, dict):
             return Match(False, reason="submission_missing")
-        for name, rule in self.fields.items():
+        alternatives = self.fields.get("any_of")
+        if not isinstance(alternatives, list):
+            alternatives = [self.fields]
+        best_passed = -1
+        best_reason = "submission_mismatch"
+        for alternative in alternatives:
+            if not isinstance(alternative, dict):
+                continue
+            passed, reason = self._check(alternative, submission, events, seq, dict(refs or {}))
+            if not reason:
+                return Match(True, [seq])
+            if passed > best_passed:
+                best_passed, best_reason = passed, reason
+        return Match(False, reason=best_reason)
+
+    def _check(
+        self,
+        rules: dict[str, Any],
+        submission: dict[str, Any],
+        events: list[EvidenceEvent],
+        submission_seq: int,
+        refs: dict[str, Any],
+    ) -> tuple[int, str]:
+        ordered = sorted(rules.items(), key=lambda item: 0 if "evidence" in (item[1] or {}) else 1)
+        passed = 0
+        for name, rule in ordered:
             got = _norm(submission.get(name))
-            if not got:
-                return Match(False, reason="submission_mismatch")
             if not isinstance(rule, dict):
-                return Match(False, reason="submission_mismatch")
+                return passed, "submission_mismatch"
+            if "evidence" in rule:
+                if not self._evidence_ok(rule["evidence"], got, events, submission_seq, refs):
+                    return passed, "evidence_mismatch"
+                passed += 1
+                continue
+            if not got:
+                return passed, f"submission_mismatch:{name}"
             if "equals_ref" in rule:
                 expected = _norm(refs.get(str(rule["equals_ref"])))
                 if not expected or got != expected:
-                    return Match(False, reason="submission_mismatch")
+                    return passed, f"submission_mismatch:{name}"
+            elif "equals" in rule:
+                if got != _norm(rule["equals"]):
+                    return passed, f"submission_mismatch:{name}"
             elif "any_of_ref" in rule:
                 options = []
                 for ref in rule["any_of_ref"]:
@@ -171,7 +226,36 @@ class Submit:
                     else:
                         options.append(_norm(value))
                 if got not in {item for item in options if item}:
-                    return Match(False, reason="submission_mismatch")
+                    return passed, f"submission_mismatch:{name}"
             else:
-                return Match(False, reason="submission_mismatch")
-        return Match(True, [seq])
+                return passed, f"submission_mismatch:{name}"
+            passed += 1
+        return passed, ""
+
+    def _evidence_ok(
+        self,
+        spec: Any,
+        got: str,
+        events: list[EvidenceEvent],
+        submission_seq: int,
+        refs: dict[str, Any],
+    ) -> bool:
+        if not isinstance(spec, dict):
+            return False
+        prior = [event for event in events if event.seq < submission_seq and event.kind != "submission"]
+        matcher = Event.from_spec(spec.get("event") or {})
+        if spec.get("auto"):
+            picked = next((event for event in reversed(prior) if matcher.eval([event]).ok), None)
+        elif got.isdigit():
+            picked = next((event for event in prior if event.seq == int(got)), None)
+            if picked is not None and not matcher.eval([picked]).ok:
+                picked = None
+        else:
+            picked = None
+        if picked is None:
+            return False
+        capture = spec.get("capture") if isinstance(spec.get("capture"), dict) else None
+        if capture:
+            found = re.search(str(capture.get("pattern") or ""), json.dumps(picked.shown, default=str))
+            refs[f"evidence.{capture.get('as') or 'value'}"] = found.group(0) if found else ""
+        return True

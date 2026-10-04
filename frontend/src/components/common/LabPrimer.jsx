@@ -10,6 +10,7 @@ import DefenseLevelChip, { DEFENSE_LEVEL_LABELS } from './DefenseLevelChip';
 import McpFlow from './McpFlow';
 import RiskChip from './RiskChip';
 import SectionCard from './SectionCard';
+import McpClientGuide from '../mcp/McpClientGuide';
 import { HOST_STEPS, MCP_FLOWS, SHIP_CONTROL } from '../../utils/labTeaching';
 import { useRisk } from '../../hooks/useFrameworks';
 
@@ -51,7 +52,8 @@ const LabPrimer = ({ lab, onTryPayload, hideGoal = false, hideDiagram = false })
   const { risk } = useRisk(isMcp ? lab?.primary_risk : null);
   if (!lab) return null;
 
-  const flow = MCP_FLOWS[lab.id];
+  const learnerFirst = Boolean(lab?.ui?.learner_first);
+  const flow = learnerFirst ? null : MCP_FLOWS[lab.id];
   const diagram = flow ? null : DIAGRAM[lab.surface];
   const riskCode = String(lab.primary_risk || '').split(':').pop();
   const payloads = (lab.example_payloads || []).map((item) => String(item).trim()).filter(Boolean);
@@ -125,7 +127,7 @@ const LabPrimer = ({ lab, onTryPayload, hideGoal = false, hideDiagram = false })
                       {risk.summary}
                     </Typography>
                   )}
-                  {SHIP_CONTROL[lab.id] && (
+                  {SHIP_CONTROL[lab.id] && !learnerFirst && (
                     <Box
                       sx={{
                         mt: 1,
@@ -173,6 +175,17 @@ const LabPrimer = ({ lab, onTryPayload, hideGoal = false, hideDiagram = false })
             </Box>
             {!hideDiagram && flow && <McpFlow steps={flow.steps} caption={flow.caption} stacked compact />}
           </Box>
+          {learnerFirst && (
+            <Box sx={{ ...sectionSx, mt: 1.5 }}>
+              <Typography sx={labelSx}>Scenario</Typography>
+              <Typography sx={{ fontSize: '0.875rem', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                {lab.briefing}
+              </Typography>
+              <Box sx={{ mt: 1.5 }}>
+                <McpClientGuide />
+              </Box>
+            </Box>
+          )}
         </SectionCard>
       ) : diagram && (
         <SectionCard dense>
@@ -299,7 +312,7 @@ LabPrimer.defaultProps = {
 };
 
 export const LabDiagram = ({ lab }) => {
-  const flow = MCP_FLOWS[lab?.id];
+  const flow = lab?.ui?.learner_first ? null : MCP_FLOWS[lab?.id];
   if (!flow) return null;
   return (
     <SectionCard compact stretch>

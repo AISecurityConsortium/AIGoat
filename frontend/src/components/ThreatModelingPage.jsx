@@ -111,7 +111,7 @@ const EXAMPLE_STEPS = [
     labs: [
       { id: 'llm08-1', label: 'llm08-1 Hidden context' },
       { id: 'asi06-1', label: 'asi06-1 Memory poison' },
-      { id: 'mcp09-1', label: 'mcp09-1 Shadow server' },
+      { id: 'mcp09-1', label: 'mcp09-1 Identity lab' },
     ],
   },
   {
@@ -134,7 +134,7 @@ const EXAMPLE_STEPS = [
 ];
 
 const STRIDE_ROWS = [
-  { threat: 'Spoofing', where: 'Shadow Catalog Server claims to be the Shop Catalog Server', lab: 'mcp09-1' },
+  { threat: 'Spoofing', where: 'A second catalog package claims to be the Shop Catalog Server', lab: 'mcp09-1' },
   { threat: 'Tampering', where: 'poisoned tool description', lab: 'mcp03-1' },
   { threat: 'Repudiation', where: 'refund at L0 with no approval row', lab: 'llm03-1' },
   { threat: 'Disclosure', where: 'hidden system prompt', lab: 'llm08-1' },

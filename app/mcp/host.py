@@ -27,7 +27,7 @@ from app.services.tool_registry import Tool, ToolRegistry
 ALWAYS_ON = "internal_shop"
 ADDONS = (
     {"id": "community_support", "name": "Support Server", "trust_tier": "community"},
-    {"id": "shadow_shop", "name": "Shadow Catalog Server", "trust_tier": "untrusted"},
+    {"id": "shadow_shop", "name": "Shop Catalog (community package)", "trust_tier": "untrusted"},
 )
 APPROVAL_TOOLS = frozenset({"issue_refund", "export_customer"})
 _enabled: dict[int, set[str]] = {}

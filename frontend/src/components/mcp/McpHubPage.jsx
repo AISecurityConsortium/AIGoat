@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, Collapse, Container, Skeleton, Typography } from '@mui/material';
-import { ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Alert, Box, Button, Container, Skeleton, Typography } from '@mui/material';
+import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLabs } from '../../hooks/useLabs';
 import { SectionCard, EmptyState } from '../common';
@@ -13,12 +13,6 @@ import API_CONFIG from '../../config/api';
 const authHeaders = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const trustColor = (tier) => {
-  if (tier === 'official') return 'success';
-  if (tier === 'untrusted') return 'error';
-  return 'warning';
 };
 
 const MCP_STEPS = [
@@ -40,7 +34,6 @@ const McpHubPage = () => {
   const first = labs[0];
   const [servers, setServers] = useState([]);
   const [serversError, setServersError] = useState(null);
-  const [openCommandId, setOpenCommandId] = useState(null);
 
   const loadServers = useCallback(async () => {
     try {
@@ -110,7 +103,7 @@ const McpHubPage = () => {
                   endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
                 >
-                  {first ? 'Start with the decoy token' : 'Browse MCP labs'}
+                  {first ? 'Open the first lab' : 'Browse MCP labs'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -156,7 +149,7 @@ const McpHubPage = () => {
                 Level 1 pins a drifted description and blocks calls the lab marks as too strong.
               </Typography>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
-                Level 2 also redacts injection phrasing and decoy tokens. A shadow server can still slip past a fixed word list.
+                Level 2 also redacts instruction phrasing and credentials in tool results. A fixed word list does not check who a server is.
               </Typography>
             </Box>
           </SectionCard>
@@ -172,7 +165,7 @@ const McpHubPage = () => {
                 A description can change between two <Box component="span" sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>tools/list</Box> calls.
               </Typography>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
-                A result can carry a decoy token that looks like a flag.
+                A tool result is copied into the client as text. Read what came back, not only whether the call succeeded.
               </Typography>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
                 A second server can shadow a tool name you already trusted.
@@ -189,61 +182,11 @@ const McpHubPage = () => {
               </Typography>
             )}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {servers.map((server) => {
-                const redacted = Array.isArray(server.command_display_redacted)
-                  ? server.command_display_redacted
-                  : null;
-                const open = openCommandId === server.id;
-                return (
-                  <Box key={server.id} sx={{ py: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{server.name}</Typography>
-                      <Chip size="small" label={server.trust_tier} color={trustColor(server.trust_tier)} />
-                    </Box>
-                    {redacted && redacted.length > 0 && (
-                      <>
-                        <Button
-                          size="small"
-                          onClick={() => setOpenCommandId(open ? null : server.id)}
-                          endIcon={(
-                            <ExpandMoreIcon
-                              sx={{
-                                fontSize: '1rem !important',
-                                transform: open ? 'rotate(180deg)' : 'none',
-                                transition: 'transform 0.15s',
-                              }}
-                            />
-                          )}
-                          sx={{
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            fontSize: '0.9375rem',
-                            color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
-                            px: 0,
-                            minWidth: 0,
-                          }}
-                        >
-                          What actually runs
-                        </Button>
-                        <Collapse in={open}>
-                          <Typography
-                            sx={{
-                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                              fontSize: '0.9375rem',
-                              color: (t) => t.palette.custom?.text?.body ?? 'text.primary',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-all',
-                              mt: 0.5,
-                            }}
-                          >
-                            {redacted.join(' ')}
-                          </Typography>
-                        </Collapse>
-                      </>
-                    )}
-                  </Box>
-                );
-              })}
+              {servers.map((server) => (
+                <Box key={server.id} sx={{ py: 0.5 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{server.name}</Typography>
+                </Box>
+              ))}
             </Box>
           </SectionCard>
         </Box>

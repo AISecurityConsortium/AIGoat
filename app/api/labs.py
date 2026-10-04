@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,14 +48,20 @@ def _submission_fields(lab) -> list[str]:
     names: list[str] = []
     for stage in (lab.completion or {}).get("stages") or []:
         submit = stage.get("submit") if isinstance(stage, dict) else None
-        if isinstance(submit, dict):
-            names.extend(str(key) for key in submit)
+        if not isinstance(submit, dict):
+            continue
+        groups = submit.get("any_of") if isinstance(submit.get("any_of"), list) else [submit]
+        for group in groups:
+            if isinstance(group, dict):
+                names.extend(str(key) for key in group if str(key) not in names)
     return names
 
 
 def _lab_out(lab, sess: LabSession | None, *, hints_revealed: int = 0, solution_revealed: bool = False) -> LabOut:
     show = _show_walkthrough(lab, sess, solution_revealed)
     expected = {str(k): v for k, v in (lab.expected_by_level or {}).items()}
+    if (lab.ui or {}).get("learner_first") and not show:
+        expected = {}
     return LabOut(
         id=lab.id,
         name=lab.name,
@@ -93,6 +99,7 @@ def _lab_out(lab, sess: LabSession | None, *, hints_revealed: int = 0, solution_
         recommended_server_id=_recommended_server(lab),
         servers=[str(item) for item in (lab.surface_config or {}).get("servers") or []],
         has_fixture=bool((lab.surface_config or {}).get("variants")),
+        takeaway=dict(lab.takeaway or {}) if show else {},
     )
 
 
@@ -342,14 +349,17 @@ async def lab_agent_step(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    """One deterministic planner step over the descriptions this attempt was shown.
+    """Deterministic planner simulation over the descriptions this attempt was shown.
 
-    It does not complete the lab. The learner still has to perform the action.
+    Pilot only: this is not a live model. Genuine model-mediated behaviour is a
+    later enhancement. The simulation does not invoke the tool and does not
+    complete the lab.
     """
     from app.mcp.victim_planner import VictimPlanner
 
     lab = await _require_lab(lab_id, user, db)
-    if not (lab.ui or {}).get("agent_mode"):
+    ui = lab.ui or {}
+    if not (ui.get("agent_mode") or ui.get("planner_simulation")):
         raise HTTPException(status_code=404, detail="This lab has no planner step")
     attempt = await current_attempt(db, user.id, lab_id)
     result = await db.execute(
@@ -370,7 +380,70 @@ async def lab_agent_step(
     )
     planner = VictimPlanner(level=0)
     call = planner.choose(goal, observation, {str(row.get("name") or "") for row in tools})
-    return {"call": call, "note": "The planner's choice does not complete the lab."}
+    if call and call.get("name"):
+        message = (
+            "Based on the advertised tool metadata, the planner would next "
+            f"invoke: {call['name']}."
+        )
+    else:
+        message = "Based on the advertised tool metadata, the planner would not add another action."
+    baseline = [
+        {"name": str(step.get("name") or ""), "arguments": dict(step.get("arguments") or {})}
+        for step in (ui.get("planner_baseline") or [])
+        if isinstance(step, dict) and step.get("name")
+    ]
+    plan = [{**step, "source": "request"} for step in baseline]
+    if call and call.get("name") and all(step["name"] != call["name"] for step in baseline):
+        schema = next((row.get("inputSchema") or {} for row in tools if row.get("name") == call["name"]), {})
+        accepted = set((schema.get("properties") or {}) if isinstance(schema, dict) else {})
+        arguments = dict(call.get("arguments") or {})
+        for step in baseline:
+            for key, value in step["arguments"].items():
+                if key in accepted and key not in arguments:
+                    arguments[key] = value
+        plan.append({"name": str(call["name"]), "arguments": arguments, "source": "metadata"})
+    changed = len(plan) != len(baseline)
+    canned = (lab.surface_config or {}).get("planner_effects") or {}
+    effects = [
+        {
+            "name": step["name"],
+            "arguments": step["arguments"],
+            "source": step["source"],
+            "result": str(canned.get(step["name"]) or "No simulated result is defined for this step."),
+        }
+        for step in plan
+    ]
+    question = str(ui.get("planner_question") or "")
+    lines = [
+        f"Request: {question}" if question else "",
+        "Baseline plan: " + " -> ".join(_step_text(step) for step in baseline),
+        "Simulated plan: " + " -> ".join(_step_text(step) for step in plan),
+        message,
+    ] + [f"Simulated result of {_step_text(row)}: {row['result']}" for row in effects]
+    await append_events(db, user.id, lab_id, [{
+        "kind": "planner_simulated",
+        "actor": "system",
+        "shown": {"text": [line for line in lines if line], "tools": tools},
+        "data": {"call": call or {}, "baseline": baseline, "plan": plan, "changed": changed, "effects": effects},
+    }])
+    return {
+        "call": call,
+        "message": message,
+        "simulated": True,
+        "question": question,
+        "baseline": baseline,
+        "plan": plan,
+        "changed": changed,
+        "effects": effects,
+        "tools_considered": len(tools),
+        "tools": [{"name": row.get("name"), "description": row.get("description")} for row in tools],
+        "note": "Deterministic planner simulation. No tool was called on the server, and it does not complete the lab.",
+    }
+
+
+def _step_text(step: dict) -> str:
+    args = ", ".join(f"{key}={value}" for key, value in (step.get("arguments") or {}).items())
+    return f"{step.get('name')}({args})"
 
 
 @router.get("/api/labs/{lab_id}/fixture")
@@ -439,7 +512,74 @@ async def lab_submit(
     }])
     evaluation = await _evaluation(lab_id, "", "", [], db=db, user_id=user.id)
     await record_lab_result(db, user, lab_id, evaluation)
-    return {"evaluation": evaluation, "lab_id": lab.id}
+    guidance = ""
+    met = bool((evaluation or {}).get("exploit_triggered"))
+    if (lab.ui or {}).get("learner_first") and not met:
+        picked = None
+        if str(fields.get("evidence") or "").isdigit():
+            attempt = await current_attempt(db, user.id, lab_id)
+            picked_result = await db.execute(
+                select(LabEvent).where(
+                    LabEvent.user_id == user.id,
+                    LabEvent.lab_id == lab_id,
+                    LabEvent.attempt == attempt,
+                    LabEvent.seq == int(str(fields.get("evidence"))),
+                )
+            )
+            picked = picked_result.scalars().first()
+        guidance = _submission_guidance(lab, fields, evaluation, picked)
+        if not guidance:
+            attempt = await current_attempt(db, user.id, lab_id)
+            count_result = await db.execute(
+                select(func.count()).select_from(LabEvent).where(
+                    LabEvent.user_id == user.id,
+                    LabEvent.lab_id == lab_id,
+                    LabEvent.attempt == attempt,
+                    LabEvent.kind == "submission",
+                )
+            )
+            count = int(count_result.scalar_one() or 0)
+            hints = list(lab.hints or ())
+            if hints and count:
+                guidance = hints[min(count, len(hints)) - 1]
+    return {
+        "evaluation": evaluation,
+        "guidance": guidance,
+        "lab_id": lab.id,
+        "takeaway": dict(lab.takeaway or {}) if met else {},
+    }
+
+
+def _submission_guidance(lab, fields: dict, evaluation: dict | None, picked=None) -> str:
+    """Evidence-aware nudge. Specific wrong choices beat the generic ladder.
+
+    ``evidence`` feedback is keyed by what the picked event was (``server:<id>``,
+    ``tool:<name>`` or ``kind:<kind>``), never by the expected answer.
+    """
+    table = getattr(lab, "submission_feedback", None) or {}
+    if not isinstance(table, dict):
+        return ""
+    reason = str((evaluation or {}).get("reason_code") or "")
+    detail = str((evaluation or {}).get("reason_detail") or "")
+    if reason == "stage_incomplete":
+        return str(table.get("_before_evidence") or "")
+    if reason == "evidence_mismatch":
+        per_evidence = table.get("evidence") if isinstance(table.get("evidence"), dict) else {}
+        if picked is not None:
+            for key in (f"server:{picked.server_id}", f"tool:{picked.tool}", f"kind:{picked.kind}"):
+                if key in per_evidence:
+                    return str(per_evidence[key])
+        return str(per_evidence.get("_default") or table.get("_default") or "")
+    names = [detail] if detail else [str(name) for name in fields]
+    for name in names:
+        per_field = table.get(name)
+        value = str(fields.get(name) or "")
+        if isinstance(per_field, dict):
+            if value in per_field:
+                return str(per_field[value])
+            if per_field.get("_default"):
+                return str(per_field["_default"])
+    return str(table.get("_default") or "")
 
 
 @router.post("/api/labs/{lab_id}/solution")
