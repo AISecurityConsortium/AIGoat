@@ -25,3 +25,4 @@ class McpHostTurnIn(BaseModel):
 class McpHostIntegrationIn(BaseModel):
     server_id: str
     enabled: bool = False
+    lab_id: str | None = None

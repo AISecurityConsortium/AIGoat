@@ -7,6 +7,8 @@ import { apiClient } from '../config/api';
 import API_CONFIG from '../config/api';
 import AgentConsole from './agent/AgentConsole';
 import McpConsole from './mcp/McpConsole';
+import McpHostLab from './mcp/McpHostLab';
+import McpRecordedSession from './mcp/McpRecordedSession';
 import PerimeterTrace, { borderAngles } from './common/PerimeterTrace';
 import { RelatedMap, SectionCard, LabPrimer } from './common';
 import { LabExpectations } from './common/LabPrimer';
@@ -228,7 +230,21 @@ const LabWorkspace = () => {
           </>
         )}
       </Box>
-      {mcpClient ? (
+      {mcpClient && lab.ui?.recorded_session ? (
+        <McpRecordedSession
+          labId={labId}
+          lab={lab}
+          completed={goalMet}
+          onGoalMet={onCompletionChange}
+        />
+      ) : mcpLab && lab.ui?.learner_first && mcpHost ? (
+        <McpHostLab
+          labId={labId}
+          lab={lab}
+          completed={goalMet}
+          onGoalMet={onCompletionChange}
+        />
+      ) : mcpClient ? (
         <Box sx={{ maxWidth: 1560, mx: 'auto' }}>
           <McpConsole
             labId={labId}

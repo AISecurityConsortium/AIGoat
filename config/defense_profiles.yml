@@ -113,7 +113,9 @@ profiles:
         Everything Level 1 does, plus descriptions that carry instruction-override
         phrasing are redacted before they are shown as model-facing text, and
         decoy tokens in tool results are redacted from the reply the model sees.
-      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "mcp.description_scan", "mcp.result_scan", "output.moderate"]
+        A lab that pins an input contract also refuses calls carrying an argument
+        that contract does not list, before the server runs.
+      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "mcp.schema_pin", "mcp.description_scan", "mcp.result_scan", "output.moderate"]
 
   mcp.host:
     0:
@@ -128,9 +130,11 @@ profiles:
       controls: ["mcp.tool_pin", "output.moderate"]
     2:
       intent: >
-        Everything Level 1 does, plus poisoned tool descriptions are redacted
-        and refund or export calls pause until the admin approves them.
-      controls: ["mcp.tool_pin", "mcp.description_scan", "tool.approval", "output.moderate"]
+        Everything Level 1 does, plus poisoned tool descriptions are redacted,
+        a tool pinned to one integration is refused when another integration
+        would serve it, and refund or export calls pause until the admin
+        approves them.
+      controls: ["mcp.tool_pin", "mcp.description_scan", "mcp.origin_pin", "tool.approval", "output.moderate"]
 
   api.raw:
     0:

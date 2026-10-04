@@ -9,7 +9,7 @@ import { useDefense } from '../../contexts/DefenseContext';
 
 const LEVEL_NAMES = { 0: 'Vulnerable', 1: 'Protected', 2: 'Hardened' };
 
-const McpDefenseBehaviour = ({ behaviour }) => {
+const McpDefenseBehaviour = ({ behaviour, surface = 'mcp.client' }) => {
   const { defenseLevel } = useDefense();
   const [open, setOpen] = useState(false);
   const [levels, setLevels] = useState([]);
@@ -18,13 +18,13 @@ const McpDefenseBehaviour = ({ behaviour }) => {
     let cancelled = false;
     const token = localStorage.getItem('token');
     apiClient.get(API_CONFIG.ENDPOINTS.DEFENSE_LEVELS, {
-      params: { surface: 'mcp.client' },
+      params: { surface },
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(({ data }) => { if (!cancelled) setLevels(Array.isArray(data?.levels) ? data.levels : []); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [surface]);
 
   const byLevel = Object.fromEntries(levels.map((row) => [row.level, row]));
   const current = Number(defenseLevel) || 0;
@@ -99,6 +99,7 @@ const McpDefenseBehaviour = ({ behaviour }) => {
 
 McpDefenseBehaviour.propTypes = {
   behaviour: PropTypes.object,
+  surface: PropTypes.string,
 };
 
 export default McpDefenseBehaviour;

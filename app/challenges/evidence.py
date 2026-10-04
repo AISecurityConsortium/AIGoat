@@ -17,4 +17,5 @@ class EvidenceEvent:
     shown: dict[str, Any] = field(default_factory=dict)
     claimed_name: str = ""
     data: dict[str, Any] = field(default_factory=dict)
+    provenance: dict[str, Any] = field(default_factory=dict)
     parent_seq: int | None = None

@@ -31,12 +31,41 @@ ADDONS = (
 )
 APPROVAL_TOOLS = frozenset({"issue_refund", "export_customer"})
 _enabled: dict[int, set[str]] = {}
+_scoped_enabled: dict[tuple[int, str], set[str]] = {}
 _runs: dict[str, "HostRun"] = {}
 
 
+def _lab(lab_id: str):
+    if not lab_id:
+        return None
+    from app.core.lab_loader import get_lab_by_id
+
+    return get_lab_by_id(lab_id)
+
+
+def lab_is_scoped(lab_id: str) -> bool:
+    """Learner-first host labs keep their own add-on set. Legacy labs share the old one."""
+    lab = _lab(lab_id)
+    if lab is None or lab.surface != "mcp.host":
+        return False
+    return bool((lab.ui or {}).get("learner_first"))
+
+
+def lab_has_completion(lab_id: str) -> bool:
+    lab = _lab(lab_id)
+    return bool(lab and lab.completion)
+
+
 def _assistant_prompt(lab_id: str) -> str:
-    path = Path(__file__).resolve().parents[2] / "prompts" / "labs" / "admin_assistant.md"
-    return path.read_text(encoding="utf-8").strip()
+    """Shared admin prompt, unless this lab names a file under prompts/labs/."""
+    root = Path(__file__).resolve().parents[2] / "prompts" / "labs"
+    name = "admin_assistant.md"
+    lab = _lab(lab_id) if lab_id else None
+    variant = str((lab.surface_config or {}).get("prompt_variant") or "") if lab else ""
+    if variant and "/" not in variant and "\\" not in variant and variant.endswith(".md"):
+        if (root / variant).is_file():
+            name = variant
+    return (root / name).read_text(encoding="utf-8").strip()
 
 
 @dataclass
@@ -54,25 +83,59 @@ class HostRun:
     transcript: list[dict[str, Any]] = field(default_factory=list)
     loop: GatedAgentLoop | None = None
     registry: ToolRegistry | None = None
+    ceiling: int | None = None
 
 
-def enabled_addons(user_id: int) -> set[str]:
+class HostIntentGate(IntentGate):
+    """Adds lab pins and the serving integration. Absent pins leave the chain unchanged."""
+
+    def __init__(self, registry: ToolRegistry, *, level: int, user_id: int, lab: Any) -> None:
+        super().__init__(registry, level=level, user_id=user_id, surface="mcp.host")
+        config = (lab.surface_config or {}) if lab is not None and lab_is_scoped(lab.id) else {}
+        self._pins = dict(config.get("pinned_descriptions") or {})
+        self._origins = dict(config.get("pinned_origins") or {})
+
+    def extra_context(self, tool: Any) -> dict[str, Any]:
+        ctx: dict[str, Any] = {}
+        if self._pins:
+            ctx["pinned_descriptions"] = self._pins
+        if self._origins:
+            ctx["pinned_origins"] = self._origins
+        if tool is not None:
+            ctx["tool_origin"] = str(getattr(tool, "origin", "") or "")
+            ctx["tool_description"] = str(getattr(tool, "description", "") or "")
+        return ctx
+
+
+def enabled_addons(user_id: int, lab_id: str = "") -> set[str]:
+    if lab_id and lab_is_scoped(lab_id):
+        return set(_scoped_enabled.get((user_id, lab_id), set()))
     return set(_enabled.get(user_id, set()))
 
 
-def set_addon(user_id: int, server_id: str, enabled: bool) -> None:
+def set_addon(user_id: int, server_id: str, enabled: bool, lab_id: str = "") -> None:
     known = {row["id"] for row in ADDONS}
     if server_id not in known:
         return
-    current = _enabled.setdefault(user_id, set())
+    if lab_id and lab_is_scoped(lab_id):
+        current = _scoped_enabled.setdefault((user_id, lab_id), set())
+    else:
+        current = _enabled.setdefault(user_id, set())
     if enabled:
         current.add(server_id)
     else:
         current.discard(server_id)
 
 
-def integration_rows(user_id: int) -> list[dict[str, Any]]:
-    chosen = enabled_addons(user_id)
+def clear_addons(user_id: int, lab_id: str) -> None:
+    _scoped_enabled.pop((user_id, lab_id), None)
+
+
+def integration_rows(user_id: int, lab_id: str = "") -> list[dict[str, Any]]:
+    from app.mcp.registry import get_server_spec
+
+    scoped = bool(lab_id) and lab_is_scoped(lab_id)
+    chosen = enabled_addons(user_id, lab_id if scoped else "")
     rows = [{
         "id": ALWAYS_ON,
         "name": "Internal Management Server",
@@ -80,6 +143,17 @@ def integration_rows(user_id: int) -> list[dict[str, Any]]:
         "enabled": True,
         "locked": True,
     }]
+    if scoped:
+        lab = _lab(lab_id)
+        for server_id in (lab.surface_config or {}).get("host_servers") or []:
+            spec = get_server_spec(str(server_id))
+            rows.append({
+                "id": spec.id,
+                "name": spec.name,
+                "trust_tier": spec.trust_tier,
+                "enabled": True,
+                "locked": True,
+            })
     for addon in ADDONS:
         rows.append({
             **addon,
@@ -89,9 +163,18 @@ def integration_rows(user_id: int) -> list[dict[str, Any]]:
     return rows
 
 
-def active_servers(user_id: int) -> list[str]:
-    """Official server first so an enabled add-on can shadow a same-named tool."""
-    return [ALWAYS_ON, *sorted(enabled_addons(user_id))]
+def active_servers(user_id: int, lab_id: str = "") -> list[str]:
+    """Official server first, then a lab's extra servers, then enabled add-ons."""
+    ordered = [ALWAYS_ON]
+    if lab_id and lab_is_scoped(lab_id):
+        lab = _lab(lab_id)
+        ordered.extend(str(item) for item in (lab.surface_config or {}).get("host_servers") or [])
+    ordered.extend(sorted(enabled_addons(user_id, lab_id if lab_is_scoped(lab_id) else "")))
+    seen: list[str] = []
+    for server_id in ordered:
+        if server_id not in seen:
+            seen.append(server_id)
+    return seen
 
 
 async def export_shop_snapshot(db: AsyncSession) -> None:
@@ -142,10 +225,16 @@ def _schema(tool: dict[str, Any]) -> dict[str, Any]:
     return {"type": "object", "properties": {}, "additionalProperties": True}
 
 
-async def build_mcp_registry(server_ids: list[str], transcript: list[dict[str, Any]]) -> ToolRegistry:
+async def build_mcp_registry(
+    server_ids: list[str],
+    transcript: list[dict[str, Any]],
+    *,
+    lab_id: str = "",
+) -> ToolRegistry:
     registry = ToolRegistry()
+    child_lab = lab_id if lab_id and lab_is_scoped(lab_id) else None
     for server_id in server_ids:
-        listed = await run_allowlisted(server_id, "tools")
+        listed = await run_allowlisted(server_id, "tools", lab_id=child_lab)
         transcript.extend(listed.get("transcript") or [])
         for spec in listed.get("tools") or []:
             name = str(spec.get("name") or "")
@@ -153,7 +242,7 @@ async def build_mcp_registry(server_ids: list[str], transcript: list[dict[str, A
                 continue
 
             async def _call(_name: str = name, _server: str = server_id, **kwargs: Any) -> dict[str, Any]:
-                called = await run_allowlisted(_server, "call", tool=_name, arguments=kwargs)
+                called = await run_allowlisted(_server, "call", tool=_name, arguments=kwargs, lab_id=child_lab)
                 transcript.extend(called.get("transcript") or [])
                 content = called.get("structured_content")
                 if isinstance(content, dict):
@@ -210,6 +299,8 @@ def _evaluation(run: HostRun) -> dict[str, Any] | None:
     from app.core.lab_loader import get_lab_by_id
 
     lab = get_lab_by_id(run.lab_id) if run.lab_id else None
+    if lab and lab.completion:
+        return None
     key = lab.challenge_evaluator if lab else None
     if not key:
         return None
@@ -241,8 +332,111 @@ def _evaluation(run: HostRun) -> dict[str, Any] | None:
     return {"exploit_triggered": bool(triggered), "evaluator": key, "flag": None}
 
 
-async def _drive(run: HostRun, user: User) -> dict[str, Any]:
+def _origin(run: HostRun, action: str) -> str:
+    tool = run.registry.get(action) if run.registry is not None else None
+    return str(getattr(tool, "origin", "") or "")
+
+
+def _earlier_text(steps: list[Any], index: int) -> str:
+    parts = []
+    for step in steps[:index]:
+        observed = getattr(step, "observation", "") or ""
+        if observed:
+            parts.append(str(observed))
+    return "\n".join(parts)
+
+
+async def _record_steps(db: AsyncSession, run: HostRun, steps: list[Any], start: int) -> None:
+    from app.mcp.host_evidence import argument_provenance, record_rows, step_rows, stored_baseline
+
+    baseline = await stored_baseline(db, run.user_id, run.lab_id)
+    if baseline is None:
+        baseline = int(run.ceiling or 0)
+    for index in range(start, len(steps)):
+        step = steps[index]
+        action = str(getattr(step, "action", "") or "")
+        if not action or action == "finish":
+            if action == "finish":
+                await record_rows(db, run.user_id, run.lab_id, [{
+                    "surface": "mcp.host",
+                    "kind": "host_reply",
+                    "actor": "model",
+                    "shown": {"text": [str(getattr(step, "thought", "") or "")]},
+                }])
+            continue
+        provenance = await argument_provenance(
+            db,
+            admin_message=run.message,
+            arguments=getattr(step, "action_input", None) or {},
+            earlier_text=_earlier_text(steps, index),
+            baseline_id=baseline,
+        )
+        await record_rows(db, run.user_id, run.lab_id, step_rows(step, provenance=provenance, origin=_origin(run, action)))
+
+
+async def _record(db: AsyncSession, run: HostRun, *, before: int, continuation: str | None) -> None:
+    from app.mcp.host_evidence import (
+        approval_row,
+        argument_provenance,
+        host_turn_row,
+        record_rows,
+        result_ok,
+        stored_baseline,
+    )
+
+    if not lab_has_completion(run.lab_id) or run.loop is None:
+        return
+    steps = run.loop.steps
+    if continuation is None:
+        existing = await stored_baseline(db, run.user_id, run.lab_id)
+        ceiling = None if existing is not None else run.ceiling
+        await record_rows(db, run.user_id, run.lab_id, [host_turn_row(run.message, run.level, ceiling)])
+        await _record_steps(db, run, steps, 0)
+        return
+    pending = steps[before - 1] if before else None
+    tool = str(getattr(pending, "action", "") or "") if pending is not None else ""
+    args = getattr(pending, "action_input", None) if pending is not None else {}
+    if not isinstance(args, dict):
+        args = {}
+    await record_rows(db, run.user_id, run.lab_id, [approval_row(continuation, tool, args)])
+    if continuation == "approve" and pending is not None:
+        baseline = await stored_baseline(db, run.user_id, run.lab_id)
+        provenance = await argument_provenance(
+            db,
+            admin_message=run.message,
+            arguments=args,
+            earlier_text=_earlier_text(steps, before - 1),
+            baseline_id=int(baseline or 0),
+        )
+        ok, parsed = result_ok(getattr(pending, "observation", None), args)
+        if ok:
+            await record_rows(db, run.user_id, run.lab_id, [{
+                "surface": "mcp.host",
+                "kind": "tool_result",
+                "actor": "server",
+                "server_id": _origin(run, tool),
+                "tool": tool,
+                "args": args,
+                "decision": "allow",
+                "ok": True,
+                "provenance": provenance,
+                "shown": {
+                    "structured": parsed if isinstance(parsed, dict) else {},
+                    "text": [json.dumps(parsed, default=str)],
+                },
+            }])
+    await _record_steps(db, run, steps, before)
+
+
+async def _drive(
+    run: HostRun,
+    user: User,
+    db: AsyncSession | None = None,
+    *,
+    continuation: str | None = None,
+) -> dict[str, Any]:
     assert run.loop is not None
+    before = len(run.loop.steps)
     result = await run.loop.run(run.message)
     run.steps = _steps(run.loop)
     run.answer = result.answer or ""
@@ -254,6 +448,8 @@ async def _drive(run: HostRun, user: User) -> dict[str, Any]:
         run.pending = None
     _runs[run.run_id] = run
     assert user.id == run.user_id
+    if db is not None:
+        await _record(db, run, before=before, continuation=continuation)
     return serialize_run(run)
 
 
@@ -281,17 +477,19 @@ async def host_turn(
             run.loop.steps[-1].observation = "The admin denied this tool call."
             run.loop.steps[-1].decision = "deny"
         run.pending = None
-        return await _drive(run, user)
+        return await _drive(run, user, db, continuation=decision)
+
+    from app.mcp.host_evidence import message_ceiling
 
     await export_shop_snapshot(db)
     transcript: list[dict[str, Any]] = []
-    servers = active_servers(user.id)
-    registry = await build_mcp_registry(servers, transcript)
-    gate = IntentGate(registry, level=level, user_id=user.id, surface="mcp.host")
+    servers = active_servers(user.id, lab_id or "")
+    registry = await build_mcp_registry(servers, transcript, lab_id=lab_id or "")
     from app.core.lab_loader import get_lab_by_id
     from app.mcp.victim_planner import VictimPlanner
 
     lab = get_lab_by_id(lab_id) if lab_id else None
+    gate = HostIntentGate(registry, level=level, user_id=user.id, lab=lab)
     use_victim = str((lab.surface_config or {}).get("planner") or "") == "victim" if lab else False
     loop = GatedAgentLoop(
         registry,
@@ -300,6 +498,7 @@ async def host_turn(
         llm=VictimPlanner(level) if use_victim else get_llm_client(),
         system=_assistant_prompt(lab_id or ""),
     )
+    ceiling = await message_ceiling(db) if lab_has_completion(lab_id or "") else None
     run = HostRun(
         run_id=uuid.uuid4().hex,
         user_id=user.id,
@@ -310,5 +509,6 @@ async def host_turn(
         transcript=transcript,
         loop=loop,
         registry=registry,
+        ceiling=ceiling,
     )
-    return await _drive(run, user)
+    return await _drive(run, user, db)

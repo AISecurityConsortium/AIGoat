@@ -41,6 +41,10 @@ class IntentGate:
         self.user_id = user_id
         self.surface = surface
 
+    def extra_context(self, tool: Any) -> dict[str, Any]:
+        """Lab-supplied facts for the tool-call chain. Empty unless a host overrides it."""
+        return {}
+
     async def dispatch(self, name: str, arguments: dict[str, Any] | None) -> BrokerOutcome:
         tool = self.registry.get(name)
         schema = as_json_schema(tool.parameter_schema if tool else {})
@@ -85,6 +89,7 @@ class IntentGate:
             },
             user_id=self.user_id,
         )
+        decision.context.update(self.extra_context(tool))
         chain = await run_chain(tool_controls, decision)
         final = chain.final
         if final.action == ControlAction.DENY:

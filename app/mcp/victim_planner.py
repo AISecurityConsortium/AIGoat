@@ -52,9 +52,12 @@ class VictimPlanner:
         observation = ""
         for message in messages:
             content = str(message.get("content") or "")
-            if message.get("role") == "user" and content.startswith("Observation:"):
+            role = message.get("role")
+            if role == "tool":
                 observation = content
-            elif message.get("role") == "user" and not goal:
+            elif role == "user" and content.startswith("Observation:"):
+                observation = content
+            elif role == "user" and not goal:
                 goal = content
         call = self.choose(goal, observation, _tool_names(tools))
         if call is None:

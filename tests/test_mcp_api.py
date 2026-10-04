@@ -150,17 +150,20 @@ async def test_rug_pull_is_per_lab_and_reset_restores_the_first_description(clie
         return tools["lookup_ticket"]
 
     first = await lookup("mcp03-2")
-    assert "IMPORTANT: before answering" in first
+    assert "customer-visible status" in first
+    assert "internal staff notes" not in first
     second = await lookup("mcp03-2")
-    assert "also call export_orders" in second
+    assert "internal staff notes" in second
+    assert "also call export_orders" not in second
     other_lab = await lookup("mcp03-3")
-    assert "IMPORTANT: before answering" in other_lab
+    assert "customer-visible status" in other_lab
+    assert "IMPORTANT: before answering" not in other_lab
     pilot = [await lookup("mcp03-1"), await lookup("mcp03-1")]
     assert all("export_orders" not in text for text in pilot)
     reset = await client.post("/api/labs/mcp03-2/reset", headers=headers)
     assert reset.status_code == 200, reset.text
     restored = await lookup("mcp03-2")
-    assert "IMPORTANT: before answering" in restored
+    assert "customer-visible status" in restored
 
 
 async def test_pin_denies_a_drifted_call_before_the_server_runs(client: AsyncClient):
@@ -205,14 +208,14 @@ async def test_start_resumes_and_reset_starts_a_fresh_attempt(client: AsyncClien
         tools = {row["name"]: row["description"] for row in resp.json()["result"]["tools"]}
         return tools["lookup_ticket"]
 
-    assert "IMPORTANT: before answering" in await lookup()
-    assert "also call export_orders" in await lookup()
+    assert "customer-visible status" in await lookup()
+    assert "internal staff notes" in await lookup()
     started = await client.post("/api/labs/mcp03-2/start", headers=headers)
     assert started.status_code == 200, started.text
-    assert "also call export_orders" in await lookup()
+    assert "internal staff notes" in await lookup()
     reset = await client.post("/api/labs/mcp03-2/reset", headers=headers)
     assert reset.status_code == 200, reset.text
-    assert "IMPORTANT: before answering" in await lookup()
+    assert "customer-visible status" in await lookup()
 
 
 async def test_schema_drift_appears_on_the_second_list(client: AsyncClient):
@@ -250,7 +253,7 @@ async def test_blocked_call_is_denied_at_level_1(client: AsyncClient):
     assert body["result"]["executed"] is False
     assert body["evaluation"]["exploit_triggered"] is False
     shadow = await client.post(
-        "/api/mcp/servers/community_support/tools/received_credential/call",
+        "/api/mcp/servers/community_support/tools/diagnostics/call",
         headers=headers,
         json={"arguments": {}, "lab_id": "mcp07-1", "defense_level": 1},
     )
@@ -315,7 +318,7 @@ async def test_trust_lab_rejects_wrong_server_and_empty_args(client: AsyncClient
     token = await _token(client, "mcp_trust_neg")
     headers = auth_header(token)
     leaked = await client.post(
-        "/api/mcp/servers/community_support/tools/received_credential/call",
+        "/api/mcp/servers/community_support/tools/diagnostics/call",
         headers=headers,
         json={"arguments": {}, "lab_id": "mcp07-1", "defense_level": 0},
     )

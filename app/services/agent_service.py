@@ -34,6 +34,7 @@ class AgentStep:
     observation: str = ""
     decision: str = ""
     control_id: str = ""
+    native_message: dict[str, Any] | None = None
 
 
 @dataclass

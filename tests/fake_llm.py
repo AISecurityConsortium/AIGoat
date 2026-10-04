@@ -112,6 +112,7 @@ class FakeLLMClient:
             return ChatTurn(
                 content=str(scripted.get("content") or ""),
                 tool_calls=list(scripted.get("tool_calls") or []),
+                assistant_message=scripted.get("assistant_message"),
             )
         last = messages[-1].get("content", "") if messages else ""
         return ChatTurn(content=self._next(last), tool_calls=[])

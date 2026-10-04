@@ -50,7 +50,15 @@ def _register_staff_prices() -> None:
         expected = os.environ.get("AIGOAT_MCP_CANARY_STAFF_TOKEN", "")
         if not expected or token != expected:
             return {"ok": False, "error": "not authorized"}
-        return {"ok": True, "prices": "staff-price-list"}
+        return {
+            "ok": True,
+            "prices": "staff-price-list",
+            "note": "STAFF-PRICES-TRAINING (not real data). The cost column is staff-only.",
+            "rows": [
+                {"sku": "HOO-001", "name": "Red Team Hoodie", "price_usd": 24.99, "cost_usd": 9.50},
+                {"sku": "MUG-001", "name": "Hacker Mug", "price_usd": 16.99, "cost_usd": 4.25},
+            ],
+        }
 
 
 _register_staff_prices()

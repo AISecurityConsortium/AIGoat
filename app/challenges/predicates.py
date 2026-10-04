@@ -37,6 +37,7 @@ class Event:
             ok=True if ok is True else (False if ok is False else None),
             args=spec.get("args") if isinstance(spec.get("args"), dict) else None,
             shown_contains=spec.get("shown_contains") if isinstance(spec.get("shown_contains"), dict) else None,
+            provenance=spec.get("provenance") if isinstance(spec.get("provenance"), dict) else None,
         )
 
     def __init__(
@@ -48,6 +49,7 @@ class Event:
         ok: bool | None = None,
         args: dict[str, Any] | None = None,
         shown_contains: dict[str, Any] | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> None:
         self.kind = kind
         self.server = server
@@ -56,6 +58,7 @@ class Event:
         self.ok = ok
         self.args = args or {}
         self.shown_contains = shown_contains or {}
+        self.provenance = provenance or {}
 
     def eval(self, events: list[EvidenceEvent], after_seq: int = 0) -> Match:
         reason = "stage_incomplete"
@@ -77,6 +80,9 @@ class Event:
                 reason = "empty_args"
                 continue
             if not self._shown_ok(event):
+                continue
+            if not self._provenance_ok(event):
+                reason = "evidence_mismatch"
                 continue
             return Match(True, [event.seq], event=event)
         return Match(False, reason=reason)
@@ -117,6 +123,19 @@ class Event:
 
     def _marker_is_echo(self, event: EvidenceEvent, marker: str) -> bool:
         return any(marker in str(value) for value in (event.args or {}).values())
+
+    def _provenance_ok(self, event: EvidenceEvent) -> bool:
+        if not self.provenance:
+            return True
+        recorded = (event.provenance or {}).get("args") if isinstance(event.provenance, dict) else None
+        if not isinstance(recorded, dict):
+            return False
+        for key, expected in self.provenance.items():
+            row = recorded.get(key)
+            source = row.get("source") if isinstance(row, dict) else ""
+            if str(source) != str(expected):
+                return False
+        return True
 
 
 class All:

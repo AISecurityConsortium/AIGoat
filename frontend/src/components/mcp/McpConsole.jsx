@@ -499,6 +499,7 @@ const McpConsole = ({ labId, lab, onGoalMet, pushedEvaluation = null, header = n
   const submitting = reportOpen && !done;
   const multiServer = visibleServers.length > 1;
   const approved = lab?.ui?.approved_surface;
+  const hasContract = Array.isArray(approved?.definitions) && approved.definitions.length > 0;
   const takeawayRows = TAKEAWAY_ROWS.filter(([key]) => takeaway?.[key]);
   const earlierEvents = !exchanges.length && recorded.length;
   const resultText = callResult && !callResult.denied
@@ -905,6 +906,20 @@ const McpConsole = ({ labId, lab, onGoalMet, pushedEvaluation = null, header = n
                   {'Approved tools: '}
                   <Box component="span" sx={{ fontFamily: MONO, color: 'text.primary' }}>{(approved.tools || []).join(', ')}</Box>
                 </Typography>
+                {(approved.definitions || []).map((row) => (
+                  <Box key={row.tool} sx={{ flexBasis: '100%', mt: 0.75 }}>
+                    <Typography sx={{ fontFamily: MONO, fontWeight: 700, fontSize: '0.78rem' }}>{row.tool}</Typography>
+                    {row.description && (
+                      <Typography sx={{ fontSize: '0.8rem', lineHeight: 1.45, whiteSpace: 'pre-wrap', mt: 0.25 }}>{row.description}</Typography>
+                    )}
+                    {Array.isArray(row.arguments) && row.arguments.length > 0 && (
+                      <Typography sx={meta}>
+                        {'Approved arguments: '}
+                        <Box component="span" sx={{ fontFamily: MONO, color: 'text.primary' }}>{row.arguments.join(', ')}</Box>
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
               </Box>
             )}
           </Box>
@@ -934,7 +949,7 @@ const McpConsole = ({ labId, lab, onGoalMet, pushedEvaluation = null, header = n
                 <Box role="listbox" aria-label="Tools" sx={{ ...inset, overflowY: 'auto', maxHeight: 440 }}>
                   {tools.map((tool, index) => {
                     const active = tool.name === selectedTool;
-                    const drift = changedNames.has(tool.name) || changedSchemas.has(tool.name);
+                    const drift = !hasContract && (changedNames.has(tool.name) || changedSchemas.has(tool.name));
                     return (
                       <Box
                         key={tool.name}
@@ -988,7 +1003,7 @@ const McpConsole = ({ labId, lab, onGoalMet, pushedEvaluation = null, header = n
                       <Typography sx={{ fontSize: '0.85rem', lineHeight: 1.55, whiteSpace: 'pre-wrap', mt: 0.5, maxHeight: 180, overflowY: 'auto', wordBreak: 'break-word' }}>
                         {escaped ? showEscaped(toolObj.description || '') : (toolObj.description || 'No description.')}
                       </Typography>
-                      {(changedNames.has(toolObj.name) || changedSchemas.has(toolObj.name)) && (
+                      {!hasContract && (changedNames.has(toolObj.name) || changedSchemas.has(toolObj.name)) && (
                         <Typography sx={{ fontSize: '0.78rem', color: 'warning.main', mt: 0.5 }}>
                           {changedNames.has(toolObj.name) ? 'Description changed since the last list.' : 'Arguments changed since the last list.'}
                         </Typography>

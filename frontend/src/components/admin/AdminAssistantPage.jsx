@@ -4,7 +4,7 @@ import {
   Alert, Box, Button, Chip, FormControlLabel, Switch, TextField, Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { apiClient as api } from '../../config/api';
+import API_CONFIG, { apiClient as api } from '../../config/api';
 import ApprovalDialog from '../agent/ApprovalDialog';
 import DefenseLevelToggle from '../DefenseLevelToggle';
 import { SectionCard } from '../common';
@@ -151,45 +151,41 @@ const AdminAssistantPage = () => {
   const [chat, setChat] = useState([]);
   const [run, setRun] = useState(null);
   const [integrations, setIntegrations] = useState([]);
+  const [labMeta, setLabMeta] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const chatPane = useRef(null);
   const abortRef = useRef(null);
 
-  const loadIntegrations = () => {
-    api.get('/api/mcp/host/integrations', { headers: authHeaders() })
-      .then((res) => setIntegrations(res.data || []))
-      .catch(() => setIntegrations([]));
-  };
+  const learnerFirst = Boolean(labMeta?.ui?.learner_first);
 
-  useEffect(() => { loadIntegrations(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/api/mcp/host/integrations', {
+      headers: authHeaders(),
+      params: labId ? { lab_id: labId } : undefined,
+    })
+      .then((res) => { if (!cancelled) setIntegrations(res.data || []); })
+      .catch(() => { if (!cancelled) setIntegrations([]); });
+    return () => { cancelled = true; };
+  }, [labId]);
+
+  useEffect(() => {
+    if (!labId) {
+      setLabMeta(null);
+      return undefined;
+    }
+    let cancelled = false;
+    api.get(API_CONFIG.ENDPOINTS.LAB_DETAIL(labId), { headers: authHeaders() })
+      .then((res) => { if (!cancelled) setLabMeta(res.data || null); })
+      .catch(() => { if (!cancelled) setLabMeta(null); });
+    return () => { cancelled = true; };
+  }, [labId]);
 
   useEffect(() => {
     const pane = chatPane.current;
     if (pane) pane.scrollTop = pane.scrollHeight;
   }, [chat, busy]);
-
-  useEffect(() => {
-    if (!labId) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.get('/api/mcp/host/integrations', { headers: authHeaders() });
-        const rows = res.data || [];
-        for (const row of rows) {
-          if (row.locked || cancelled) continue;
-          if (cancelled) continue;
-        }
-        if (!cancelled) {
-          const fresh = await api.get('/api/mcp/host/integrations', { headers: authHeaders() });
-          setIntegrations(fresh.data || []);
-        }
-      } catch {
-        if (!cancelled) setIntegrations([]);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [labId]);
 
   const send = async (extra = {}) => {
     const text = extra.message || message;
@@ -231,7 +227,11 @@ const AdminAssistantPage = () => {
   };
 
   const toggle = async (serverId, enabled) => {
-    const res = await api.post('/api/mcp/host/integrations', { server_id: serverId, enabled }, { headers: authHeaders() });
+    const res = await api.post('/api/mcp/host/integrations', {
+      server_id: serverId,
+      enabled,
+      lab_id: labId || undefined,
+    }, { headers: authHeaders() });
     setIntegrations(res.data || []);
   };
 
@@ -245,8 +245,9 @@ const AdminAssistantPage = () => {
     && !calledScoredTool
     && !run.evaluation?.exploit_triggered,
   );
-  const goalMet = Boolean(run?.evaluation?.exploit_triggered);
+  const goalMet = Boolean(run?.evaluation?.exploit_triggered) && !learnerFirst;
   const goalMetText = 'Lab condition met.';
+  const servedName = (id) => integrations.find((row) => row.id === id)?.name || '';
 
   return (
     <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
@@ -272,10 +273,9 @@ const AdminAssistantPage = () => {
             </Button>
           )}
         >
-          {scoredTool
-            ? `This lab scores ${scoredTool}. Ask without naming that tool.`
-            : 'You opened this page from a lab.'}
-          {labId === 'mcp04-1' ? ' The Shop Catalog (community package) should already be on.' : ''}
+          {learnerFirst || !scoredTool
+            ? 'You opened this page from a lab.'
+            : `This lab scores ${scoredTool}. Ask without naming that tool.`}
         </Alert>
       )}
 
@@ -306,7 +306,9 @@ const AdminAssistantPage = () => {
           {error && <Alert severity="error" sx={{ mb: 1.5 }}>{String(error)}</Alert>}
           {run?.status === 'awaiting_approval' && (
             <Alert severity="warning" sx={{ mb: 1.5 }}>
-              Paused for approval. The lab is met only after you approve, and only if the arguments came from the planted ticket or review.
+              {learnerFirst
+                ? 'Paused for approval. Read the tool and its arguments, then approve or deny.'
+                : 'Paused for approval. The lab is met only after you approve, and only if the arguments came from the planted ticket or review.'}
             </Alert>
           )}
           {goalMet && (
@@ -314,15 +316,18 @@ const AdminAssistantPage = () => {
               {goalMetText}
             </Alert>
           )}
-          {missedTool && (
+          {!learnerFirst && missedTool && (
             <Alert severity="warning" sx={{ mb: 1.5 }}>
               The model did not call {scoredTool}. The lesson is that missing call, not the sentence above.
             </Alert>
           )}
 
+          {!learnerFirst && (
           <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 1 }}>
             Pick a start, edit it if you want, then press Send.
           </Typography>
+          )}
+          {!learnerFirst && (
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
             {STARTERS.map((starter) => (
               <Button
@@ -337,6 +342,7 @@ const AdminAssistantPage = () => {
               </Button>
             ))}
           </Box>
+          )}
 
           <Box
             ref={chatPane}
@@ -362,8 +368,9 @@ const AdminAssistantPage = () => {
           >
             {chat.length === 0 && !busy && (
               <Typography sx={{ color: 'text.secondary', lineHeight: 1.65 }}>
-                No turn yet. A useful first question is what the open tickets need. After Send, the tool name shows above the box and the raw result sits in This turn.
-                {STARTERS[2].note ? ` ${STARTERS[2].note}` : ''}
+                {learnerFirst
+                  ? 'No turn yet. Ask in your own words, then read which integration served each call.'
+                  : `No turn yet. A useful first question is what the open tickets need. After Send, the tool name shows above the box and the raw result sits in This turn. ${STARTERS[2].note || ''}`}
               </Typography>
             )}
             {chat.map((row, index) => {
@@ -442,12 +449,14 @@ const AdminAssistantPage = () => {
             <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mr: 0.5 }}>Called</Typography>
             {calls.length === 0 && !busy && (
               <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
-                None yet
+                {learnerFirst && run ? 'No tool ran this turn.' : 'None yet'}
               </Typography>
             )}
-            {calls.map((step) => (
-              <Chip key={step.seq} size="small" label={step.decision ? `${step.action} · ${step.decision}` : step.action} />
-            ))}
+            {calls.map((step) => {
+              const served = learnerFirst && step.server_id ? ` · Served by ${servedName(step.server_id)}` : '';
+              const decision = step.decision ? ` · ${step.decision}` : '';
+              return <Chip key={step.seq} size="small" label={`${step.action}${decision}${served}`} />;
+            })}
           </Box>
 
           <Box component="form" onSubmit={(event) => { event.preventDefault(); send(); }} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
@@ -476,7 +485,9 @@ const AdminAssistantPage = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <SectionCard title="Add-on servers" dense>
             <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', mb: 1, lineHeight: 1.5 }}>
-              Off by default. Turning one on lets the next turn discover that server. The mirror can answer a catalog question with a listing that is not the official shop.
+              {learnerFirst
+                ? 'Off by default. Turning one on lets the next turn discover its tools.'
+                : 'Off by default. Turning one on lets the next turn discover that server. The mirror can answer a catalog question with a listing that is not the official shop.'}
             </Typography>
             {integrations.map((row) => (
               <FormControlLabel
@@ -489,7 +500,9 @@ const AdminAssistantPage = () => {
                     onChange={(event) => toggle(row.id, event.target.checked)}
                   />
                 )}
-                label={`${row.name} (${row.trust_tier}${row.locked ? ', always on' : ''})`}
+                label={labMeta?.ui?.hide_trust_tier
+                  ? `${row.name}${row.locked ? ' (always on)' : ''}`
+                  : `${row.name} (${row.trust_tier}${row.locked ? ', always on' : ''})`}
               />
             ))}
           </SectionCard>
@@ -507,6 +520,9 @@ const AdminAssistantPage = () => {
                     {step.action}
                   </Typography>
                   {step.decision && <Chip size="small" label={step.decision} />}
+                  {learnerFirst && step.server_id && (
+                    <Chip size="small" label={`Served by ${servedName(step.server_id)}`} />
+                  )}
                 </Box>
                 <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', whiteSpace: 'pre-wrap', maxHeight: 180, overflow: 'auto' }}>
                   {step.observation || 'No result text.'}
@@ -515,6 +531,7 @@ const AdminAssistantPage = () => {
             ))}
           </SectionCard>
 
+          {!learnerFirst && (
           <SectionCard title="What it can call" dense>
             <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', mb: 1.25, lineHeight: 1.5 }}>
               Internal Management Server is always connected. These tools are the official set.
@@ -531,6 +548,7 @@ const AdminAssistantPage = () => {
               </Box>
             ))}
           </SectionCard>
+          )}
         </Box>
       </Box>
 

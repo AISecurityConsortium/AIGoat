@@ -76,6 +76,20 @@ def _observation_text(outcome: BrokerOutcome) -> str:
         return str(outcome.observation)
 
 
+def _native_assistant_message(content: str, tool_calls: list[dict[str, Any]]) -> dict[str, Any]:
+    """Ollama assistant message for a client that did not return the raw one."""
+    calls = []
+    for call in tool_calls:
+        calls.append({
+            "type": "function",
+            "function": {
+                "name": str(call.get("name") or ""),
+                "arguments": call.get("arguments") or {},
+            },
+        })
+    return {"role": "assistant", "content": content or "", "tool_calls": calls}
+
+
 class GatedAgentLoop(AgentLoop):
     """AgentLoop whose invoke path is the Intent Gate, not ToolRegistry.invoke."""
 
@@ -93,34 +107,49 @@ class GatedAgentLoop(AgentLoop):
         self.llm = llm
         self.system = system
         self.model = model
+        self._native_message: dict[str, Any] | None = None
+
+    def _messages(self, goal: str, history: list[AgentStep]) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = [{"role": "user", "content": goal}]
+        for step in history:
+            if step.native_message:
+                messages.append(step.native_message)
+                messages.append({
+                    "role": "tool",
+                    "tool_name": step.action,
+                    "content": step.observation,
+                })
+                continue
+            assistant = step.thought or step.action
+            messages.append({"role": "assistant", "content": assistant})
+            if step.observation:
+                messages.append({"role": "user", "content": f"Observation: {step.observation}"})
+        return messages
 
     async def plan(
         self, goal: str, history: list[AgentStep]
     ) -> tuple[str, str, dict[str, Any]]:
         if self.llm is None:
+            self._native_message = None
             return ("no model", "finish", {"answer": ""})
-        messages: list[dict[str, str]] = [{"role": "user", "content": goal}]
-        for step in history:
-            assistant = step.thought or step.action
-            messages.append({"role": "assistant", "content": assistant})
-            if step.observation:
-                messages.append(
-                    {"role": "user", "content": f"Observation: {step.observation}"}
-                )
+        messages = self._messages(goal, history)
         turn = await self._chat(messages)
         if turn.tool_calls:
             first = turn.tool_calls[0]
             args = first.get("arguments") or {}
             if not isinstance(args, dict):
                 args = {}
+            raw = getattr(turn, "assistant_message", None)
+            self._native_message = raw or _native_assistant_message(turn.content or "", turn.tool_calls)
             return (turn.content or "", str(first.get("name") or ""), args)
+        self._native_message = None
         parsed = parse_json_tool(turn.content) or parse_literal_call(turn.content)
         if parsed:
             _thought, name, args = parsed
             return (turn.content or "", name, args)
         return (turn.content or "", "finish", {"answer": turn.content or ""})
 
-    async def _chat(self, messages: list[dict[str, str]]) -> Any:
+    async def _chat(self, messages: list[dict[str, Any]]) -> Any:
         from app.services.llm_protocol import ChatTurn
 
         tools = None
@@ -142,7 +171,12 @@ class GatedAgentLoop(AgentLoop):
     async def run(self, goal: str) -> AgentResult:
         while len(self.steps) < self.max_steps:
             thought, action, action_input = await self.plan(goal, self.steps)
-            step = AgentStep(thought=thought, action=action, action_input=action_input)
+            step = AgentStep(
+                thought=thought,
+                action=action,
+                action_input=action_input,
+                native_message=self._native_message,
+            )
             if action == "finish":
                 step.observation = "Agent terminated."
                 step.decision = "allow"

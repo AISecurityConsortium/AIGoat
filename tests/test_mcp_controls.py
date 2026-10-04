@@ -100,6 +100,72 @@ async def test_result_scan_redacts_the_decoy_token():
     assert "sk-shop-billing-" not in redacted.payload
 
 
+async def test_schema_pin_denies_an_unapproved_argument_and_allows_the_contract():
+    ensure_registered()
+    contract = {"lookup_ticket": {"properties": {"ticket_id": {"type": "string"}}}}
+
+    def decision(**context):
+        return DefenseDecision(
+            surface="mcp.client",
+            stage=DefenseStage.TOOL_CALL,
+            payload="",
+            level=2,
+            context={"op": "call", "tool": "lookup_ticket", "pinned_schemas": contract, **context},
+        )
+
+    allowed = await get_control("mcp.schema_pin").evaluate(decision(arguments={"ticket_id": "TCK-1008"}))
+    assert allowed.action is ControlAction.ALLOW
+    extra = await get_control("mcp.schema_pin").evaluate(
+        decision(arguments={"ticket_id": "TCK-1008", "include_internal": False})
+    )
+    assert extra.action is ControlAction.DENY
+    assert extra.reason == "Call denied: argument is not part of the approved tool schema."
+    assert "include_internal" not in (extra.reason or "")
+    untouched = {"ticket_id": "TCK-1008", "include_internal": True}
+    await get_control("mcp.schema_pin").evaluate(decision(arguments=untouched))
+    assert untouched["include_internal"] is True
+    no_contract = DefenseDecision(
+        surface="mcp.client", stage=DefenseStage.TOOL_CALL, payload="", level=2,
+        context={"op": "call", "tool": "lookup_ticket", "arguments": {"include_internal": True}},
+    )
+    assert (await get_control("mcp.schema_pin").evaluate(no_contract)).action is ControlAction.ALLOW
+    listed = DefenseDecision(
+        surface="mcp.client", stage=DefenseStage.TOOL_CALL, payload="", level=2,
+        context={"op": "tools", "pinned_schemas": contract},
+    )
+    assert (await get_control("mcp.schema_pin").evaluate(listed)).action is ControlAction.ALLOW
+
+
+async def test_origin_pin_denies_only_when_a_lab_pins_an_integration():
+    ensure_registered()
+    control = get_control("mcp.origin_pin")
+
+    def decision(**context):
+        return DefenseDecision(
+            surface="mcp.host",
+            stage=DefenseStage.TOOL_CALL,
+            payload="",
+            level=2,
+            context={"tool": "lookup_product", **context},
+        )
+
+    bare = await control.evaluate(decision(tool_origin="shadow_shop"))
+    assert bare.action is ControlAction.ALLOW
+    pinned = {"pinned_origins": {"lookup_product": "shop_catalog"}}
+    denied = await control.evaluate(decision(tool_origin="shadow_shop", **pinned))
+    assert denied.action is ControlAction.DENY
+    assert denied.reason == "Call denied: this tool is not being served by its approved integration."
+    assert "shadow" not in (denied.reason or "")
+    allowed = await control.evaluate(decision(tool_origin="shop_catalog", **pinned))
+    assert allowed.action is ControlAction.ALLOW
+    other = await control.evaluate(decision(
+        tool="issue_refund",
+        tool_origin="internal_shop",
+        pinned_origins={"lookup_product": "shop_catalog"},
+    ))
+    assert other.action is ControlAction.ALLOW
+
+
 async def test_description_scan_redacts_poison():
     ensure_registered()
     tools = [{"name": "lookup_ticket", "description": POISONED_DESCRIPTION}]

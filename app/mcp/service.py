@@ -206,6 +206,14 @@ def _pins_for_lab(lab_id: str | None) -> dict[str, str]:
     return {str(k): str(v) for k, v in raw.items()}
 
 
+def _pinned_schemas(lab_id: str | None) -> dict[str, Any]:
+    lab = get_lab_by_id(lab_id) if lab_id else None
+    if lab is None:
+        return {}
+    raw = (lab.surface_config or {}).get("pinned_schemas") or {}
+    return {str(name): spec for name, spec in raw.items() if isinstance(spec, dict)}
+
+
 def _blocked_calls(lab_id: str | None) -> list[dict[str, Any]]:
     lab = get_lab_by_id(lab_id) if lab_id else None
     if lab is None:
@@ -249,6 +257,7 @@ async def execute_mcp(
     controls = list(profile.controls) if profile else []
     outcomes: list[dict[str, Any]] = []
     pins = _pins_for_lab(lab_id)
+    schemas = _pinned_schemas(lab_id)
     blocked = _blocked_calls(lab_id)
     denied = False
     deny_reason = None
@@ -280,6 +289,8 @@ async def execute_mcp(
                     "tool": tool,
                     "tool_description": live_desc,
                     "pinned_descriptions": pins,
+                    "pinned_schemas": schemas,
+                    "arguments": arguments,
                     "blocked_calls": blocked,
                     "op": "call",
                 },
@@ -330,6 +341,7 @@ async def execute_mcp(
             context={
                 "tools": visible_tools,
                 "pinned_descriptions": pins,
+                "pinned_schemas": schemas,
                 "blocked_calls": blocked,
                 "op": "tools",
             },
@@ -555,6 +567,7 @@ def _evidence_rows(
                 "control_id": deny_control or "",
                 "parent_index": 0,
                 "data": {"reason": deny_reason or ""},
+                "shown": {"text": [deny_reason] if deny_reason else []},
             },
         ]
     return [

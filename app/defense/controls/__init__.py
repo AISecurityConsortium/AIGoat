@@ -9,7 +9,9 @@ from app.defense.control import get_control, register_control
 from app.defense.controls.input_validate import InputValidateControl
 from app.defense.controls.intent_classify import IntentClassifyControl
 from app.defense.controls.mcp_description_scan import McpDescriptionScanControl
+from app.defense.controls.mcp_origin_pin import McpOriginPinControl
 from app.defense.controls.mcp_result_scan import McpResultScanControl
+from app.defense.controls.mcp_schema_pin import McpSchemaPinControl
 from app.defense.controls.mcp_tool_allowlist import McpToolAllowlistControl
 from app.defense.controls.mcp_tool_pin import McpToolPinControl
 from app.defense.controls.memory_scan import MemoryScanControl
@@ -41,6 +43,8 @@ def ensure_registered() -> None:
     _register_if_missing(ToolApprovalControl())
     _register_if_missing(MemoryScanControl())
     _register_if_missing(McpToolPinControl())
+    _register_if_missing(McpOriginPinControl())
+    _register_if_missing(McpSchemaPinControl())
     _register_if_missing(McpToolAllowlistControl())
     _register_if_missing(McpDescriptionScanControl())
     _register_if_missing(McpResultScanControl())

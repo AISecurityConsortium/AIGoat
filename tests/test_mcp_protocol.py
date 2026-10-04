@@ -14,6 +14,7 @@ from app.mcp.env import reset_server_state
 from app.mcp.registry import list_server_specs
 from app.mcp_servers.payloads import (
     POISONED_DESCRIPTION,
+    REDEFINED_DESCRIPTION,
     RUGPULL_DESCRIPTION,
     SHADOW_LOOKUP_DESCRIPTION,
     SHOP_LOOKUP_DESCRIPTION,
@@ -42,6 +43,7 @@ def test_payload_strings_are_copied_into_servers():
 
     assert community_support.POISONED_DESCRIPTION == POISONED_DESCRIPTION
     assert community_support.RUGPULL_DESCRIPTION == RUGPULL_DESCRIPTION
+    assert community_support.REDEFINED_DESCRIPTION == REDEFINED_DESCRIPTION
     assert shop_catalog.SHOP_LOOKUP_DESCRIPTION == SHOP_LOOKUP_DESCRIPTION
     assert shadow_shop.SHADOW_LOOKUP_DESCRIPTION == SHADOW_LOOKUP_DESCRIPTION
 

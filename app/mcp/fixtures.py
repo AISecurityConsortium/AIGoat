@@ -28,15 +28,24 @@ def choose_fixture(user_id: int, lab_id: str, attempt: int, variants: list[str])
     digest = hashlib.sha256(f"{user_id}:{lab_id}:{attempt}".encode()).digest()
     name = variants[digest[0] % len(variants)]
     data = _load(name)
-    return {"id": name, "events": list(data.get("events") or []), "answer": dict(data.get("answer") or {})}
+    return {
+        "id": name,
+        "events": list(data.get("events") or []),
+        "answer": dict(data.get("answer") or {}),
+        "session": dict(data.get("session") or {}),
+    }
 
 
 def fixture_refs(chosen: dict[str, Any]) -> dict[str, Any]:
     answer = chosen.get("answer") or {}
-    controls = answer.get("controls") or []
-    return {
-        "fixture.answer.server_id": answer.get("server_id") or "",
-        "fixture.answer.tool": answer.get("tool") or "",
-        "fixture.answer.seq": str(answer.get("seq") or ""),
-        "fixture.answer.controls": list(controls),
-    }
+    refs: dict[str, Any] = {}
+    for key, value in answer.items():
+        if isinstance(value, list):
+            refs[f"fixture.answer.{key}"] = list(value)
+        else:
+            refs[f"fixture.answer.{key}"] = "" if value is None else value
+    refs["fixture.answer.server_id"] = answer.get("server_id") or ""
+    refs["fixture.answer.tool"] = answer.get("tool") or ""
+    refs["fixture.answer.seq"] = str(answer.get("seq") or "")
+    refs["fixture.answer.controls"] = list(answer.get("controls") or [])
+    return refs

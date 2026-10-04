@@ -88,19 +88,29 @@ async def call_tool(
 
 
 @router.get("/host/integrations")
-async def host_integrations(user: Annotated[User, Depends(get_current_user)]) -> list[dict[str, Any]]:
+async def host_integrations(
+    user: Annotated[User, Depends(get_current_user)],
+    lab_id: str | None = Query(default=None),
+) -> list[dict[str, Any]]:
     _require_admin(user)
-    return integration_rows(user.id)
+    return integration_rows(user.id, lab_id or "")
 
 
 @router.post("/host/integrations")
 async def host_set_integration(
     body: McpHostIntegrationIn,
     user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[dict[str, Any]]:
+    from app.mcp.host import lab_is_scoped
+    from app.mcp.host_evidence import integration_row, record_rows
+
     _require_admin(user)
-    set_addon(user.id, body.server_id, body.enabled)
-    return integration_rows(user.id)
+    lab_id = body.lab_id or ""
+    set_addon(user.id, body.server_id, body.enabled, lab_id)
+    if lab_id and lab_is_scoped(lab_id):
+        await record_rows(db, user.id, lab_id, [integration_row(body.server_id, body.enabled)])
+    return integration_rows(user.id, lab_id)
 
 
 @router.post("/host/turn")

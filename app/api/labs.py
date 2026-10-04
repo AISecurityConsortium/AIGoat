@@ -313,6 +313,10 @@ async def reset_lab(
         if lab_def.get("surface") == "mcp.client" and server_id:
             reset_server_state(server_id, learner_scope(user.id, lab_id, sess.attempt))
             clear_live_descriptions(user.id, lab_id)
+        if lab_def.get("surface") == "mcp.host":
+            from app.mcp.host import clear_addons
+
+            clear_addons(user.id, lab_id)
         await db.commit()
         await db.refresh(sess)
         return {"reset": True, "lab_id": lab_id, "reset_count": sess.reset_count}
@@ -328,6 +332,10 @@ async def reset_lab(
     if lab_def.get("surface") == "mcp.client" and server_id:
         reset_server_state(server_id, learner_scope(user.id, lab_id, 2))
         clear_live_descriptions(user.id, lab_id)
+    if lab_def.get("surface") == "mcp.host":
+        from app.mcp.host import clear_addons
+
+        clear_addons(user.id, lab_id)
     db.add(new_sess)
     await db.commit()
     return {"reset": True, "lab_id": lab_id, "reset_count": 1}
@@ -460,7 +468,16 @@ async def lab_fixture(
         raise HTTPException(status_code=404, detail="This lab has no recorded log")
     attempt = await current_attempt(db, user.id, lab_id)
     chosen = choose_fixture(user.id, lab_id, attempt, variants)
-    return {"lab_id": lab_id, "attempt": attempt, "events": chosen["events"]}
+    await append_events(db, user.id, lab_id, [{
+        "kind": "fixture_viewed",
+        "actor": "learner",
+        "surface": str(lab.surface or ""),
+        "data": {"fixture": chosen["id"]},
+    }])
+    payload = {"lab_id": lab_id, "attempt": attempt, "events": chosen["events"]}
+    if chosen.get("session"):
+        payload["session"] = chosen["session"]
+    return payload
 
 
 @router.get("/api/labs/{lab_id}/progress")

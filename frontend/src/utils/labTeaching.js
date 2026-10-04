@@ -76,10 +76,10 @@ export const MCP_DECISIONS = [
 
 export const LAB_SERIES = {
   'mcp02-1': 'Same decision, different screen. A later tool list asks for a stronger call.',
-  'mcp03-2': 'Same decision, different screen. The description changes on the second list.',
-  'mcp03-3': 'Same decision, different screen. The arguments change on the second list.',
+  'mcp03-2': 'Tool Metadata series, step 2. Compare the approved tool with a later listing.',
+  'mcp03-3': 'Tool Metadata series, step 3. Compare the approved arguments with a later listing.',
   'mcp04-1': 'Same decision, different screen. Turn on the Shop Catalog (community package).',
-  'mcp07-1': 'Same decision, different screen. Any listed tool can be called.',
+  'mcp07-1': 'A staff credential has an owner. See which integration this client starts with it.',
   'mcp10-1': 'Same decision, different screen. The score here is the export, not the refund.',
   'asi06-2': 'Same note as ASI06. This pass is what Level 2 does with it.',
   'asi10-1': 'Same note as ASI06. The note is still there on the next run.',
@@ -144,11 +144,11 @@ export const SHIP_CONTROL = {
   'mcp01-1': 'Redact tool results before they reach the model, and do not log them raw.',
   'mcp02-1': 'Pin the tool list you approved, and block any new tool until a person allows it.',
   'mcp03-1': 'Treat every tool description as untrusted text. Do not let it become an instruction.',
-  'mcp03-2': 'Pin the description you approved, and alert when a later list changes it.',
-  'mcp03-3': 'Pin the argument list you approved, and alert when a later list adds a field.',
+  'mcp03-2': 'Pin the definition you approved, and refuse the tool when a later list no longer matches it.',
+  'mcp03-3': 'Pin the input contract separately from the description, and refuse an argument you did not approve.',
   'mcp04-1': 'Bind an integration to a signed server identity, not to the name it displays.',
   'mcp06-1': 'Treat ticket text as data. Do not let it choose the next tool.',
-  'mcp07-1': 'A tool on the list is not permission to call it. Require a separate allow.',
+  'mcp07-1': 'Give each integration only the credential it owns.',
   'mcp08-1': 'Log every tool call so you can name the method, the arguments, and the result.',
   'mcp09-1': 'Trust a server by a signed identity, not by the name it reports.',
   'mcp10-1': 'Do not send every ticket to the model. Require approval before an export.',
@@ -212,19 +212,19 @@ export const MCP_FLOWS = {
     ],
   },
   'mcp03-2': {
-    caption: 'Same tool name. The description changes on the next list.',
+    caption: 'Same tool name. Compare the approval record with a later listing.',
     steps: [
-      { title: 'First list', detail: 'call read_internal_notes' },
-      { title: 'Second list', detail: 'also call export_orders', warn: true },
-      { title: 'Pin', detail: 'Level 1 restores the first text' },
+      { title: 'Approved', detail: 'read the record' },
+      { title: 'Call', detail: 'note what comes back' },
+      { title: 'List again', detail: 'compare, then call again', warn: true },
     ],
   },
   'mcp03-3': {
-    caption: 'Same tool name. The argument list changes on the next list.',
+    caption: 'Same description. Compare the approved arguments with a later listing.',
     steps: [
-      { title: 'First list', detail: 'ticket_id only' },
-      { title: 'Second list', detail: 'include_internal appears', warn: true },
-      { title: 'Pin', detail: 'Level 1 does not freeze arguments' },
+      { title: 'Approved', detail: 'one argument' },
+      { title: 'List again', detail: 'compare the arguments', warn: true },
+      { title: 'Call', detail: 'try what is new' },
     ],
   },
   'mcp02-1': {
@@ -244,11 +244,11 @@ export const MCP_FLOWS = {
     ],
   },
   'mcp07-1': {
-    caption: 'A listed tool is not permission to call it.',
+    caption: 'Two owners. See which integration was started with the catalog credential.',
     steps: [
-      { title: 'tools/list', detail: 'lookup_product' },
-      { title: 'Call', detail: 'sent because it was listed', warn: true },
-      { title: 'No check', detail: 'no capability token' },
+      { title: 'Identify', detail: 'catalog and support' },
+      { title: 'Launch', detail: 'what each process received', warn: true },
+      { title: 'Replay', detail: 'try it where it belongs' },
     ],
   },
   'mcp08-1': {

@@ -75,6 +75,7 @@ def to_evidence(row: LabEvent) -> EvidenceEvent:
         shown=row.shown if isinstance(row.shown, dict) else {},
         claimed_name=row.claimed_name or "",
         data=row.data if isinstance(row.data, dict) else {},
+        provenance=row.provenance if isinstance(row.provenance, dict) else {},
         parent_seq=row.parent_seq,
     )
 
