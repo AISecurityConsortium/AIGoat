@@ -164,3 +164,51 @@ async def test_start_lab_missing(client: AsyncClient):
     token = await _token(client, "labstartmiss")
     resp = await client.post("/api/labs/nope/start", headers=auth_header(token))
     assert resp.status_code == 404
+
+
+async def test_lab_docs_requires_auth(client: AsyncClient):
+    resp = await client.get("/api/labs/docs")
+    assert resp.status_code == 401
+
+
+async def test_lab_docs_lists_asi01_writeup(client: AsyncClient):
+    token = await _token(client, "labdocslist")
+    resp = await client.get("/api/labs/docs", headers=auth_header(token))
+    assert resp.status_code == 200
+    docs = resp.json()["docs"]
+    slugs = {item["slug"] for item in docs}
+    assert "ASI01" in slugs
+    asi01 = next(item for item in docs if item["slug"] == "ASI01")
+    assert asi01["title"]
+    assert "markdown" not in asi01  # list is metadata only
+
+
+async def test_lab_doc_returns_markdown(client: AsyncClient):
+    token = await _token(client, "labdocone")
+    resp = await client.get("/api/labs/docs/ASI01", headers=auth_header(token))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["slug"] == "ASI01"
+    assert body["title"]
+    assert body["markdown"].lstrip().startswith("#")
+    assert "Goal Hijack" in body["markdown"]
+
+
+async def test_lab_doc_unknown_slug_is_404(client: AsyncClient):
+    token = await _token(client, "labdocmiss")
+    resp = await client.get("/api/labs/docs/nope", headers=auth_header(token))
+    assert resp.status_code == 404
+
+
+async def test_lab_doc_slug_cannot_traverse(client: AsyncClient):
+    token = await _token(client, "labdoctrav")
+    resp = await client.get("/api/labs/docs/..%2f..%2fREADME", headers=auth_header(token))
+    assert resp.status_code == 404
+
+
+async def test_docs_route_not_shadowed_by_lab_id(client: AsyncClient):
+    """GET /api/labs/docs resolves to the docs list, not the {lab_id} route."""
+    token = await _token(client, "labdocshadow")
+    resp = await client.get("/api/labs/docs", headers=auth_header(token))
+    assert resp.status_code == 200
+    assert "docs" in resp.json()

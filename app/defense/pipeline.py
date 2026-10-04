@@ -116,6 +116,19 @@ class DefensePipeline:
             level=level,
         )
         chain = await run_chain(_output_control_ids(profile), decision)
+        changed = chain.final.payload != response or any(
+            outcome.action != ControlAction.ALLOW for outcome in chain.outcomes
+        )
+        if changed:
+            action = "blocked" if chain.final.action == ControlAction.DENY else "transformed"
+            await self.telemetry.log(
+                user_id=decision.user_id,
+                level=level,
+                message=response,
+                intent=None,
+                action=action,
+                reason=chain.final.reason,
+            )
         return chain.final.payload
 
 

@@ -15,6 +15,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.memory import clear_lab_memory
+from app.agent.service import cancel_runs_for_lab
+from app.labs.containment import clear_halt, halt_lab
+from app.labs.effects import restore_lab_effects
+from app.labs.writeups import get_writeup, list_writeups
+from app.mcp.host import cancel_host_runs
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundError
@@ -129,6 +134,21 @@ async def list_labs(
     return out
 
 
+@router.get("/api/labs/docs")
+async def list_lab_docs() -> dict:
+    """List the Agentic Top 10 lab writeups (markdown docs in docs/agenttop10)."""
+    return {"docs": list_writeups()}
+
+
+@router.get("/api/labs/docs/{slug}")
+async def get_lab_doc(slug: str) -> dict:
+    """Return one lab writeup as markdown. Slug is the file name without .md."""
+    doc = get_writeup(slug)
+    if doc is None:
+        raise NotFoundError(f"Doc {slug} not found")
+    return doc
+
+
 @router.get("/api/labs/{lab_id}", response_model=LabOut)
 async def get_lab(
     lab_id: str,
@@ -223,13 +243,15 @@ async def reset_lab(
         )
     )
     sess = result.scalar_one_or_none()
+    clear_halt(user.id, lab_id)
+    restored = await restore_lab_effects(db, user.id, lab_id)
     if sess:
         await clear_lab_memory(db, user.id, lab_id)
         sess.completed_at = None
         sess.reset_count = (sess.reset_count or 0) + 1
         await db.commit()
         await db.refresh(sess)
-        return {"reset": True, "lab_id": lab_id, "reset_count": sess.reset_count}
+        return {"reset": True, "lab_id": lab_id, "reset_count": sess.reset_count, "restored": restored}
     await clear_lab_memory(db, user.id, lab_id)
     new_sess = LabSession(
         user_id=user.id,
@@ -240,4 +262,26 @@ async def reset_lab(
     )
     db.add(new_sess)
     await db.commit()
-    return {"reset": True, "lab_id": lab_id, "reset_count": 1}
+    return {"reset": True, "lab_id": lab_id, "reset_count": 1, "restored": restored}
+
+
+@router.post("/api/labs/{lab_id}/halt")
+async def halt_lab_route(
+    lab_id: str,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Cancel this user's runs for the lab and refuse new ones until reset."""
+    lab_def = get_lab_dict(lab_id)
+    if not lab_def:
+        raise HTTPException(status_code=404, detail="Lab not found")
+    if lab_def.get("status") == "coming_soon":
+        raise HTTPException(status_code=400, detail="Lab coming soon")
+    halt_lab(user.id, lab_id)
+    agent_cancelled = await cancel_runs_for_lab(db, user, lab_id)
+    host_cancelled = cancel_host_runs(user.id, lab_id)
+    return {
+        "halted": True,
+        "lab_id": lab_id,
+        "cancelled_runs": agent_cancelled + host_cancelled,
+    }

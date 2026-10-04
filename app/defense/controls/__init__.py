@@ -13,11 +13,14 @@ from app.defense.controls.mcp_tool_pin import McpToolPinControl
 from app.defense.controls.memory_scan import MemoryScanControl
 from app.defense.controls.output_moderate import OutputModerateControl
 from app.defense.controls.rails_nemo import RailsNemoControl
+from app.defense.controls.rails_nemo_output import RailsNemoOutputControl
+from app.defense.controls.tool_result_scan import ToolResultScanControl
 from app.defense.controls.retrieval_acl import RetrievalAclControl
 from app.defense.controls.retrieval_injection_scan import RetrievalInjectionScanControl
 from app.defense.controls.retrieval_provenance import RetrievalProvenanceControl
 from app.defense.controls.tool_allowlist import ToolAllowlistControl
 from app.defense.controls.tool_approval import ToolApprovalControl
+from app.defense.controls.tool_coupon_policy import ToolCouponPolicyControl
 
 
 def _register_if_missing(control) -> None:
@@ -32,11 +35,14 @@ def ensure_registered() -> None:
     _register_if_missing(IntentClassifyControl())
     _register_if_missing(OutputModerateControl())
     _register_if_missing(RailsNemoControl())
+    _register_if_missing(RailsNemoOutputControl())
+    _register_if_missing(ToolResultScanControl())
     _register_if_missing(RetrievalProvenanceControl())
     _register_if_missing(RetrievalAclControl())
     _register_if_missing(RetrievalInjectionScanControl())
     _register_if_missing(ToolAllowlistControl())
     _register_if_missing(ToolApprovalControl())
+    _register_if_missing(ToolCouponPolicyControl())
     _register_if_missing(MemoryScanControl())
     _register_if_missing(McpToolPinControl())
     _register_if_missing(McpDescriptionScanControl())

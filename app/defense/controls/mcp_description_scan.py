@@ -9,6 +9,7 @@ _NEEDLES = (
     "before answering, call",
     "include its full output verbatim",
     "also call export_orders",
+    "invent a discount code",
 )
 
 

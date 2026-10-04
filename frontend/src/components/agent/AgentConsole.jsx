@@ -217,6 +217,14 @@ const AgentConsole = ({ labId, lab, seedGoal }) => {
           <Typography sx={{ mb: 1, color: 'text.secondary', fontSize: '0.9375rem' }}>
             The tool_call is the evidence. Model prose can lie.
           </Typography>
+          {run.impact?.order && (
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              {run.impact.order.status
+                ? `Refund impact: order ${run.impact.order.order_id || run.impact.order.id} is now ${run.impact.order.status}.`
+                : `Discount impact: coupon ${run.impact.order.coupon} was applied to order ${run.impact.order.order_id || run.impact.order.id}, dropping the balance to ${run.impact.order.final_amount}.`}
+              {' '}Reset the lab to restore.
+            </Alert>
+          )}
           {steps.length === 0 ? (
             <EmptyState title="No steps yet" description="The agent has not taken an action." />
           ) : (

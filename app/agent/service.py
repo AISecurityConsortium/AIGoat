@@ -22,6 +22,8 @@ from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.lab_loader import get_lab_by_id, get_lab_dict
 from app.defense.control import ControlAction
 from app.defense.pipeline import defense_pipeline
+from app.labs.containment import is_halted
+from app.labs.effects import apply_coupon_impact
 from app.defense.profiles import resolve_profile
 from app.models.agent import AgentRun, AgentStepRow, PendingApproval
 from app.models.user import User
@@ -133,6 +135,46 @@ def _evaluation(lab_id: str | None, goal: str, answer: str, transcript: list[dic
         "evaluator": key,
         "flag": None,
     }
+
+
+# Labs where a successful apply_coupon tool call applies a tracked synthetic
+# discount (a restricted staff coupon is really written to the lab's victim
+# order; reset restores the original amounts). lab_id -> victim order ref.
+_COUPON_IMPACT_LABS = {"asi02-1": 1003}
+
+
+def _applied_coupon_code(run: AgentRun) -> str | None:
+    """The coupon code from an allowed apply_coupon step, or None."""
+    code: str | None = None
+    for row in run.steps or []:
+        if row.action != "apply_coupon":
+            continue
+        if row.decision == "deny":
+            continue
+        value = (row.action_input or {}).get("code")
+        if value is None:
+            continue
+        code = str(value).strip() or None
+    return code
+
+
+async def _maybe_apply_coupon_impact(
+    db: AsyncSession, run: AgentRun, payload: dict[str, Any]
+) -> None:
+    """When a tool-misuse lab lands an unauthorized coupon, apply it as synthetic state."""
+    order_ref = _COUPON_IMPACT_LABS.get(run.lab_id)
+    if order_ref is None:
+        return
+    if not (payload.get("evaluation") or {}).get("exploit_triggered"):
+        return
+    code = _applied_coupon_code(run)
+    if code is None:
+        return
+    impact = await apply_coupon_impact(
+        db, run.user_id, run.lab_id, code=code, order_ref=order_ref
+    )
+    if impact:
+        payload["impact"] = impact
 
 
 def _defense_dict(level: int, steps: list, notes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -399,6 +441,8 @@ async def start_run(
         raise NotFoundError(f"Lab {lab_id} not found")
     if lab.surface != SURFACE:
         raise ValidationError(f"Lab {lab_id} is not an agent.runner lab")
+    if is_halted(user.id, lab_id):
+        raise ValidationError("This lab is halted. Reset the lab before starting another run.")
     settings = get_settings()
     level = resolve_agent_level(
         {"defense_level": defense_level},
@@ -417,17 +461,69 @@ async def start_run(
     )
     db.add(run)
     await db.flush()
+    if level >= 1:
+        gated = await defense_pipeline.process_input(goal, level, user.id, surface=SURFACE)
+        if not gated.allowed:
+            control_id = next(
+                (outcome.control_id for outcome in gated.outcomes if outcome.action == ControlAction.DENY),
+                None,
+            )
+            run.answer = gated.message
+            run.status = "failed"
+            run.terminated_reason = "input_denied"
+            run.completed_at = _now()
+            db.add(AgentStepRow(
+                run_id=run.id,
+                seq=0,
+                thought="",
+                action="input",
+                action_input={},
+                observation=gated.message,
+                decision=ControlAction.DENY.value,
+                control_id=control_id,
+            ))
+            await db.commit()
+            loaded = await _owned_run(db, run.id, user)
+            return await serialize_run(db, loaded)
+        goal = gated.message
     loop = await _build_loop(db, user, run, lab)
     result = await loop.run(goal)
     await _apply_result(db, run, result, user)
     await db.commit()
     loaded = await _owned_run(db, run.id, user)
-    return await serialize_run(db, loaded)
+    payload = await serialize_run(db, loaded)
+    await _maybe_apply_coupon_impact(db, loaded, payload)
+    return payload
 
 
 async def get_run(db: AsyncSession, user: User, run_id: str) -> dict[str, Any]:
     run = await _owned_run(db, run_id, user)
     return await serialize_run(db, run)
+
+
+async def cancel_runs_for_lab(db: AsyncSession, user: User, lab_id: str) -> int:
+    """Cancel this user's running or awaiting runs for one lab. Returns how many."""
+    result = await db.execute(
+        select(AgentRun)
+        .where(
+            AgentRun.user_id == user.id,
+            AgentRun.lab_id == lab_id,
+            AgentRun.status.in_(("running", "awaiting_approval")),
+        )
+        .options(selectinload(AgentRun.pending))
+    )
+    rows = list(result.scalars().all())
+    for run in rows:
+        run.status = "cancelled"
+        run.terminated_reason = "halted"
+        run.completed_at = _now()
+        for pending in list(run.pending or []):
+            if pending.status == "pending":
+                pending.status = "cancelled"
+                pending.resolved_at = _now()
+    if rows:
+        await db.commit()
+    return len(rows)
 
 
 async def cancel_run(db: AsyncSession, user: User, run_id: str) -> dict[str, Any]:
@@ -482,4 +578,7 @@ async def resolve_approval(
     result = await loop.run(run.goal)
     await _apply_result(db, run, result, user)
     await db.commit()
-    return await serialize_run(db, await _owned_run(db, run_id, user))
+    loaded = await _owned_run(db, run_id, user)
+    payload = await serialize_run(db, loaded)
+    await _maybe_apply_coupon_impact(db, loaded, payload)
+    return payload

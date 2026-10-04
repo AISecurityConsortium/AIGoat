@@ -177,6 +177,13 @@ def admin_tools(db: AsyncSession, user: User, lab_id: str = "", level: int = 0) 
     ))
     async def accept_handoff(payload: str, signature: str = "") -> dict[str, Any]:
         signed = bool((signature or "").strip())
+        if level >= 2 and not signed:
+            return {
+                "accepted": False,
+                "signed": False,
+                "payload": payload,
+                "note": "unsigned handoff rejected",
+            }
         return {
             "accepted": True,
             "signed": signed,
@@ -222,6 +229,7 @@ def admin_tools(db: AsyncSession, user: User, lab_id: str = "", level: int = 0) 
         name="run_shell",
         description="Ask the fake executor to run a shell command. It always refuses.",
         handler=run_shell,
+        requires_approval=True,
         parameter_schema={
             "type": "object",
             "properties": {"command": {"type": "string"}},

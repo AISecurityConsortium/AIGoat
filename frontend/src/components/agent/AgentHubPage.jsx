@@ -5,12 +5,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useLabs } from '../../hooks/useLabs';
 import { SectionCard, EmptyState } from '../common';
 import HubLabCard from '../common/HubLabCard';
-import { AGENT_ORDER, sortLabs } from '../../utils/labTeaching';
+import { AGENT_ORDER, LEVEL_POSTURE, sortLabs } from '../../utils/labTeaching';
 
 const AGENT_STEPS = [
   'The attack surface is the agent runner, and for Admin the same assistant.',
   'The exploit is the accepted tool call. Prose does not score.',
-  'Level 0 runs the call. Level 1 checks the allowlist. Level 2 also asks you to approve refunds and exports, and scans memory.',
+  `Level 0 is ${LEVEL_POSTURE[0]} Level 1 is ${LEVEL_POSTURE[1]} Level 2 is ${LEVEL_POSTURE[2]}`,
 ];
 
 const AgentHubPage = () => {
@@ -158,7 +158,7 @@ const AgentHubPage = () => {
         <Box id="agent-labs" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
           <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Do these in order</Typography>
           <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 0.5 }}>
-            A card that says "same idea" or "same note" is one attack seen again. ASI01 is the review version of the planted-ticket labs.
+            A card that says "same idea" or "same note" is one attack seen again. ASI01 plants a support ticket that hijacks the admin assistant's goal.
           </Typography>
           {labs.map((lab, index) => <HubLabCard key={lab.id} lab={lab} index={index + 1} />)}
         </Box>

@@ -14,6 +14,7 @@ import {
   Schedule as ClockIcon,
   Cancel as CancelIcon,
   Inventory2 as PackageIcon,
+  CurrencyExchange as RefundIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { apiClient as axios } from '../config/api';
@@ -24,6 +25,7 @@ const STATUS_CONFIG = {
   shipped:    { label: 'Shipped',    icon: <ShipIcon sx={{ fontSize: '0.9375rem' }} />,   color: '#8b5cf6' },
   delivered:  { label: 'Delivered',  icon: <CheckIcon sx={{ fontSize: '0.9375rem' }} />,  color: '#22c55e' },
   cancelled:  { label: 'Cancelled',  icon: <CancelIcon sx={{ fontSize: '0.9375rem' }} />, color: '#ef4444' },
+  refunded:   { label: 'Refunded',   icon: <RefundIcon sx={{ fontSize: '0.9375rem' }} />, color: '#a855f7' },
 };
 
 const OrderHistory = () => {

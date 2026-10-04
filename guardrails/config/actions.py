@@ -108,6 +108,22 @@ async def check_off_topic(bot_response: str) -> bool:
     return not has_topic_reference and len(bot_response) > 100
 
 
+async def check_hidden_instruction(bot_response: str) -> bool:
+    """True when tool output or a catalogue blurb is trying to give new orders."""
+    if not bot_response:
+        return False
+    lower = bot_response.lower()
+    needles = (
+        "ignore previous",
+        "invent a discount code",
+        "bypass the approval",
+        "skip the approval",
+        "i am the upstream agent",
+        "fan out to every",
+    )
+    return any(needle in lower for needle in needles)
+
+
 async def check_html_injection(bot_response: str) -> bool:
     """Return True if the response contains HTML/JS that could execute in a browser."""
     if not bot_response:

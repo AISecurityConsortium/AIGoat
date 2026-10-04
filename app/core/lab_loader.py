@@ -29,6 +29,12 @@ ALLOWED_SURFACES = frozenset(
 )
 
 
+class LabLevelSpec(BaseModel):
+    level: int
+    controls: tuple[str, ...] = ()
+    expected_outcome: str = ""
+
+
 class LabDefinition(BaseModel):
     id: str
     name: str
@@ -51,6 +57,11 @@ class LabDefinition(BaseModel):
     remediation: str = ""
     references: tuple[str, ...] = ()
     challenge_id: int | None = None
+    detection: str = ""
+    kill_switch: str = ""
+    reset: str = ""
+    hints: tuple[str, ...] = ()
+    levels: tuple[LabLevelSpec, ...] = ()
 
     @model_validator(mode="before")
     @classmethod
@@ -87,6 +98,32 @@ class LabDefinition(BaseModel):
         if expected:
             data["expected_by_level"] = {int(k): str(v) for k, v in expected.items()}
         return data
+
+    @model_validator(mode="after")
+    def _agentic_maturity_required(self) -> "LabDefinition":
+        if not str(self.primary_risk).startswith("owasp-agentic-2026:"):
+            return self
+        missing = [
+            name
+            for name, value in (
+                ("detection", self.detection),
+                ("kill_switch", self.kill_switch),
+                ("reset", self.reset),
+            )
+            if not str(value).strip()
+        ]
+        if len(self.hints) < 3:
+            missing.append("hints")
+        got = {row.level for row in self.levels}
+        if got != {0, 1, 2}:
+            missing.append("levels")
+        elif any(not row.expected_outcome.strip() for row in self.levels):
+            missing.append("levels.expected_outcome")
+        if missing:
+            raise ValueError(
+                f"lab {self.id}: owasp-agentic-2026 labs require {', '.join(missing)}"
+            )
+        return self
 
 
 class LabManifest(BaseModel):

@@ -95,6 +95,20 @@ def silent_telemetry(monkeypatch):
     monkeypatch.setattr(TelemetryLogger, "_write_to_db", _noop)
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def clear_lab_runtime_state():
+    """Undo in-memory halts and any synthetic lab impact between tests."""
+    from app.labs.containment import clear_all_halts
+    from app.labs.effects import clear_all_effects, restore_all_effects
+
+    clear_all_halts()
+    yield
+    async with TestingSessionLocal() as session:
+        await restore_all_effects(session)
+    clear_all_effects()
+    clear_all_halts()
+
+
 @pytest.fixture
 def fake_llm():
     """Install a deterministic LLM for the duration of one test.

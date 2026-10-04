@@ -26,6 +26,10 @@ rails:
       - check_context_manipulation
       - check_encoding_evasion
       - check_code_generation
+      - check_approval_bypass
+      - check_handoff_impersonation
+      - check_resource_abuse
+      - check_hidden_tool_instruction
       - handle_off_topic
   output:
     flows:
@@ -33,6 +37,7 @@ rails:
       - check_system_prompt_leak
       - check_hallucination
       - check_html_output
+      - check_tool_output_instruction
 
 sample_conversation: |
   user "Hello"

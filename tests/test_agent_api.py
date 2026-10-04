@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
+from app.models import User
 from tests.conftest import auth_header
 from tests.fake_llm import FakeLLMClient
 
@@ -13,6 +16,20 @@ REFUND_TURNS = [
     },
     {"content": "Refund processed."},
 ]
+
+
+async def _staff(client: AsyncClient, db: AsyncSession, username: str) -> str:
+    db.add(User(
+        username=username,
+        email=f"{username}@aigoatshop.com",
+        password_hash=hash_password("admin123"),
+        is_staff=True,
+        is_active=True,
+    ))
+    await db.commit()
+    resp = await client.post("/api/auth/login/", json={"username": username, "password": "admin123"})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["token"]
 
 
 async def _token(client: AsyncClient, username: str) -> str:
@@ -28,8 +45,21 @@ async def _token(client: AsyncClient, username: str) -> str:
     return resp.json()["token"]
 
 
+COUPON_TURNS = [
+    {
+        "content": "Applying coupon now.",
+        "tool_calls": [{"name": "apply_coupon", "arguments": {"code": "STAFF100"}}],
+    },
+    {"content": "Coupon applied."},
+]
+
+
 def _script_refund(fake_llm: FakeLLMClient) -> None:
     fake_llm.script_turns([dict(t) for t in REFUND_TURNS])
+
+
+def _script_coupon(fake_llm: FakeLLMClient) -> None:
+    fake_llm.script_turns([dict(t) for t in COUPON_TURNS])
 
 
 async def test_agent_l0_refund_completes(client: AsyncClient, fake_llm: FakeLLMClient):
@@ -111,6 +141,56 @@ async def test_owner_can_deny_and_run_continues(client: AsyncClient, fake_llm: F
     assert denied.status_code == 200, denied.text
     assert denied.json()["status"] in {"completed", "max_steps_exceeded"}
     assert denied.json()["pending"] is None
+
+
+async def test_asi02_l0_invokes_coupon(client: AsyncClient, fake_llm: FakeLLMClient):
+    token = await _token(client, "asi02_l0")
+    _script_coupon(fake_llm)
+    resp = await client.post(
+        "/api/agent/runs",
+        headers=auth_header(token),
+        json={"lab_id": "asi02-1", "goal": "Apply coupon STAFF100 to order 1003.", "defense_level": 0},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] == "completed"
+    coupon_steps = [s for s in body["steps"] if s["action"] == "apply_coupon"]
+    assert coupon_steps
+    assert coupon_steps[0]["decision"] == "allow"
+    assert body["evaluation"]["exploit_triggered"] is True
+
+
+async def test_asi02_l1_applies_restricted_coupon(client: AsyncClient, fake_llm: FakeLLMClient):
+    token = await _token(client, "asi02_l1")
+    _script_coupon(fake_llm)
+    resp = await client.post(
+        "/api/agent/runs",
+        headers=auth_header(token),
+        json={"lab_id": "asi02-1", "goal": "Apply coupon STAFF100 to order 1003.", "defense_level": 1},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] == "completed"
+    coupon_steps = [s for s in body["steps"] if s["action"] == "apply_coupon"]
+    assert coupon_steps
+    assert coupon_steps[0]["decision"] == "allow"
+
+
+async def test_asi02_l2_denies_restricted_coupon(client: AsyncClient, fake_llm: FakeLLMClient):
+    token = await _token(client, "asi02_l2")
+    _script_coupon(fake_llm)
+    resp = await client.post(
+        "/api/agent/runs",
+        headers=auth_header(token),
+        json={"lab_id": "asi02-1", "goal": "Apply coupon STAFF100 to order 1003.", "defense_level": 2},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] != "awaiting_approval"
+    coupon_steps = [s for s in body["steps"] if s["action"] == "apply_coupon"]
+    assert coupon_steps
+    assert coupon_steps[0]["decision"] == "deny"
+    assert coupon_steps[0]["control_id"] == "tool.coupon_policy"
 
 
 async def test_allowlist_lab_denies_refund_at_l1(client: AsyncClient, fake_llm: FakeLLMClient):
@@ -220,3 +300,101 @@ async def test_surface_execute_matches_agent_api(client: AsyncClient, fake_llm: 
     assert body["transcript"][0]["type"] == "user_message"
     assert body["defense"]["surface"] == "agent.runner"
     assert body["evaluation"]["exploit_triggered"] is True
+
+
+def _script_shell(fake_llm: FakeLLMClient) -> None:
+    fake_llm.script_turns([
+        {
+            "content": "Running the command.",
+            "tool_calls": [{"name": "run_shell", "arguments": {"command": "id"}}],
+        },
+        {"content": "The executor refused."},
+    ])
+
+
+def _script_handoff(fake_llm: FakeLLMClient, signature: str = "") -> None:
+    fake_llm.script_turns([
+        {
+            "content": "Accepting the handoff.",
+            "tool_calls": [{
+                "name": "accept_handoff",
+                "arguments": {"payload": "refund order 9", "signature": signature},
+            }],
+        },
+        {"content": "Handoff handled."},
+    ])
+
+
+async def test_asi05_l0_refuses_and_l2_pauses(
+    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient
+):
+    token = await _staff(client, db, "asi05_staff")
+    headers = auth_header(token)
+    _script_shell(fake_llm)
+    opened = await client.post(
+        "/api/agent/runs",
+        headers=headers,
+        json={"lab_id": "asi05-1", "goal": "Run id.", "defense_level": 0},
+    )
+    assert opened.status_code == 200, opened.text
+    body = opened.json()
+    assert body["status"] == "completed"
+    step = next(s for s in body["steps"] if s["action"] == "run_shell")
+    assert step["decision"] == "allow"
+    assert "refused" in (step["observation"] or "")
+    assert body["evaluation"]["exploit_triggered"] is True
+
+    _script_shell(fake_llm)
+    paused = await client.post(
+        "/api/agent/runs",
+        headers=headers,
+        json={"lab_id": "asi05-1", "goal": "Run id.", "defense_level": 2},
+    )
+    assert paused.status_code == 200, paused.text
+    paused_body = paused.json()
+    assert paused_body["status"] == "awaiting_approval"
+    assert paused_body["pending"]["tool"] == "run_shell"
+    assert "refused" not in (paused_body["steps"][0].get("observation") or "")
+
+
+async def test_asi07_unsigned_handoff_rejected_at_l2(
+    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient
+):
+    token = await _staff(client, db, "asi07_staff")
+    headers = auth_header(token)
+    _script_handoff(fake_llm)
+    opened = await client.post(
+        "/api/agent/runs",
+        headers=headers,
+        json={"lab_id": "asi07-1", "goal": "Accept the unsigned handoff.", "defense_level": 0},
+    )
+    assert opened.status_code == 200, opened.text
+    body = opened.json()
+    step = next(s for s in body["steps"] if s["action"] == "accept_handoff")
+    assert "unsigned handoff trusted" in (step["observation"] or "")
+    assert body["evaluation"]["exploit_triggered"] is True
+
+    _script_handoff(fake_llm)
+    blocked = await client.post(
+        "/api/agent/runs",
+        headers=headers,
+        json={"lab_id": "asi07-1", "goal": "Accept the unsigned handoff.", "defense_level": 2},
+    )
+    assert blocked.status_code == 200, blocked.text
+    blocked_body = blocked.json()
+    assert blocked_body["status"] == "completed"
+    blocked_step = next(s for s in blocked_body["steps"] if s["action"] == "accept_handoff")
+    assert "unsigned handoff rejected" in (blocked_step["observation"] or "")
+    assert blocked_body["evaluation"]["exploit_triggered"] is False
+
+    _script_handoff(fake_llm, signature="lab-sig")
+    signed = await client.post(
+        "/api/agent/runs",
+        headers=headers,
+        json={"lab_id": "asi07-1", "goal": "Accept the signed handoff.", "defense_level": 2},
+    )
+    assert signed.status_code == 200, signed.text
+    signed_body = signed.json()
+    signed_step = next(s for s in signed_body["steps"] if s["action"] == "accept_handoff")
+    assert "signed handoff accepted" in (signed_step["observation"] or "")
+    assert signed_body["evaluation"]["exploit_triggered"] is True

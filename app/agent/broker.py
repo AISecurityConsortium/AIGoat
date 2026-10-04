@@ -6,10 +6,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.agent.schema import as_json_schema, validate_and_repair
-from app.defense.chain import run_chain
+from app.defense.chain import ChainResult, run_chain
 from app.defense.control import ControlAction, DefenseDecision, DefenseStage, get_control
 from app.defense.profiles import resolve_profile
+from app.defense.telemetry import TelemetryLogger
 from app.services.tool_registry import ToolRegistry
+
+_telemetry = TelemetryLogger()
 
 
 @dataclass
@@ -114,3 +117,43 @@ class IntentGate:
             invoked=True,
             outcomes=chain.outcomes,
         )
+
+    async def review_tool_result(self, observation: str) -> str:
+        """Redact untrusted instructions before the result re-enters the planner."""
+        if self.level <= 0 or not observation:
+            return observation
+        profile = resolve_profile(self.surface, self.level)
+        controls = [
+            cid for cid in profile.controls
+            if DefenseStage.TOOL_RESULT in get_control(cid).applies_to
+        ]
+        if not controls:
+            return observation
+        decision = DefenseDecision(
+            surface=self.surface,
+            stage=DefenseStage.TOOL_RESULT,
+            payload=observation,
+            level=self.level,
+            user_id=self.user_id,
+        )
+        chain = await run_chain(controls, decision)
+        await _log_chain(self.user_id, self.level, observation, chain)
+        return chain.final.payload
+
+
+async def _log_chain(user_id: int | None, level: int, message: str, chain: ChainResult) -> None:
+    action = "allowed"
+    if chain.final.action == ControlAction.DENY:
+        action = "blocked"
+    elif chain.final.action == ControlAction.TRANSFORM or chain.final.payload != message:
+        action = "transformed"
+    elif chain.final.action == ControlAction.REQUIRE_APPROVAL:
+        action = "approval"
+    await _telemetry.log(
+        user_id=user_id,
+        level=level,
+        message=message,
+        intent=None,
+        action=action,
+        reason=chain.final.reason,
+    )

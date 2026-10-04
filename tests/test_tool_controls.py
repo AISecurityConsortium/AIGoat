@@ -68,3 +68,43 @@ async def test_approval_allows_when_not_required():
     )
     outcome = await get_control("tool.approval").evaluate(decision)
     assert outcome.action is ControlAction.ALLOW
+
+
+async def test_coupon_policy_denies_staff_coupon():
+    ensure_registered()
+    decision = DefenseDecision(
+        surface="agent.runner",
+        stage=DefenseStage.TOOL_CALL,
+        payload='{"tool": "apply_coupon"}',
+        level=2,
+        context={"tool": "apply_coupon", "arguments": {"code": "STAFF100"}},
+    )
+    outcome = await get_control("tool.coupon_policy").evaluate(decision)
+    assert outcome.action is ControlAction.DENY
+    assert outcome.rejection_key == "coupon_restricted"
+
+
+async def test_coupon_policy_allows_customer_coupon():
+    ensure_registered()
+    decision = DefenseDecision(
+        surface="agent.runner",
+        stage=DefenseStage.TOOL_CALL,
+        payload='{"tool": "apply_coupon"}',
+        level=2,
+        context={"tool": "apply_coupon", "arguments": {"code": "WELCOME20"}},
+    )
+    outcome = await get_control("tool.coupon_policy").evaluate(decision)
+    assert outcome.action is ControlAction.ALLOW
+
+
+async def test_coupon_policy_ignores_other_tools():
+    ensure_registered()
+    decision = DefenseDecision(
+        surface="agent.runner",
+        stage=DefenseStage.TOOL_CALL,
+        payload='{"tool": "lookup_order"}',
+        level=2,
+        context={"tool": "lookup_order", "arguments": {"order_id": 1003}},
+    )
+    outcome = await get_control("tool.coupon_policy").evaluate(decision)
+    assert outcome.action is ControlAction.ALLOW

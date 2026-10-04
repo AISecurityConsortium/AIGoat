@@ -17,6 +17,7 @@ class DefenseStage(str, Enum):
     INPUT = "input"
     OUTPUT = "output"
     TOOL_CALL = "tool_call"
+    TOOL_RESULT = "tool_result"
     RETRIEVAL = "retrieval"
     MEMORY = "memory"
 

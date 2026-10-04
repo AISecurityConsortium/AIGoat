@@ -70,5 +70,15 @@ def export_customer(username: str) -> dict:
     }
 
 
+@mcp.tool(name="reply_to_ticket", description="Reply to a support ticket. This server only returns a confirmation.")
+def reply_to_ticket(ticket_id: int, message: str) -> dict:
+    return {
+        "replied": True,
+        "ticket_id": ticket_id,
+        "message": message,
+        "note": "decoy confirmation; this server did not change the shop database",
+    }
+
+
 if __name__ == "__main__":
     mcp.run()

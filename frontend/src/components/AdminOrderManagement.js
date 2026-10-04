@@ -42,6 +42,7 @@ import {
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
   Warning as WarningIcon,
+  CurrencyExchange as RefundIcon,
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
 import { formatUsd } from '../utils/money';
@@ -55,6 +56,7 @@ const AdminOrderManagement = () => {
   const [orderDialog, setOrderDialog] = useState(false);
   const [statusDialog, setStatusDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [refundDialog, setRefundDialog] = useState(false);
   const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
@@ -92,6 +94,35 @@ const AdminOrderManagement = () => {
   const handleDeleteOrder = (order) => {
     setSelectedOrder(order);
     setDeleteDialog(true);
+  };
+
+  const handleRefundOrder = (order) => {
+    setSelectedOrder(order);
+    setRefundDialog(true);
+  };
+
+  const confirmRefund = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `/api/admin/orders/${selectedOrder.id}/refund/`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setSuccess(response.data.message);
+      setRefundDialog(false);
+      fetchOrders(); // Refresh orders
+
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error refunding order:', error);
+      setError(error.response?.data?.error || 'Failed to refund order');
+    }
   };
 
   const confirmStatusUpdate = async () => {
@@ -150,6 +181,7 @@ const AdminOrderManagement = () => {
       case 'shipped': return 'primary';
       case 'delivered': return 'success';
       case 'cancelled': return 'error';
+      case 'refunded': return 'secondary';
       default: return 'default';
     }
   };
@@ -161,6 +193,7 @@ const AdminOrderManagement = () => {
       case 'shipped': return <ShippingIcon />;
       case 'delivered': return <DeliveredIcon />;
       case 'cancelled': return <CancelledIcon />;
+      case 'refunded': return <RefundIcon />;
       default: return <OrderIcon />;
     }
   };
@@ -320,6 +353,17 @@ const AdminOrderManagement = () => {
                             <EditIcon />
                           </IconButton>
                         </Tooltip>
+                        {order.status !== 'refunded' && (
+                          <Tooltip title="Refund Order">
+                            <IconButton
+                              color="warning"
+                              onClick={() => handleRefundOrder(order)}
+                              size="small"
+                            >
+                              <RefundIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {order.status !== 'delivered' && (
                           <Tooltip title="Delete Order">
                             <IconButton
@@ -506,6 +550,7 @@ const AdminOrderManagement = () => {
               <MenuItem value="shipped">Shipped</MenuItem>
               <MenuItem value="delivered">Delivered</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>
+              <MenuItem value="refunded">Refunded</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
@@ -513,6 +558,31 @@ const AdminOrderManagement = () => {
           <Button onClick={() => setStatusDialog(false)}>Cancel</Button>
           <Button onClick={confirmStatusUpdate} variant="contained" color="primary">
             Update Status
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Refund Confirmation Dialog */}
+      <Dialog open={refundDialog} onClose={() => setRefundDialog(false)}>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <RefundIcon sx={{ color: 'warning.main', mr: 1 }} />
+            Confirm Refund
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Refund order <strong>{selectedOrder?.order_id}</strong> for{' '}
+            <strong>{formatCurrency(selectedOrder?.final_amount || selectedOrder?.total_amount)}</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            The order will be marked as refunded and the amount returned to the customer.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRefundDialog(false)}>Cancel</Button>
+          <Button onClick={confirmRefund} color="warning" variant="contained">
+            Refund Order
           </Button>
         </DialogActions>
       </Dialog>

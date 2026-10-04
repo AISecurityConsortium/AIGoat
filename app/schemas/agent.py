@@ -36,6 +36,7 @@ class AgentRunOut(BaseModel):
     defense: dict[str, Any] = Field(default_factory=dict)
     evaluation: dict[str, Any] | None = None
     memory: list[dict[str, Any]] = Field(default_factory=list)
+    impact: dict[str, Any] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

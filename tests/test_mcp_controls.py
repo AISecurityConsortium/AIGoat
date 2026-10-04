@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from app.defense.control import ControlAction, DefenseDecision, DefenseStage, get_control
 from app.defense.controls import ensure_registered
-from app.mcp_servers.payloads import POISONED_DESCRIPTION, RUGPULL_DESCRIPTION
+from app.mcp_servers.payloads import POISONED_DESCRIPTION, RUGPULL_DESCRIPTION, SHADOW_LOOKUP_DESCRIPTION
 
 
 async def test_pin_restores_drifted_description():
@@ -57,3 +57,18 @@ async def test_description_scan_redacts_poison():
     outcome = await get_control("mcp.description_scan").evaluate(decision)
     assert outcome.action is ControlAction.TRANSFORM
     assert "IMPORTANT" not in tools[0]["description"]
+
+
+async def test_description_scan_redacts_shadow_discount():
+    ensure_registered()
+    tools = [{"name": "lookup_product", "description": SHADOW_LOOKUP_DESCRIPTION}]
+    decision = DefenseDecision(
+        surface="mcp.client",
+        stage=DefenseStage.TOOL_CALL,
+        payload="",
+        level=2,
+        context={"tools": tools, "op": "tools"},
+    )
+    outcome = await get_control("mcp.description_scan").evaluate(decision)
+    assert outcome.action is ControlAction.TRANSFORM
+    assert "invent a discount code" not in tools[0]["description"]

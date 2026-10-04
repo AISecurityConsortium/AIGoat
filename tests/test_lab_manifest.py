@@ -293,7 +293,9 @@ class TestMigratedLabContent:
         assert set(_P9_MCP_LAB_IDS) <= ids
         assert set(_D5_MEMORY_LAB_IDS) <= ids
         assert "llm03-3" in ids
-        assert len(ids) == 42
+        assert "asi02-1" in ids
+        assert "asi04-1" in ids
+        assert len(ids) == 44
 
     def test_original_ids_still_resolve(self):
         for lab_id in _ORIGINAL_LAB_IDS:
@@ -375,3 +377,19 @@ class TestLlm2026OnlyMapping:
                 assert lab.primary_risk.startswith("owasp-mcp-2025:"), lab.id
             elif lab.id.startswith("asi"):
                 assert lab.primary_risk.startswith("owasp-agentic-2026:"), lab.id
+
+    def test_agentic_primary_labs_declare_maturity(self):
+        for lab in get_all_labs():
+            if not lab.primary_risk.startswith("owasp-agentic-2026:"):
+                continue
+            assert lab.detection and lab.kill_switch and lab.reset, lab.id
+            assert len(lab.hints) >= 3, lab.id
+            assert {row.level for row in lab.levels} == {0, 1, 2}, lab.id
+
+    def test_every_asi_risk_has_a_primary_lab(self):
+        for n in range(1, 11):
+            risk = f"owasp-agentic-2026:ASI{n:02d}"
+            matches = [lab for lab in get_all_labs() if lab.primary_risk == risk]
+            assert matches, risk
+            for lab in matches:
+                assert set(lab.expected_by_level) == {0, 1, 2}, lab.id
