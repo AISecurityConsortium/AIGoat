@@ -30,7 +30,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Security as SecurityIcon,
   Storage as KBIcon,
   SmartToy as BotIcon,
   Warning as WarningIcon,
@@ -313,12 +312,9 @@ const KnowledgeBaseManagement = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <SecurityIcon sx={{ fontSize: 36, mr: 1.5, color: 'primary.main' }} />
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-          Knowledge Base
-        </Typography>
-      </Box>
+      <Typography variant="h4" component="h1" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 1 }}>
+        Knowledge Base
+      </Typography>
       <Typography sx={{ color: 'text.secondary', fontSize: '1rem', mb: 3 }}>
         RAG (Retrieval-Augmented Generation) attack surface for AI Goat Shop
       </Typography>

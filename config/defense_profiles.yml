@@ -118,13 +118,17 @@ profiles:
     1:
       intent: >
         Tool descriptions that a lab has pinned are restored if a later
-        tools/list drifts (rug-pull). Output moderation still runs on tool results.
-      controls: ["mcp.tool_pin", "output.moderate"]
+        tools/list drifts (rug-pull). Calls a lab marks as blocked are denied
+        before the server runs. Output moderation still runs on tool results.
+      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "output.moderate"]
     2:
       intent: >
         Everything Level 1 does, plus descriptions that carry instruction-override
-        phrasing are redacted before they are shown as model-facing text.
-      controls: ["mcp.tool_pin", "mcp.description_scan", "output.moderate"]
+        phrasing are redacted before they are shown as model-facing text, and
+        decoy tokens in tool results are redacted from the reply the model sees.
+        A lab that pins an input contract also refuses calls carrying an argument
+        that contract does not list, before the server runs.
+      controls: ["mcp.tool_allowlist", "mcp.tool_pin", "mcp.schema_pin", "mcp.description_scan", "mcp.result_scan", "output.moderate"]
 
   mcp.host:
     0:
@@ -143,13 +147,16 @@ profiles:
       intent: >
         Guardrailed. Everything Level 1 does, plus NeMo rails on the goal, on
         each tool result, and on the final answer. Poisoned descriptions are
-        redacted, and refund or export calls pause until the admin approves them.
+        redacted, a tool pinned to one integration is refused when another
+        integration would serve it, and refund or export calls pause until
+        the admin approves them.
       controls:
         - "input.validate"
         - "intent.classify"
         - "rails.nemo"
         - "mcp.tool_pin"
         - "mcp.description_scan"
+        - "mcp.origin_pin"
         - "tool.approval"
         - "tool_result.scan"
         - "output.moderate"

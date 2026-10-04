@@ -18,6 +18,7 @@ class ChatTurn:
 
     content: str
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    assistant_message: dict[str, Any] | None = None
 
 
 @runtime_checkable

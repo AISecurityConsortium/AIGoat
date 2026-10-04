@@ -199,7 +199,7 @@ const AdminDashboard = () => {
             startIcon={<AIIcon />}
             onClick={() => navigate('/admin/assistant')}
           >
-            Assistant
+            Admin Assistant
           </Button>
           <Button
             variant="outlined"

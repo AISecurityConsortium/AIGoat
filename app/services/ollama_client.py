@@ -252,7 +252,15 @@ class OllamaClient:
                 name = fn.get("name") or raw.get("name")
                 if name:
                     tool_calls.append({"name": str(name), "arguments": args})
-            return ChatTurn(content=content, tool_calls=tool_calls)
+            assistant_message = None
+            if tool_calls and isinstance(msg, dict):
+                assistant_message = dict(msg)
+                assistant_message.setdefault("role", "assistant")
+            return ChatTurn(
+                content=content,
+                tool_calls=tool_calls,
+                assistant_message=assistant_message,
+            )
         except Exception as e:
             logger.error("Ollama chat failed: %s", e)
             return ChatTurn(content="", tool_calls=[])

@@ -6,7 +6,7 @@ from app.models.challenge import Challenge, ChallengeAttempt
 from app.models.chat_history import ChatMessage
 from app.models.coupon import Coupon, CouponUsage
 from app.models.knowledge import KnowledgeBaseEntry
-from app.models.lab import LabSession
+from app.models.lab import LabEvent, LabSession
 from app.models.order import Order, OrderItem, Payment
 from app.models.product import Product
 from app.models.review import Review
@@ -19,6 +19,6 @@ __all__ = [
     "Order", "OrderItem", "Payment", "Coupon", "CouponUsage", "Review",
     "SupportTicket", "SupportMessage",
     "Challenge", "ChallengeAttempt", "ChatMessage", "KnowledgeBaseEntry",
-    "LabSession", "DefenseTelemetry",
+    "LabSession", "LabEvent", "DefenseTelemetry",
     "AgentRun", "AgentStepRow", "PendingApproval", "AgentMemory",
 ]

@@ -42,8 +42,8 @@ risks:
     title: "Agentic Supply Chain Vulnerabilities"
     summary: "Poisoned tool descriptors, typosquatted servers, and untrusted skill packs enter the agent the same way a dependency enters an app."
     description: "The agent does not need to be jailbroken if the catalogue it loads is already hostile. AIGoat uses local fake registries and decoy packages so learners can see a bad descriptor before any network call is made."
-    writeup: "Practice this on asi04-1. The admin assistant loads shadow_shop for that turn, and lookup_product tells the model to invent a discount code. Level 1 restores a pinned official description. Level 2 also scans the description and the tool result. MCP04 and MCP09 are the same supply-chain idea on the MCP page. There is no separate package installer."
-    attack_surfaces: ["mcp.host"]
+    writeup: "Practice this on asi04-1. The admin assistant loads shadow_shop for that turn, and lookup_product tells the model to invent a discount code. Level 1 restores a pinned official description. Level 2 also scans the description and the tool result. MCP04 and MCP09 are the same supply-chain idea on the MCP page: a lookalike server or a poisoned tool description is loaded because the client trusts the catalogue. There is no separate package installer."
+    attack_surfaces: ["mcp.host", "mcp.client"]
     related:
       - "owasp-llm-2026:LLM04"
   - code: "ASI05"

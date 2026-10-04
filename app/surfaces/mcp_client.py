@@ -26,12 +26,14 @@ class McpClientSurface(TargetSurface):
         }
 
     async def execute(self, req: SurfaceRequest) -> SurfaceResult:
+        from app.mcp.progress import record_lab_result
         from app.mcp.service import execute_mcp
 
         data = dict(req.input or {})
         if not data.get("server_id"):
             raise ValidationError("server_id is required")
-        payload = await execute_mcp(user=req.user, lab_id=req.lab_id, data=data)
+        payload = await execute_mcp(user=req.user, lab_id=req.lab_id, data=data, db=req.db)
+        await record_lab_result(req.db, req.user, req.lab_id, payload.get("evaluation"))
         transcript = Transcript()
         skip = {"type", "seq", "ts", "raw", "transformed"}
         for event in payload.get("transcript") or []:

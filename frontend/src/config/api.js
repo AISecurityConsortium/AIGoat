@@ -90,6 +90,11 @@ const API_CONFIG = {
     LAB_DETAIL: (id) => `/api/labs/${id}`,
     LAB_START: (id) => `/api/labs/${id}/start`,
     LAB_RESET: (id) => `/api/labs/${id}/reset`,
+    LAB_PROGRESS: (id) => `/api/labs/${id}/progress`,
+    LAB_HINT: (id) => `/api/labs/${id}/hints/next`,
+    LAB_SUBMIT: (id) => `/api/labs/${id}/submit`,
+    LAB_SOLUTION: (id) => `/api/labs/${id}/solution`,
+    LAB_FIXTURE: (id) => `/api/labs/${id}/fixture`,
 
     // Surfaces
     SURFACES: '/api/surfaces/',

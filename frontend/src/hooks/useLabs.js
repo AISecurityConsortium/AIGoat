@@ -10,6 +10,11 @@ const authHeaders = () => {
 const labCache = new Map();
 const labInflight = new Map();
 
+/** Drop cached lab lists so completion state is re-read after a reset or completion. */
+export const invalidateLabsCache = () => {
+  labCache.clear();
+};
+
 /**
  * Fetch labs from GET /api/labs/ with optional filters.
  * @param {{framework?: string, risk?: string, surface?: string, difficulty?: string, status?: string}} [filters]

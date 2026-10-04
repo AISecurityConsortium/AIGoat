@@ -13,7 +13,7 @@ import {
   Lock as LockIcon, Send as SendIcon,
   ExpandMore as ExpandIcon, ExpandLess as CollapseIcon,
   Storage as KBIcon, ArrowBack as BackIcon,
-  Security as ShieldIcon, Terminal as TerminalIcon,
+  Terminal as TerminalIcon,
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
@@ -426,12 +426,9 @@ const ChallengePage = () => {
     <Box sx={{ bgcolor: 'background.default', minHeight: 'calc(100vh - 56px)', py: 4 }}>
       <Container maxWidth="lg">
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-          <ShieldIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-          <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em' }}>
-            Security Challenges
-          </Typography>
-        </Box>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em', mb: 0.5 }}>
+          Security Challenges
+        </Typography>
         <Typography sx={{ color: muted, mb: 3.5, fontSize: '1rem', maxWidth: 600 }}>
           Exploit LLM vulnerabilities across 9 challenges. Each challenge has a dedicated chat environment. Craft your attack, earn the flag, and submit it.
         </Typography>

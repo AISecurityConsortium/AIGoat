@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -37,6 +37,8 @@ import { SearchProvider } from './contexts/SearchContext';
 import { ChatProvider } from './contexts/ChatContext';
 import { DefenseProvider } from './contexts/DefenseContext';
 import { useFeatureFlag } from './hooks/useFeatureFlags';
+import TrainingOffer from './components/common/TrainingOffer';
+import './liquidGlass.css';
 
 const GITHUB_REPO = 'AISecurityConsortium/AIGoat';
 
@@ -112,6 +114,9 @@ const Footer = () => {
 
       {/* Bottom bar */}
       <Box sx={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)'}`, py: 1.25, px: 3, textAlign: 'center' }}>
+        <Box sx={{ mb: 0.5, color: text }}>
+          <TrainingOffer variant="footer" />
+        </Box>
         <Typography sx={{ fontSize: '0.875rem', color: '#FFFFFF', letterSpacing: '0.02em', fontWeight: 500 }}>
           &copy; {new Date().getFullYear()} AI Goat &mdash; Deliberately vulnerable. For educational purposes only.
         </Typography>
@@ -129,7 +134,12 @@ const DynamicKnowledgeBase = () => {
 };
 
 function AppContent() {
-  const { theme } = useThemeMode();
+  const { theme, liquidGlass, mode } = useThemeMode();
+  useEffect(() => {
+    document.body.classList.toggle('liquid-glass', liquidGlass);
+    document.body.dataset.glassMode = mode;
+    return () => document.body.classList.remove('liquid-glass');
+  }, [liquidGlass, mode]);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

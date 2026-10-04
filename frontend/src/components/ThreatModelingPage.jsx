@@ -5,7 +5,6 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
-  AccountTree as ThreatModelIcon,
   ArrowForward as ArrowForwardIcon,
   ExpandMore as ExpandMoreIcon,
   OpenInNew as ExternalIcon,
@@ -112,7 +111,7 @@ const EXAMPLE_STEPS = [
     labs: [
       { id: 'llm08-1', label: 'llm08-1 Hidden context' },
       { id: 'asi06-1', label: 'asi06-1 Memory poison' },
-      { id: 'mcp09-1', label: 'mcp09-1 Shadow server' },
+      { id: 'mcp09-1', label: 'mcp09-1 Identity lab' },
     ],
   },
   {
@@ -135,7 +134,7 @@ const EXAMPLE_STEPS = [
 ];
 
 const STRIDE_ROWS = [
-  { threat: 'Spoofing', where: 'shadow server claims to be shop_catalog', lab: 'mcp09-1' },
+  { threat: 'Spoofing', where: 'A second catalog package claims to be the Shop Catalog Server', lab: 'mcp09-1' },
   { threat: 'Tampering', where: 'poisoned tool description', lab: 'mcp03-1' },
   { threat: 'Repudiation', where: 'refund at L0 with no approval row', lab: 'llm03-1' },
   { threat: 'Disclosure', where: 'hidden system prompt', lab: 'llm08-1' },
@@ -215,7 +214,6 @@ const ThreatModelingPage = () => {
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: { xs: 3, md: 5 } }}>
       <Container maxWidth="md">
         <PageHeader
-          icon={<ThreatModelIcon sx={{ fontSize: 36, color: 'primary.main' }} />}
           title="Threat modeling for LLM systems"
           subtitle="Start with one refund on the AIGoat shop. Then use six models when you need a different question. Titles are upstream labels. The notes are AIGoat teaching commentary."
           actions={(
@@ -322,6 +320,7 @@ const ThreatModelingPage = () => {
                   jumpTo(model.id);
                 }
               }}
+              className="tm-pane"
               sx={{
                 p: 1.5,
                 borderRadius: '10px',

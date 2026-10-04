@@ -15,6 +15,28 @@ from app.core.lab_loader import (
 )
 
 
+def _completion_words(node) -> set[str]:
+    words: set[str] = set()
+
+    def walk(value) -> None:
+        if isinstance(value, dict):
+            for key in ("tool", "server"):
+                item = value.get(key)
+                if isinstance(item, str) and item:
+                    words.add(item.casefold())
+            shown = value.get("shown_contains")
+            if isinstance(shown, dict) and isinstance(shown.get("tool"), str):
+                words.add(shown["tool"].casefold())
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(node)
+    return words
+
+
 class TestLabDefinition:
     def test_required_fields(self):
         lab = LabDefinition(id="test-1", name="Test Lab", owasp="LLM01")
@@ -295,7 +317,7 @@ class TestMigratedLabContent:
         assert "llm03-3" in ids
         assert "asi02-1" in ids
         assert "asi04-1" in ids
-        assert len(ids) == 44
+        assert len(ids) == 45
 
     def test_original_ids_still_resolve(self):
         for lab_id in _ORIGINAL_LAB_IDS:
@@ -321,8 +343,25 @@ class TestMigratedLabContent:
 
     def test_every_lab_has_objective_and_payloads(self):
         for lab in get_all_labs():
+            if lab.completion:
+                assert lab.briefing.strip(), lab.id
+                assert lab.solution, lab.id
+                continue
             assert lab.objective.strip(), lab.id
             assert lab.example_payloads, lab.id
+
+    def test_migrated_opening_does_not_name_the_scored_action(self):
+        for lab in get_all_labs():
+            if not lab.completion:
+                continue
+            banned = _completion_words(lab.completion)
+            labels = [str(stage.get("label") or "") for stage in lab.completion.get("stages") or []]
+            blob = " ".join([lab.briefing, *lab.hints[:3], *labels]).casefold()
+            for word in banned:
+                assert word not in blob, (lab.id, word)
+            assert len(lab.hints) == 5, lab.id
+            if lab.ui.get("autoplay") is False:
+                assert lab.design_note.get("hidden_because"), lab.id
 
     def test_every_lab_has_three_expected_levels(self):
         for lab in get_all_labs():

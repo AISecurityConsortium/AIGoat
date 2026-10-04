@@ -1,0 +1,114 @@
+/* App-wide liquid glass. Active only while body has .liquid-glass.
+   Turn it off from the header control, which stores aigoat_liquid_glass=0. */
+
+body.liquid-glass {
+  background-color: #0b1020 !important;
+  background-image:
+    radial-gradient(ellipse 55% 42% at 8% -4%, rgba(99, 102, 241, 0.55), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 96% 6%, rgba(56, 189, 248, 0.4), transparent 58%),
+    radial-gradient(ellipse 48% 40% at 78% 92%, rgba(244, 114, 182, 0.32), transparent 60%),
+    radial-gradient(ellipse 40% 32% at 12% 96%, rgba(52, 211, 153, 0.28), transparent 58%) !important;
+  background-attachment: fixed !important;
+}
+
+body.liquid-glass[data-glass-mode='light'] {
+  background-color: #eef2ff !important;
+  background-image:
+    radial-gradient(ellipse 55% 42% at 8% -4%, rgba(99, 102, 241, 0.35), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 96% 6%, rgba(56, 189, 248, 0.32), transparent 58%),
+    radial-gradient(ellipse 48% 40% at 78% 92%, rgba(244, 114, 182, 0.28), transparent 60%),
+    radial-gradient(ellipse 40% 32% at 12% 96%, rgba(52, 211, 153, 0.24), transparent 58%) !important;
+}
+
+body.liquid-glass .MuiPaper-root,
+body.liquid-glass .MuiAccordion-root,
+body.liquid-glass .MuiCard-root,
+body.liquid-glass .MuiAlert-root,
+body.liquid-glass .tm-pane {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 32px rgba(0, 0, 0, 0.28) !important;
+  border-radius: 22px !important;
+}
+
+body.liquid-glass[data-glass-mode='light'] .MuiPaper-root,
+body.liquid-glass[data-glass-mode='light'] .MuiAccordion-root,
+body.liquid-glass[data-glass-mode='light'] .MuiCard-root,
+body.liquid-glass[data-glass-mode='light'] .MuiAlert-root,
+body.liquid-glass[data-glass-mode='light'] .tm-pane {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.38)) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.liquid-glass .MuiAppBar-root {
+  background: rgba(11, 16, 32, 0.55) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+body.liquid-glass[data-glass-mode='light'] .MuiAppBar-root {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body.liquid-glass .MuiDrawer-paper {
+  border-radius: 0 !important;
+}
+
+body.liquid-glass .MuiAccordion-root::before {
+  display: none;
+}
+
+body.liquid-glass .MuiChip-root {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+body.liquid-glass[data-glass-mode='light'] .MuiChip-root {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+body.liquid-glass .MuiOutlinedInput-root {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+}
+
+body.liquid-glass[data-glass-mode='light'] .MuiOutlinedInput-root {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+body.liquid-glass footer {
+  background: rgba(11, 16, 32, 0.45) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body.liquid-glass[data-glass-mode='light'] footer {
+  background: rgba(255, 255, 255, 0.55) !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body.liquid-glass .MuiPaper-root,
+  body.liquid-glass .MuiAccordion-root,
+  body.liquid-glass .MuiCard-root,
+  body.liquid-glass .MuiAlert-root,
+  body.liquid-glass .tm-pane,
+  body.liquid-glass .MuiAppBar-root,
+  body.liquid-glass .MuiChip-root,
+  body.liquid-glass .MuiOutlinedInput-root,
+  body.liquid-glass footer {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}

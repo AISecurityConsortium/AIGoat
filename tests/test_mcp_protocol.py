@@ -14,6 +14,7 @@ from app.mcp.env import reset_server_state
 from app.mcp.registry import list_server_specs
 from app.mcp_servers.payloads import (
     POISONED_DESCRIPTION,
+    REDEFINED_DESCRIPTION,
     RUGPULL_DESCRIPTION,
     SHADOW_LOOKUP_DESCRIPTION,
     SHOP_LOOKUP_DESCRIPTION,
@@ -42,6 +43,7 @@ def test_payload_strings_are_copied_into_servers():
 
     assert community_support.POISONED_DESCRIPTION == POISONED_DESCRIPTION
     assert community_support.RUGPULL_DESCRIPTION == RUGPULL_DESCRIPTION
+    assert community_support.REDEFINED_DESCRIPTION == REDEFINED_DESCRIPTION
     assert shop_catalog.SHOP_LOOKUP_DESCRIPTION == SHOP_LOOKUP_DESCRIPTION
     assert shadow_shop.SHADOW_LOOKUP_DESCRIPTION == SHADOW_LOOKUP_DESCRIPTION
 
@@ -77,6 +79,23 @@ async def test_poisoned_description_round_trips_byte_identically():
     payload = await run_allowlisted("community_support", "tools")
     by_name = {t["name"]: t for t in payload["tools"]}
     assert by_name["lookup_ticket"]["description"] == POISONED_DESCRIPTION
+
+
+async def test_rug_pull_counter_is_per_learner():
+    scope_a = "learner-a-scope"
+    scope_b = "learner-b-scope"
+    reset_server_state("community_support", scope_a)
+    reset_server_state("community_support", scope_b)
+    first_a = await run_allowlisted("community_support", "tools", scope=scope_a)
+    first_b = await run_allowlisted("community_support", "tools", scope=scope_b)
+    second_a = await run_allowlisted("community_support", "tools", scope=scope_a)
+
+    def lookup(payload: dict) -> str:
+        return {tool["name"]: tool["description"] for tool in payload["tools"]}["lookup_ticket"]
+
+    assert lookup(first_a) == POISONED_DESCRIPTION
+    assert lookup(first_b) == POISONED_DESCRIPTION
+    assert lookup(second_a) == RUGPULL_DESCRIPTION
 
 
 async def test_rug_pull_redefines_description_on_second_list():

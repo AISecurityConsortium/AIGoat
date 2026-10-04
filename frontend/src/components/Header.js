@@ -47,6 +47,7 @@ import {
   AccountBalanceWallet as WalletIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
+  BlurOn as BlurOnIcon,
   SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
@@ -144,7 +145,6 @@ const NavMenu = ({ label, items }) => {
             }}
             selected={location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)}
           >
-            {item.icon && <ListItemIcon>{item.icon}</ListItemIcon>}
             <ListItemText>{item.label}</ListItemText>
           </MenuItem>
         ))}
@@ -161,7 +161,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { searchBarQuery, setSearchBarQuery } = useSearch();
-  const { mode, toggleTheme } = useThemeMode();
+  const { mode, toggleTheme, liquidGlass, toggleLiquidGlass } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:1279px)');
   const isWide = useMediaQuery('(min-width:1440px)');
@@ -251,11 +251,20 @@ const Header = () => {
       if (!match?.demo_token) return;
       localStorage.setItem('token', match.demo_token);
       localStorage.setItem('username', target);
-      window.location.assign(target === 'admin' ? '/admin/assistant' : '/home');
+      const params = new URLSearchParams(location.search);
+      const fromPath = location.pathname.match(/^\/labs\/([^/]+)/);
+      const labId = fromPath?.[1] || params.get('lab') || '';
+      if (target === 'admin') {
+        window.location.assign(labId ? `/admin/assistant?lab=${encodeURIComponent(labId)}` : '/admin/assistant');
+      } else if (labId) {
+        window.location.assign(`/labs/${encodeURIComponent(labId)}`);
+      } else {
+        window.location.assign('/home');
+      }
     } catch (error) {
       console.error('Persona switch failed', error);
     }
-  }, []);
+  }, [location.pathname, location.search]);
 
   const handleSearchChange = (value) => {
     setSearchBarQuery(value);
@@ -305,37 +314,43 @@ const Header = () => {
       >
         Shop
       </Box>
+      <NavMenu
+        label="Learn"
+        items={[
+          { to: '/owasp-top-10', label: 'OWASP Top 10' },
+          { to: '/threat-modeling', label: 'Threat Modeling' },
+        ]}
+      />
       {isLoggedIn && (
         <NavMenu
-          label="Learn"
+          label="Try"
           items={[
-            { to: '/attacks', label: 'Attack Labs', icon: <BugReportIcon fontSize="small" /> },
-            { to: '/challenges', label: 'Challenges', icon: <ChallengesIcon fontSize="small" /> },
-            { to: '/agent', label: 'Agent', icon: <AIIcon fontSize="small" /> },
-            { to: '/mcp', label: 'MCP', icon: <SecurityIcon fontSize="small" /> },
-            ...(ragSystemEnabled && !ragLoading
-              ? [{ to: '/knowledge-base', label: 'Knowledge Base', icon: <LibraryBooksIcon fontSize="small" /> }]
-              : []),
+            { to: '/attacks', label: 'Attack Labs' },
+            { to: '/challenges', label: 'Challenges' },
           ]}
         />
       )}
-      <NavMenu
-        label="Reference"
-        items={[
-          { to: '/owasp-top-10', label: 'OWASP Top 10', icon: <SecurityIcon fontSize="small" /> },
-          { to: '/threat-modeling', label: 'Threat Modeling', icon: <ThreatModelIcon fontSize="small" /> },
-        ]}
-      />
+      {isLoggedIn && (
+        <NavMenu
+          label="Console"
+          items={[
+            ...(ragSystemEnabled && !ragLoading
+              ? [{ to: '/knowledge-base', label: 'Knowledge Base' }]
+              : []),
+            { to: '/mcp', label: 'MCP' },
+            { to: '/agent', label: 'Agent' },
+          ]}
+        />
+      )}
       {(isAdmin || personaName === 'admin') && (
         <Button
           size="small"
           variant="contained"
-          startIcon={<AIIcon sx={{ fontSize: '1rem !important' }} />}
           onClick={() => navigate('/admin/assistant')}
           aria-current={location.pathname.startsWith('/admin/assistant') ? 'page' : undefined}
           sx={{ ml: 0.5, flexShrink: 0, px: 1.5, py: 0.6 }}
         >
-          Assistant
+          Admin Assistant
         </Button>
       )}
 
@@ -387,6 +402,16 @@ const Header = () => {
 
       {isLoggedIn && !isShopper && <DefenseLevelToggle compact={!isWide} />}
 
+      <IconButton
+        onClick={toggleLiquidGlass}
+        aria-label={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
+        title={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
+        aria-pressed={liquidGlass}
+        sx={{ color: liquidGlass ? 'primary.light' : 'text.secondary', ml: 0.5 }}
+      >
+        <BlurOnIcon sx={{ fontSize: '1.15rem', opacity: liquidGlass ? 1 : 0.45 }} />
+      </IconButton>
+
       {!isLoggedIn && (
         <IconButton
           onClick={toggleTheme}
@@ -412,6 +437,31 @@ const Header = () => {
           )}
 
           {/* Profile dropdown */}
+          {(personaName === 'alice' || personaName === 'admin') && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={switchPersona}
+              startIcon={<SwapHorizIcon />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                flexShrink: 0,
+                borderRadius: '8px',
+                py: 0.4,
+                color: 'primary.light',
+                borderColor: (t) => alpha(t.palette.primary.light, 0.4),
+                background: (t) => `linear-gradient(120deg, ${alpha(t.palette.primary.main, 0.28)}, ${alpha(t.palette.secondary.main, 0.16)})`,
+                '&:hover': {
+                  borderColor: 'primary.light',
+                  background: (t) => `linear-gradient(120deg, ${alpha(t.palette.primary.main, 0.4)}, ${alpha(t.palette.secondary.main, 0.24)})`,
+                },
+              }}
+            >
+              {personaName === 'admin' ? 'Switch to Alice' : 'Switch to Admin'}
+            </Button>
+          )}
+
           <Box
             onClick={(e) => setProfileAnchorEl(e.currentTarget)}
             sx={{
@@ -467,6 +517,11 @@ const Header = () => {
                 </Box>
               )}
             </Box>
+
+            <MenuItem onClick={toggleLiquidGlass} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
+              <ListItemIcon><BlurOnIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
+              <ListItemText>{liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}</ListItemText>
+            </MenuItem>
 
             <MenuItem onClick={toggleTheme} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
               <ListItemIcon>
@@ -670,22 +725,27 @@ const Header = () => {
 
       <Divider sx={{ borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
 
-      {isLoggedIn && (
-        <MobileSection title="Learn">
-          <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
-          <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
-          <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
-          <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
-          {ragSystemEnabled && !ragLoading && (
-            <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="Knowledge Base" />
-          )}
-        </MobileSection>
-      )}
-
-      <MobileSection title="Reference">
+      <MobileSection title="Learn">
         <MobileNavItem to="/owasp-top-10" icon={<SecurityIcon />} label="OWASP Top 10" />
         <MobileNavItem to="/threat-modeling" icon={<ThreatModelIcon />} label="Threat Modeling" />
       </MobileSection>
+
+      {isLoggedIn && (
+        <MobileSection title="Try">
+          <MobileNavItem to="/attacks" icon={<BugReportIcon />} label="Attack Labs" />
+          <MobileNavItem to="/challenges" icon={<ChallengesIcon />} label="Challenges" />
+        </MobileSection>
+      )}
+
+      {isLoggedIn && (
+        <MobileSection title="Console">
+          {ragSystemEnabled && !ragLoading && (
+            <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="Knowledge Base" />
+          )}
+          <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
+          <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
+        </MobileSection>
+      )}
 
       <MobileSection title="Shop">
         <MobileNavItem to="/home" icon={<GiftCardIcon />} label="Shop" />
@@ -704,7 +764,7 @@ const Header = () => {
 
       {isAdmin && (
         <MobileSection title="Account">
-          <MobileNavItem to="/admin/assistant" icon={<AIIcon />} label="Assistant" />
+          <MobileNavItem to="/admin/assistant" icon={<AIIcon />} label="Admin Assistant" />
           <MobileNavItem to="/admin-dashboard" icon={<AdminIcon />} label="Dashboard" />
           <MobileNavItem to="/user-management" icon={<PeopleIcon />} label="User Management" />
           <MobileNavItem to="/order-management" icon={<OrderManagementIcon />} label="Order Management" />
@@ -783,7 +843,7 @@ const Header = () => {
             onClick={() => navigate('/admin/assistant')}
             sx={{ px: 1.25, py: 0.4, minWidth: 0 }}
           >
-            Assistant
+            Admin Assistant
           </Button>
         )}
         {showShopTools && (
@@ -809,6 +869,35 @@ const Header = () => {
             </Badge>
           </IconButton>
         )}
+        {(personaName === 'alice' || personaName === 'admin') && (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={switchPersona}
+            aria-label={personaName === 'admin' ? 'Switch to Alice' : 'Switch to Admin'}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              minWidth: 0,
+              px: 1,
+              py: 0.3,
+              color: 'primary.light',
+              borderColor: (t) => alpha(t.palette.primary.light, 0.4),
+              background: (t) => `linear-gradient(120deg, ${alpha(t.palette.primary.main, 0.28)}, ${alpha(t.palette.secondary.main, 0.16)})`,
+            }}
+          >
+            {personaName === 'admin' ? 'Alice' : 'Admin'}
+          </Button>
+        )}
+        <IconButton
+          onClick={toggleLiquidGlass}
+          aria-label={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
+          title={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
+          aria-pressed={liquidGlass}
+          sx={{ color: liquidGlass ? 'primary.light' : 'text.secondary' }}
+        >
+          <BlurOnIcon sx={{ fontSize: '1.15rem', opacity: liquidGlass ? 1 : 0.45 }} />
+        </IconButton>
         <IconButton onClick={() => setMobileOpen(true)} sx={{ color: 'text.primary' }} aria-label="Open menu">
           <MenuIcon />
         </IconButton>
@@ -831,16 +920,6 @@ const Header = () => {
         {isMobile ? renderMobileToolbar() : renderDesktopNav()}
       </AppBar>
       {isMobile && renderMobileDrawer()}
-      {isLoggedIn && canSwitchPersona && (
-        <Box sx={{ px: 2, py: 0.5, bgcolor: (t) => alpha(t.palette.primary.main, 0.08), borderBottom: (t) => `1px solid ${t.palette.divider}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-          <Typography sx={{ fontSize: '0.78rem', fontWeight: 600 }}>
-            You are {personaName === 'admin' ? 'Admin' : 'Alice'} (shopper).
-          </Typography>
-          <Button size="small" onClick={switchPersona} startIcon={<SwapHorizIcon />} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
-            {personaName === 'admin' ? 'Switch to Alice' : 'Switch to Admin'}
-          </Button>
-        </Box>
-      )}
     </>
   );
 };

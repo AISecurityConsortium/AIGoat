@@ -1,23 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, Collapse, Container, Skeleton, Typography } from '@mui/material';
-import { ArrowForward as ArrowForwardIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Alert, Box, Button, Container, Skeleton, Typography } from '@mui/material';
+import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useLabs } from '../../hooks/useLabs';
 import { SectionCard, EmptyState } from '../common';
 import HubLabCard from '../common/HubLabCard';
-import { MCP_ORDER, sortLabs } from '../../utils/labTeaching';
+import McpFlow from '../common/McpFlow';
+import { MCP_DECISIONS, MCP_FLOWS, MCP_ORDER, sortLabs } from '../../utils/labTeaching';
 import { apiClient } from '../../config/api';
 import API_CONFIG from '../../config/api';
 
 const authHeaders = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const trustColor = (tier) => {
-  if (tier === 'official') return 'success';
-  if (tier === 'untrusted') return 'error';
-  return 'warning';
 };
 
 const MCP_STEPS = [
@@ -39,7 +34,6 @@ const McpHubPage = () => {
   const first = labs[0];
   const [servers, setServers] = useState([]);
   const [serversError, setServersError] = useState(null);
-  const [openCommandId, setOpenCommandId] = useState(null);
 
   const loadServers = useCallback(async () => {
     try {
@@ -81,7 +75,7 @@ const McpHubPage = () => {
                 MCP client
               </Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '1rem', lineHeight: 1.65, mb: 2 }}>
-                The attack surface is this MCP client. Each action spawns an allowlisted server, runs one call, and stops it. Tool descriptions are written by whoever shipped the server. Admins also have an assistant that is an MCP client for the internal shop server.
+                The attack surface is this MCP client. Each action spawns an allowlisted server, runs one call, and stops it. Tool descriptions are written by whoever shipped the server. Admins also have an assistant that is an MCP client for the Internal Management Server.
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2.5 }}>
                 {MCP_STEPS.map((step, index) => (
@@ -109,7 +103,7 @@ const McpHubPage = () => {
                   endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
                   sx={{ textTransform: 'none', fontWeight: 700 }}
                 >
-                  {first ? 'Start with the decoy token' : 'Browse MCP labs'}
+                  {first ? 'Open the first lab' : 'Browse MCP labs'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -127,15 +121,7 @@ const McpHubPage = () => {
               )}
             </Box>
             <Box>
-              <Box
-                component="img"
-                src="/media/diagrams/mcp-stateless-call.svg"
-                alt="Learner action spawns a stdio MCP server, runs one JSON-RPC, then reaps the process."
-                sx={{ width: '100%', display: 'block' }}
-              />
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mt: 1, lineHeight: 1.5 }}>
-                Spec revision 2026-07-28 is stateless. There is no session to poison between calls.
-              </Typography>
+              <McpFlow steps={MCP_FLOWS.hub.steps} caption={MCP_FLOWS.hub.caption} />
             </Box>
           </Box>
         </Box>
@@ -151,6 +137,25 @@ const McpHubPage = () => {
         )}
 
         <Box sx={{ mb: 3 }}>
+          <SectionCard title="Try every defense level">
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1 }}>
+              Re-run each lab at Level 0, Level 1, and Level 2. Note what still works. Defenses are not absolute.
+            </Typography>
+            <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+              <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
+                Level 0 is the attack. The lab condition should be met.
+              </Typography>
+              <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
+                Level 1 pins a drifted description and blocks calls the lab marks as too strong.
+              </Typography>
+              <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
+                Level 2 also redacts instruction phrasing and credentials in tool results. A fixed word list does not check who a server is.
+              </Typography>
+            </Box>
+          </SectionCard>
+        </Box>
+
+        <Box sx={{ mb: 3 }}>
           <SectionCard title="What to watch">
             <Box component="ul" sx={{ m: 0, pl: 2.5, color: (t) => t.palette.custom?.text?.body ?? 'text.primary' }}>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
@@ -160,7 +165,7 @@ const McpHubPage = () => {
                 A description can change between two <Box component="span" sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}>tools/list</Box> calls.
               </Typography>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 0.75 }}>
-                A result can carry a decoy token that looks like a flag.
+                A tool result is copied into the client as text. Read what came back, not only whether the call succeeded.
               </Typography>
               <Typography component="li" sx={{ fontSize: '0.9375rem', lineHeight: 1.6 }}>
                 A second server can shadow a tool name you already trusted.
@@ -177,61 +182,11 @@ const McpHubPage = () => {
               </Typography>
             )}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {servers.map((server) => {
-                const redacted = Array.isArray(server.command_display_redacted)
-                  ? server.command_display_redacted
-                  : null;
-                const open = openCommandId === server.id;
-                return (
-                  <Box key={server.id} sx={{ py: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{server.name}</Typography>
-                      <Chip size="small" label={server.trust_tier} color={trustColor(server.trust_tier)} />
-                    </Box>
-                    {redacted && redacted.length > 0 && (
-                      <>
-                        <Button
-                          size="small"
-                          onClick={() => setOpenCommandId(open ? null : server.id)}
-                          endIcon={(
-                            <ExpandMoreIcon
-                              sx={{
-                                fontSize: '1rem !important',
-                                transform: open ? 'rotate(180deg)' : 'none',
-                                transition: 'transform 0.15s',
-                              }}
-                            />
-                          )}
-                          sx={{
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            fontSize: '0.9375rem',
-                            color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary',
-                            px: 0,
-                            minWidth: 0,
-                          }}
-                        >
-                          What actually runs
-                        </Button>
-                        <Collapse in={open}>
-                          <Typography
-                            sx={{
-                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                              fontSize: '0.9375rem',
-                              color: (t) => t.palette.custom?.text?.body ?? 'text.primary',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-all',
-                              mt: 0.5,
-                            }}
-                          >
-                            {redacted.join(' ')}
-                          </Typography>
-                        </Collapse>
-                      </>
-                    )}
-                  </Box>
-                );
-              })}
+              {servers.map((server) => (
+                <Box key={server.id} sx={{ py: 0.5 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>{server.name}</Typography>
+                </Box>
+              ))}
             </Box>
           </SectionCard>
         </Box>
@@ -246,12 +201,48 @@ const McpHubPage = () => {
           <EmptyState title="No MCP labs" description="The mcp.client surface has no labs yet." />
         )}
 
-        <Box id="mcp-labs" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4 }}>
-          <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Do these in order</Typography>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', mb: 0.5 }}>
-            A card that says "same idea" is one attack seen again, not a new topic.
-          </Typography>
-          {labs.map((lab, index) => <HubLabCard key={lab.id} lab={lab} index={index + 1} />)}
+        <Box id="mcp-labs" sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
+          <Box>
+            <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Four decisions</Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>
+              The labs stay in teaching order. A card that says "same decision" is one decision seen on another screen.
+            </Typography>
+          </Box>
+          {MCP_DECISIONS.map((decision) => {
+            const group = decision.labIds
+              .map((id) => labs.find((lab) => lab.id === id))
+              .filter(Boolean);
+            if (!group.length) return null;
+            return (
+              <Box key={decision.title} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>{decision.title}</Typography>
+                  <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem' }}>{decision.detail}</Typography>
+                </Box>
+                {group.map((lab, index) => (
+                  <HubLabCard key={lab.id} lab={lab} index={index + 1} />
+                ))}
+              </Box>
+            );
+          })}
+          <SectionCard title="MCP05. We refused to build this" dense>
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1.5 }}>
+              Command injection would mean a tool argument reaches a shell. In a real client that looks like a tool such as run_command whose arguments are concatenated into a shell string. AIGoat does not ship that sink. The refused-executor lab asks for a shell tool and records the refusal, so you can see the control without an operating-system exploit.
+            </Typography>
+            <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mb: 1.5 }}>
+              Reflection: if a desktop agent let a tool description choose the shell command, which part would you pin, and which part would you refuse to implement at all?
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/labs/asi05-1"
+              size="small"
+              variant="outlined"
+              endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
+            >
+              Open the refused executor lab
+            </Button>
+          </SectionCard>
         </Box>
 
         <Button

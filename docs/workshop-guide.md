@@ -368,6 +368,16 @@ For competitive workshops:
 
 ---
 
+## MCP labs (instructors)
+
+Migrated MCP labs hide the walkthrough until the learner finishes or confirms a solution reveal. The reveal does not complete the lab and does not award a flag.
+
+Instructor answers are the `solution` block on each lab in `config/labs/mcp.yml` and `config/labs/agent.yml`. Do not read those aloud before the exercise.
+
+Host labs (mcp04-1, mcp06-1, mcp10-1, asi01-1) use a deterministic planner. A plain customer request is not enough. The text has to address the assistant. There is no button that files the payload or fills the prompt.
+
+Each migrated lab has a blank sheet at `docs/workshop/validation/<lab-id>.md`. A practitioner who has not seen the implementation fills it in before the lab leaves beta. mcp09-1 has the template.
+
 ## Troubleshooting
 
 | Issue | Solution |

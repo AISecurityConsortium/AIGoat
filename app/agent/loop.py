@@ -198,11 +198,49 @@ def render_tool_payload(observation: str) -> str:
     return ""
 
 
+def parse_literal_call(text: str) -> tuple[str, str, dict[str, Any]] | None:
+    """A single snake_case call with literal arguments, such as issue_refund(order_id=9)."""
+    blob = (text or "").strip()
+    fenced = re.search(r"```(?:python|py)?\s*(.*?)```", blob, re.S)
+    if fenced:
+        source = fenced.group(1)
+    elif re.fullmatch(r"[a-z][a-z0-9]*_[a-z0-9_]+\s*\([^)]*\)", blob):
+        source = blob
+    else:
+        return None
+    named = re.search(
+        r"\b([a-z][a-z0-9]*_[a-z0-9_]+)\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\d+|\"[^\"]*\"|'[^']*')\s*\)",
+        source,
+    )
+    if named:
+        raw = named.group(3)
+        value: Any = int(raw) if raw.isdigit() else raw.strip("'\"")
+        return ("", named.group(1), {named.group(2): value})
+    empty = re.search(r"\b([a-z][a-z0-9]*_[a-z0-9_]+)\s*\(\s*\)", source)
+    if empty:
+        return ("", empty.group(1), {})
+    return None
+
+
 def _observation_text(outcome: BrokerOutcome) -> str:
     try:
         return json.dumps(outcome.observation, default=str)
     except TypeError:
         return str(outcome.observation)
+
+
+def _native_assistant_message(content: str, tool_calls: list[dict[str, Any]]) -> dict[str, Any]:
+    """Ollama assistant message for a client that did not return the raw one."""
+    calls = []
+    for call in tool_calls:
+        calls.append({
+            "type": "function",
+            "function": {
+                "name": str(call.get("name") or ""),
+                "arguments": call.get("arguments") or {},
+            },
+        })
+    return {"role": "assistant", "content": content or "", "tool_calls": calls}
 
 
 class GatedAgentLoop(AgentLoop):
@@ -222,6 +260,24 @@ class GatedAgentLoop(AgentLoop):
         self.llm = llm
         self.system = system
         self.model = model
+        self._native_message: dict[str, Any] | None = None
+
+    def _messages(self, goal: str, history: list[AgentStep]) -> list[dict[str, Any]]:
+        messages: list[dict[str, Any]] = [{"role": "user", "content": goal}]
+        for step in history:
+            if step.native_message:
+                messages.append(step.native_message)
+                messages.append({
+                    "role": "tool",
+                    "tool_name": step.action,
+                    "content": step.observation,
+                })
+                continue
+            assistant = step.thought or step.action
+            messages.append({"role": "assistant", "content": assistant})
+            if step.observation:
+                messages.append({"role": "user", "content": f"Observation: {step.observation}"})
+        return messages
 
     async def plan(
         self, goal: str, history: list[AgentStep]
@@ -241,29 +297,28 @@ class GatedAgentLoop(AgentLoop):
             if named:
                 return named
         if self.llm is None:
+            self._native_message = None
             return ("no model", "finish", {"answer": ""})
-        turn = await self._chat(self._messages(goal, history))
+        messages = self._messages(goal, history)
+        turn = await self._chat(messages)
         if turn.tool_calls:
             first = turn.tool_calls[0]
             args = first.get("arguments") or {}
             if not isinstance(args, dict):
                 args = {}
+            raw = getattr(turn, "assistant_message", None)
+            self._native_message = raw or _native_assistant_message(turn.content or "", turn.tool_calls)
             return (turn.content or "", str(first.get("name") or ""), args)
+        self._native_message = None
         parsed = parse_json_tool(turn.content)
         if not parsed:
             parsed = parse_registered_call(turn.content, names)
+        if not parsed:
+            parsed = parse_literal_call(turn.content)
         if parsed:
             _thought, name, args = parsed
             return (turn.content or "", name, args)
         return (turn.content or "", "finish", {"answer": turn.content or ""})
-
-    def _messages(self, goal: str, history: list[AgentStep]) -> list[dict[str, str]]:
-        messages: list[dict[str, str]] = [{"role": "user", "content": goal}]
-        for step in history:
-            messages.append({"role": "assistant", "content": step.thought or step.action})
-            if step.observation:
-                messages.append({"role": "user", "content": f"Observation: {step.observation}"})
-        return messages
 
     async def _final_answer(self, goal: str, history: list[AgentStep]) -> str:
         """Force a prose answer with tools suppressed, so a looping model stops.
@@ -282,7 +337,7 @@ class GatedAgentLoop(AgentLoop):
             return []
         return [str(item.get("name") or "") for item in self.tools.list_tools()]
 
-    async def _chat(self, messages: list[dict[str, str]], use_tools: bool = True) -> Any:
+    async def _chat(self, messages: list[dict[str, Any]], use_tools: bool = True) -> Any:
         from app.services.llm_protocol import ChatTurn
 
         tools = None
@@ -326,7 +381,12 @@ class GatedAgentLoop(AgentLoop):
                         terminated_reason="finish",
                     )
                 seen.add(key)
-            step = AgentStep(thought=thought, action=action, action_input=action_input)
+            step = AgentStep(
+                thought=thought,
+                action=action,
+                action_input=action_input,
+                native_message=self._native_message,
+            )
             if action == "finish":
                 answer = action_input.get("answer", thought)
                 if self.steps and _looks_unhelpful(answer):
