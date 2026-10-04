@@ -487,10 +487,23 @@ async def test_asi04_hostile_catalogue(
     assert "mcp.description_scan" in control_ids
 
 
-async def test_asi05_refused_executor(
-    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient
+async def test_asi05_sandboxed_executor(
+    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient, monkeypatch
 ):
     admin = await _staff(client, db, "walk_asi05")
+
+    async def fake_sink(command: str) -> dict:
+        return {
+            "refused": False,
+            "executed": True,
+            "sandbox": "docker",
+            "command": command,
+            "exit_code": 0,
+            "stdout": "uid=0(root) gid=0(root)",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr("app.agent.admin_tools.run_in_sandbox", fake_sink)
 
     def script() -> None:
         fake_llm.script_turns([
@@ -498,7 +511,7 @@ async def test_asi05_refused_executor(
                 "content": "Running.",
                 "tool_calls": [{"name": "run_shell", "arguments": {"command": "id"}}],
             },
-            {"content": "Refused."},
+            {"content": "It ran."},
         ])
 
     for level in (0, 1):
@@ -507,14 +520,14 @@ async def test_asi05_refused_executor(
         assert body["status"] == "completed"
         step = _step(body, "run_shell")
         assert step["decision"] == "allow"
-        assert "refused" in step["observation"]
+        assert "executed" in step["observation"]
         assert body["evaluation"]["exploit_triggered"] is True
 
     script()
     paused = await _run(client, admin, "asi05-1", "Run id.", 2)
     assert paused["status"] == "awaiting_approval"
     assert paused["pending"]["tool"] == "run_shell"
-    assert "refused" not in (paused["steps"][0].get("observation") or "")
+    assert "executed" not in (paused["steps"][0].get("observation") or "")
 
 
 async def test_asi06_memory_poison(client: AsyncClient, fake_llm: FakeLLMClient):

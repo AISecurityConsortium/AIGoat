@@ -45,7 +45,7 @@ No controls. The unsigned handoff is trusted.
 
 ## 9. Level 1 - Hardened
 
-Input validation, intent classification, output filtering, and the tool allowlist or description pin. Impersonation wording is denied as SOCIAL_ENGINEERING. A neutral 'accept the unsigned handoff' still runs.
+Input validation, intent classification, output filtering, and the tool allowlist or description pin. Two-signal impersonation wording (an identity claim plus "management has authorized") is denied on input. A single claim or a neutral 'accept the unsigned handoff' still runs.
 
 ## 10. Level 2 - Guardrailed
 

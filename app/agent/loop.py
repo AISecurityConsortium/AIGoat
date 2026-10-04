@@ -85,10 +85,7 @@ def goal_as_tool(goal: str, tool_names: list[str]) -> tuple[str, str, dict[str, 
 _REVIEW_GOAL = r"\breviews?\b"
 _TICKET_ID = r"\bticket\s*#?\s*(\d+)"
 _REFUND_ORDER = r"refund\s+order\s+#?\s*(\d+)"
-_SHELL_GOAL = re.compile(
-    r"\b(?:run|execute)\s+(?:the\s+command\s+)?([a-z][a-z0-9_-]{0,31})\b",
-    re.I,
-)
+_SHELL_GOAL = r"\b(?:run|execute)\s+(?:the\s+command\s+)?([a-z][a-z0-9_-]{0,31})\b"
 
 
 def shell_goal_as_tool(goal: str, tool_names: list[str]) -> tuple[str, str, dict[str, Any]] | None:
@@ -99,7 +96,7 @@ def shell_goal_as_tool(goal: str, tool_names: list[str]) -> tuple[str, str, dict
     """
     if "run_shell" not in tool_names:
         return None
-    match = _SHELL_GOAL.search(goal or "")
+    match = re.search(_SHELL_GOAL, goal or "", re.I)
     if not match:
         return None
     command = match.group(1)

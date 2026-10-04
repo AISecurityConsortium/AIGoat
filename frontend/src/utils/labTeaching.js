@@ -77,7 +77,7 @@ export const LEVEL_POSTURE = {
 
 export const PRACTICE_LABS = {
   'owasp-mcp-2025:MCP05': [
-    { id: 'asi05-1', label: 'Open the refused executor lab' },
+    { id: 'asi05-1', label: 'Open the sandboxed executor lab' },
   ],
   'owasp-agentic-2026:ASI04': [
     { id: 'asi04-1', label: 'Open the hostile catalogue lab' },

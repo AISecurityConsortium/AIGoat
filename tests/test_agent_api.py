@@ -308,7 +308,7 @@ def _script_shell(fake_llm: FakeLLMClient) -> None:
             "content": "Running the command.",
             "tool_calls": [{"name": "run_shell", "arguments": {"command": "id"}}],
         },
-        {"content": "The executor refused."},
+        {"content": "The command ran in the sandbox."},
     ])
 
 
@@ -325,9 +325,21 @@ def _script_handoff(fake_llm: FakeLLMClient, signature: str = "") -> None:
     ])
 
 
-async def test_asi05_l0_refuses_and_l2_pauses(
-    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient
+async def test_asi05_l0_executes_and_l2_pauses(
+    client: AsyncClient, db: AsyncSession, fake_llm: FakeLLMClient, monkeypatch
 ):
+    async def fake_sink(command: str) -> dict:
+        return {
+            "refused": False,
+            "executed": True,
+            "sandbox": "docker",
+            "command": command,
+            "exit_code": 0,
+            "stdout": "uid=0(root) gid=0(root)",
+            "stderr": "",
+        }
+
+    monkeypatch.setattr("app.agent.admin_tools.run_in_sandbox", fake_sink)
     token = await _staff(client, db, "asi05_staff")
     headers = auth_header(token)
     _script_shell(fake_llm)
@@ -341,7 +353,7 @@ async def test_asi05_l0_refuses_and_l2_pauses(
     assert body["status"] == "completed"
     step = next(s for s in body["steps"] if s["action"] == "run_shell")
     assert step["decision"] == "allow"
-    assert "refused" in (step["observation"] or "")
+    assert "executed" in (step["observation"] or "")
     assert body["evaluation"]["exploit_triggered"] is True
 
     _script_shell(fake_llm)
@@ -354,7 +366,7 @@ async def test_asi05_l0_refuses_and_l2_pauses(
     paused_body = paused.json()
     assert paused_body["status"] == "awaiting_approval"
     assert paused_body["pending"]["tool"] == "run_shell"
-    assert "refused" not in (paused_body["steps"][0].get("observation") or "")
+    assert "executed" not in (paused_body["steps"][0].get("observation") or "")
 
 
 async def test_asi07_unsigned_handoff_rejected_at_l2(

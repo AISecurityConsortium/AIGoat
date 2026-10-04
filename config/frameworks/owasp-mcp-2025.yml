@@ -49,8 +49,8 @@ risks:
   - code: "MCP05"
     title: "Command Injection & Execution"
     summary: "Tool arguments that reach a shell or eval sink would turn a teaching lab into platform RCE, so this entry is documentation-only."
-    description: "AIGoat will not wire MCP tool handlers to an OS command interpreter. The page explains the sink, shows a refused fake executor, and points learners at Improper Output Handling and Unexpected Code Execution instead."
-    writeup: "Command injection would mean a tool argument reaches a shell. AIGoat does not ship that sink. The ASI05 lab asks the admin agent to call run_shell. Levels 0 and 1 record the command and return refused. Level 2 pauses for approval before that refusal is recorded. No process is started."
+    description: "AIGoat will not wire MCP tool handlers to a host OS command interpreter. The page explains the sink, points at the sandboxed executor in the ASI05 lab, and points learners at Improper Output Handling and Unexpected Code Execution instead."
+    writeup: "Command injection would mean a tool argument reaches a host shell. AIGoat does not ship that sink. The ASI05 lab asks the admin agent to call run_shell, which executes the command inside a disposable Docker container with no network and a read-only root. Levels 0 and 1 execute it. Level 2 pauses for approval before anything runs. Without Docker the sink refuses."
     attack_surfaces: ["mcp.client"]
     related:
       - "owasp-agentic-2026:ASI05"

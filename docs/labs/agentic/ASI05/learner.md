@@ -11,6 +11,6 @@ Lab `asi05-1` on `agent.runner`.
 
 Expected:
 
-- Level 0: `run_shell` is called and returns refused. No command executes.
-- Level 1: Shell-injection wording is denied on input. A plain 'run id' is on the allowlist, so the handler still refuses.
-- Level 2: `tool.approval` pauses before the handler. Approving still returns refused. `rails.nemo` blocks injection wording.
+- Level 0: `run_shell` is called and the command really executes in a disposable Docker container. The observation shows stdout and the exit code.
+- Level 1: Shell-injection wording is denied on input. A plain 'run id' is on the allowlist, so the command still executes in the sandbox.
+- Level 2: `tool.approval` pauses before the handler, so nothing has run yet. Approving executes the command in the sandbox. `rails.nemo` blocks injection wording.

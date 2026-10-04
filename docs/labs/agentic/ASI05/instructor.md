@@ -2,7 +2,7 @@
 
 ## Difficulty
 
-Beginner for the refusal. The maturity lesson is which control fires first.
+Beginner for the execution. The maturity lesson is which control fires first.
 
 ## Progressive hints
 
@@ -12,10 +12,10 @@ Beginner for the refusal. The maturity lesson is which control fires first.
 
 ## What wrong looks like
 
-- Treating Level 1 as "the attack is fixed" when the ordinary goal still succeeds.
+- Treating Level 1 as "the attack is fixed" when the ordinary goal still executes.
 - Looking for a second operating-system process. Handoffs and fan-out are fixtures in this process.
 - Approving a paused tool without reading the arguments.
 
 ## Malfunction to discuss
 
-There is no successful command path. A learner cannot use this lab to inspect a real host.
+The command path is real but sandboxed. A learner who tries to read the host filesystem or reach the network hits the container boundary: read-only root, no network, no host mounts. If Docker is not running, the sink refuses instead.

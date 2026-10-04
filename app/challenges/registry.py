@@ -20,7 +20,7 @@ from app.challenges.evaluators.mcp_host import (
     McpHostSupplyEvaluator,
     McpPrivilegeEvaluator,
     McpTrustEvaluator,
-    RefusedExecutorEvaluator,
+    SandboxedExecutorEvaluator,
     ScriptedCascadeEvaluator,
     ScriptedHandoffEvaluator,
 )
@@ -69,7 +69,7 @@ _REGISTRY: dict[str, ChallengeEvaluator] = {
     "admin export": AdminExportEvaluator(),
     "scripted handoff": ScriptedHandoffEvaluator(),
     "scripted cascade": ScriptedCascadeEvaluator(),
-    "refused executor": RefusedExecutorEvaluator(),
+    "sandbox executor": SandboxedExecutorEvaluator(),
     "unbounded consumption": UnboundedConsumptionEvaluator(),
 }
 

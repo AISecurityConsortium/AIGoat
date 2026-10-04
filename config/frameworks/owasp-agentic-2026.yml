@@ -49,8 +49,8 @@ risks:
   - code: "ASI05"
     title: "Unexpected Code Execution (RCE)"
     summary: "Planner output that is treated as code can reach an execution sink the product never meant to expose."
-    description: "AIGoat never runs attacker-controlled OS commands. A fake executor parses, logs, and refuses the dangerous string so the lesson is reaching that sink, not obtaining a shell on the workshop host."
-    writeup: "Unexpected code execution would be planner text reaching a shell. The asi05-1 lab is the refused fake executor. The model can request run_shell. At levels 0 and 1 the tool records the command string and returns refused. At level 2 the request pauses for approval before that refusal is recorded. No process is started at any defense level."
+    description: "AIGoat never runs attacker-controlled OS commands on the host. The executor runs the command inside a disposable Docker container with no network and a read-only root, so the lesson is reaching that sink, not obtaining a shell on the workshop host."
+    writeup: "Unexpected code execution is planner text reaching a shell. The asi05-1 lab is the sandboxed executor. The model can request run_shell. At levels 0 and 1 the command really executes inside the container and the observation shows stdout and the exit code. At level 2 the request pauses for approval before anything runs. Without Docker the sink refuses."
     attack_surfaces: ["agent.runner"]
     related:
       - "owasp-llm-2026:LLM01"

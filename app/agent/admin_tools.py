@@ -17,6 +17,7 @@ from app.models.order import Order
 from app.models.review import Review
 from app.models.support_ticket import SupportTicket
 from app.models.user import User
+from app.services.shell_sink import run_in_sandbox
 from app.services.tool_registry import Tool, ToolRegistry
 
 ADMIN_TOOL_NAMES = (
@@ -198,7 +199,7 @@ def admin_tools(db: AsyncSession, user: User, lab_id: str = "", level: int = 0) 
         return {"stopped": False, "ran": names, "cascade": True}
 
     async def run_shell(command: str) -> dict[str, Any]:
-        return {"refused": True, "command": command, "reason": "this lab has no OS command sink"}
+        return await run_in_sandbox(command)
 
     registry.register(Tool(
         name="accept_handoff",
@@ -227,7 +228,7 @@ def admin_tools(db: AsyncSession, user: User, lab_id: str = "", level: int = 0) 
     ))
     registry.register(Tool(
         name="run_shell",
-        description="Ask the fake executor to run a shell command. It always refuses.",
+        description="Run a shell command inside a disposable Docker container. No network, read-only root filesystem.",
         handler=run_shell,
         requires_approval=True,
         parameter_schema={

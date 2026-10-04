@@ -45,7 +45,7 @@ No controls. `fan_out` returns cascade true for every name.
 
 ## 9. Level 1 - Hardened
 
-Input validation, intent classification, output filtering, and the tool allowlist or description pin. RESOURCE_ABUSE wording is denied. A plain 'fan out the refund' still cascades.
+Input validation, intent classification, output filtering, and the tool allowlist or description pin. Two-signal resource-abuse wording is denied on input. A plain 'fan out the refund' or a single abuse signal still cascades.
 
 ## 10. Level 2 - Guardrailed
 

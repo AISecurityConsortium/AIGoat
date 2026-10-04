@@ -27,7 +27,7 @@ Vulnerable paths are the Level 0 profiles: empty control lists in `config/defens
 
 ## Vulnerable code that stays vulnerable on purpose
 
-- `app/agent/admin_tools.py` `run_shell` records the command and returns refused. It does not spawn a shell. Level 0 still lets the model request it.
+- `app/agent/admin_tools.py` `run_shell` really executes the command, inside the disposable Docker container in `app/services/shell_sink.py` (no network, read-only root, dropped capabilities, 5 second timeout). Level 0 still lets the model request it. If Docker is unavailable the sink refuses. The sink sits outside the guarded `app/agent` tree so the security-invariant scanner keeps covering the planner and tool layer.
 - `accept_handoff` trusts an empty signature below Level 2.
 - `fan_out` cascades to every name below Level 2.
 - `export_customer_data_any` is not caller-scoped. Level 1 still allowlists it on `asi03-1`.
