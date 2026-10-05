@@ -240,7 +240,7 @@ const McpHubPage = () => {
               endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
-              Open the refused executor lab
+              Open the sandboxed executor lab
             </Button>
           </SectionCard>
         </Box>

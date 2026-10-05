@@ -150,7 +150,9 @@ const LabWorkspace = () => {
     );
   }
 
-  const back = lab.surface === 'mcp.client' || lab.surface === 'mcp.host'
+  // asi01-1/asi04-1 run on the mcp.host surface but belong to the Agent track.
+  const isAgentLab = String(lab.id).startsWith('asi') || lab.surface === 'agent.runner';
+  const back = !isAgentLab && (lab.surface === 'mcp.client' || lab.surface === 'mcp.host')
     ? { to: '/mcp', label: 'Back to MCP' }
     : { to: '/agent', label: 'Back to Agent' };
 

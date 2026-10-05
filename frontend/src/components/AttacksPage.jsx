@@ -506,10 +506,10 @@ const AttacksPage = () => {
           cat.code === 'MCP05' ? (
             <EmptyState
               title="We refused to build this"
-              description="Command injection would mean a tool argument reaches a shell. Practice the refusal in the executor lab."
+              description="Command injection would mean a tool argument reaches a shell. The agentic track shows the same sink inside a disposable Docker sandbox."
               action={(
                 <Button component={Link} to="/labs/asi05-1" variant="outlined" sx={{ textTransform: 'none' }}>
-                  Open the refused executor lab
+                  Open the sandboxed executor lab
                 </Button>
               )}
             />
