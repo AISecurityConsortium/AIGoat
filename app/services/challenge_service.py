@@ -55,7 +55,7 @@ CHALLENGE_DEFINITIONS: list[dict[str, Any]] = [
         "owasp_ref": "LLM09",
         "evaluator_key": "rag manipulation",
         "hints": [
-            "Navigate to the Knowledge Base page, add a document with misleading content "
+            "Navigate to the RAG page, add a document with misleading content "
             "(fake pricing or fabricated features), then click Sync to Vector DB.",
             "Open the chatbot, enable the KB toggle, and ask about the topic you poisoned.",
             "Your KB document should be semantically similar to the question you will ask.",

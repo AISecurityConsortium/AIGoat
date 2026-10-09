@@ -16,17 +16,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.memory import clear_lab_memory
 from app.agent.service import cancel_runs_for_lab
-from app.labs.containment import clear_halt, halt_lab
-from app.labs.effects import restore_lab_effects
-from app.labs.writeups import get_writeup, list_writeups
-from app.mcp.host import cancel_host_runs
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundError
 from app.core.lab_loader import get_all_labs, get_lab_by_id, get_lab_dict
 from app.core.taxonomy import labs_for_risk, risks_for_lab
+from app.labs.containment import clear_halt, halt_lab
+from app.labs.effects import restore_lab_effects
+from app.labs.writeups import get_writeup, list_writeups
 from app.mcp.env import learner_scope, reset_server_state
 from app.mcp.evidence import append_events, current_attempt, learner_view
+from app.mcp.host import cancel_host_runs
 from app.mcp.service import clear_live_descriptions
 from app.models import LabEvent, LabSession, User
 from app.schemas.lab import LabOut, LabStartOut
@@ -104,8 +104,12 @@ def _lab_out(lab, sess: LabSession | None, *, hints_revealed: int = 0, solution_
         recommended_server_id=_recommended_server(lab),
         servers=[str(item) for item in (lab.surface_config or {}).get("servers") or []],
         has_fixture=bool((lab.surface_config or {}).get("variants")),
-        takeaway=dict(lab.takeaway or {}) if show else {},
+        takeaway=dict(lab.takeaway or {}) if _takeaway_shown(sess, solution_revealed) else {},
     )
+
+
+def _takeaway_shown(sess: LabSession | None, solution_revealed: bool) -> bool:
+    return solution_revealed or bool(sess and sess.completed_at)
 
 
 def _show_walkthrough(lab, sess: LabSession | None, solution_revealed: bool) -> bool:
@@ -339,6 +343,7 @@ async def reset_lab(
             from app.mcp.host import clear_addons
 
             clear_addons(user.id, lab_id)
+        await _reset_killchain(db, user.id, lab_def)
         await db.commit()
         await db.refresh(sess)
         return {"reset": True, "lab_id": lab_id, "reset_count": sess.reset_count, "restored": restored}
@@ -358,9 +363,18 @@ async def reset_lab(
         from app.mcp.host import clear_addons
 
         clear_addons(user.id, lab_id)
+    await _reset_killchain(db, user.id, lab_def)
     db.add(new_sess)
     await db.commit()
     return {"reset": True, "lab_id": lab_id, "reset_count": 1, "restored": restored}
+
+
+async def _reset_killchain(db: AsyncSession, user_id: int, lab_def: dict) -> None:
+    """The generic lab reset is the kill chain hard reset: one authoritative baseline."""
+    from app.labs.killchain import hard_reset, is_killchain
+
+    if is_killchain(lab_def):
+        await hard_reset(db, user_id)
 
 
 @router.post("/api/labs/{lab_id}/halt")
@@ -385,11 +399,11 @@ async def halt_lab_route(
     }
 
 
-async def _require_lab(lab_id: str, user: User, db: AsyncSession):
+async def _require_lab(lab_id: str, user: User, db: AsyncSession, *, guided: bool = True):
     lab = get_lab_by_id(lab_id)
     if lab is None:
         raise HTTPException(status_code=404, detail="Lab not found")
-    if not lab.completion:
+    if guided and not lab.completion:
         raise HTTPException(status_code=404, detail="This lab has no guided completion")
     return lab
 
@@ -530,7 +544,7 @@ async def lab_progress(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    lab = await _require_lab(lab_id, user, db)
+    lab = await _require_lab(lab_id, user, db, guided=False)
     return await _progress_payload(db, user, lab)
 
 
@@ -540,7 +554,7 @@ async def lab_next_hint(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    lab = await _require_lab(lab_id, user, db)
+    lab = await _require_lab(lab_id, user, db, guided=False)
     attempt = await current_attempt(db, user.id, lab_id)
     revealed = await _hint_count(db, user.id, lab_id, attempt)
     hints = list(lab.hints or ())
@@ -708,7 +722,9 @@ async def _progress_payload(db: AsyncSession, user: User, lab) -> dict:
         ).order_by(LabEvent.seq)
     )
     rows = list(result.scalars().all())
-    evaluation = await _evaluation(lab.id, "", "", [], db=db, user_id=user.id)
+    evaluation = (
+        await _evaluation(lab.id, "", "", [], db=db, user_id=user.id) if lab.completion else None
+    )
     hints = list(lab.hints or ())
     revealed = sum(1 for row in rows if row.kind == "hint_revealed")
     sess_result = await db.execute(
@@ -723,5 +739,6 @@ async def _progress_payload(db: AsyncSession, user: User, lab) -> dict:
         "stages": (evaluation or {}).get("stages") or [],
         "reason_code": (evaluation or {}).get("reason_code") or "",
         "hints": hints[:revealed],
+        "hint_total": len(hints),
         "events": learner_view(rows),
     }

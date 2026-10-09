@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Alert, Box, Button, LinearProgress, TextField, Typography } from '@mui/material';
 import { apiClient as axios } from '../../config/api';
 import SectionCard from '../common/SectionCard';
 import { useDefense } from '../../contexts/DefenseContext';
 
-const RetrievalAskPanel = () => {
+const Frame = ({ bare, title, children }) => (
+  bare ? (
+    <Box>
+      <Typography component="h2" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 0.5 }}>{title}</Typography>
+      {children}
+    </Box>
+  ) : <SectionCard title={title}>{children}</SectionCard>
+);
+
+Frame.propTypes = { bare: PropTypes.bool.isRequired, title: PropTypes.string.isRequired, children: PropTypes.node.isRequired };
+
+const RetrievalAskPanel = ({ bare = false }) => {
   const { defenseLevel, levelChosenThisSession } = useDefense();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +49,7 @@ const RetrievalAskPanel = () => {
   };
 
   return (
-    <SectionCard title="Ask with citations">
+    <Frame bare={bare} title="Ask with citations">
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
         Non-streaming rag.kb execute. Quotes that are not in the chunk are marked unverified.
       </Typography>
@@ -78,8 +90,10 @@ const RetrievalAskPanel = () => {
             </Typography>
           </Alert>
       ))}
-    </SectionCard>
+    </Frame>
   );
 };
+
+RetrievalAskPanel.propTypes = { bare: PropTypes.bool };
 
 export default RetrievalAskPanel;

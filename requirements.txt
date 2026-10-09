@@ -22,6 +22,9 @@ httpx>=0.26.0
 # MCP (P9 / D2). mcp 2.x pulls httpx2 (coexists with httpx) and pydantic>=2.12.
 mcp>=2.2.0
 
+# Agentic Kill Chain lab: reads the uploaded invoice PDF (pure Python, no extra deps)
+pypdf>=5,<7
+
 # Configuration
 pyyaml>=6.0.1
 pydantic>=2.5.0

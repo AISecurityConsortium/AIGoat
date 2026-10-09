@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Container, Typography, Box, Grid, Card, CardContent, Chip, Button,
+  Container, Typography, Box, Chip, Button,
   TextField, Alert, CircularProgress, IconButton, Collapse,
   Switch, FormControlLabel, LinearProgress,
 } from '@mui/material';
@@ -18,6 +18,11 @@ import {
 import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 import { useSearchParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import KillChainWorkbench from './killchain/KillChainWorkbench';
+import { killchainPath } from '../utils/taxonomyLinks';
+import HubHero from './common/HubHero';
+import HubRail, { RailPanel } from './common/HubRail';
+import { chipSx, inset, meta, panel, sectionTitle } from './common/panelStyles';
 
 const DIFF = {
   beginner:     { label: 'Beginner',     order: 0, hue: 'secondary' },
@@ -27,6 +32,34 @@ const DIFF = {
 };
 
 const KB_CHALLENGES = new Set([3, 7, 8]);
+
+const CHALLENGE_STEPS = [
+  'Pick a challenge and press Start to activate its chat.',
+  'Craft your attack in the chat until the model gives up the flag.',
+  'Copy the flag, submit it, and earn the points.',
+];
+
+const CHALLENGE_FLOW = {
+  caption: 'Each challenge has its own chat environment. Progress is saved to your account.',
+  steps: [
+    { title: 'Start', detail: 'activate the chat' },
+    { title: 'Attack', detail: 'craft prompts', accent: true },
+    { title: 'Flag', detail: 'AIGOAT{...}' },
+    { title: 'Points', detail: 'score and progress', warn: true },
+  ],
+};
+
+const FILTERS = ['All', 'Beginner', 'Intermediate', 'Expert', 'Completed', 'Incomplete'];
+
+const Stat = ({ label, value, total = null, color }) => (
+  <Box sx={{ ...inset, flex: '1 1 0', minWidth: 0, p: 1.25 }}>
+    <Typography sx={{ ...meta, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
+    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+      <Typography sx={{ color, fontSize: '1.5rem', fontWeight: 800, lineHeight: 1.2 }}>{value}</Typography>
+      {total !== null && <Typography sx={meta}>/ {total}</Typography>}
+    </Box>
+  </Box>
+);
 
 /* ── Chat widget ────────────────────────────────────────────────────── */
 
@@ -154,6 +187,7 @@ const ChallengePage = () => {
   const [starting, setStarting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [hintsOpen, setHintsOpen] = useState(false);
+  const killchainOpen = searchParams.get('killchain') === '1';
 
   const headers = () => {
     const t = localStorage.getItem('token');
@@ -229,6 +263,25 @@ const ChallengePage = () => {
   const surface = theme.palette.custom?.surface?.elevated ?? (dark ? '#111318' : '#fff');
   const border = theme.palette.custom?.border?.subtle ?? theme.palette.divider;
   const muted = theme.palette.custom?.text?.muted ?? 'text.secondary';
+
+  /* ── Kill chain (hosted here, not under /labs) ────────────── */
+  if (killchainOpen) {
+    return (
+      <Box sx={{ bgcolor: 'background.default', minHeight: 'calc(100vh - 56px)', py: 3 }}>
+        <Container maxWidth="xl">
+          <Button
+            startIcon={<BackIcon />}
+            onClick={() => navigate('/challenges', { replace: true })}
+            size="small"
+            sx={{ textTransform: 'none', fontWeight: 600, mb: 2, color: 'text.secondary' }}
+          >
+            Back to Challenges
+          </Button>
+          <KillChainWorkbench />
+        </Container>
+      </Box>
+    );
+  }
 
   /* ── Loading ──────────────────────────────────────────────── */
   if (loading) return (
@@ -423,150 +476,170 @@ const ChallengePage = () => {
   const pct = challenges.length ? Math.round((done / challenges.length) * 100) : 0;
 
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: 'calc(100vh - 56px)', py: 4 }}>
-      <Container maxWidth="lg">
-        {/* Header */}
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em', mb: 0.5 }}>
-          Security Challenges
-        </Typography>
-        <Typography sx={{ color: muted, mb: 3.5, fontSize: '1rem', maxWidth: 600 }}>
-          Exploit LLM vulnerabilities across 9 challenges. Each challenge has a dedicated chat environment. Craft your attack, earn the flag, and submit it.
-        </Typography>
+    <Box sx={{ bgcolor: 'background.default', minHeight: 'calc(100vh - 56px)', py: 2 }}>
+      <Container maxWidth="xl">
+        <Box sx={{ maxWidth: 1560, mx: 'auto' }}>
+          <HubHero
+            eyebrow="Capture the flag"
+            title="Security Challenges"
+            description={`Exploit LLM vulnerabilities across ${challenges.length || 9} challenges. Each challenge has a dedicated chat environment. Craft your attack, earn the flag, and submit it.`}
+            steps={CHALLENGE_STEPS}
+            flow={CHALLENGE_FLOW}
+          />
 
-        {error && <Alert severity="warning" sx={{ mb: 3, borderRadius: '10px' }}>{error}</Alert>}
+          {error && <Alert severity="warning" sx={{ mb: 2, borderRadius: '10px' }}>{error}</Alert>}
 
-        {/* Progress + Stats */}
-        <Box sx={{
-          display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap',
-        }}>
-          <Box sx={{ flex: 2, minWidth: 240, bgcolor: surface, border: `1px solid ${border}`, borderRadius: '14px', px: 3, py: 2.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
-              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: muted }}>
-                Progress
-              </Typography>
-              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary' }}>{pct}%</Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={pct} sx={{
-              height: 6, borderRadius: 3, mb: 1.5,
-              bgcolor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-              '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: 'primary.main' },
-            }} />
-            <Typography sx={{ fontSize: '0.9375rem', color: muted }}>{done} of {challenges.length} completed</Typography>
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 120, bgcolor: surface, border: `1px solid ${border}`, borderRadius: '14px', px: 3, py: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: muted, mb: 0.5 }}>Points</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-              <Typography sx={{ color: 'warning.main', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{totalPts}</Typography>
-              <Typography sx={{ color: muted, fontSize: '0.9375rem', fontWeight: 500 }}>/ {maxPts}</Typography>
-            </Box>
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 120, bgcolor: surface, border: `1px solid ${border}`, borderRadius: '14px', px: 3, py: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: muted, mb: 0.5 }}>Solved</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-              <Typography sx={{ color: 'secondary.main', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{done}</Typography>
-              <Typography sx={{ color: muted, fontSize: '0.9375rem', fontWeight: 500 }}>/ {challenges.length}</Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 0.75, mb: 3.5, flexWrap: 'wrap' }}>
-          {['All', 'Beginner', 'Intermediate', 'Expert', 'Completed', 'Incomplete'].map(f => (
-            <Chip key={f} label={f} size="small" onClick={() => setFilter(f)} sx={{
-              bgcolor: filter === f ? alpha(theme.palette.primary.main, 0.15) : 'transparent',
-              color: filter === f ? 'primary.light' : muted,
-              fontWeight: 600, fontSize: '0.8125rem',
-              border: `1px solid ${filter === f ? alpha(theme.palette.primary.main, 0.3) : border}`,
-              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
-            }} />
-          ))}
-        </Box>
-
-        {/* Challenge cards */}
-        {sortedGroups.map(([difficulty, chs]) => {
-          const dc = DIFF[difficulty] || DIFF.beginner;
-          return (
-            <Box key={difficulty} sx={{ mb: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                <Chip label={dc.label} size="small" sx={{
-                  bgcolor: alpha(theme.palette[dc.hue].main, 0.1),
-                  color: `${dc.hue}.main`,
-                  fontWeight: 700, fontSize: '0.8125rem',
-                  border: `1px solid ${alpha(theme.palette[dc.hue].main, 0.2)}`,
-                }} />
-                <Typography sx={{ color: muted, fontSize: '0.9375rem' }}>
-                  {chs.length} challenge{chs.length !== 1 ? 's' : ''}
-                </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 1.5,
+              alignItems: 'start',
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 7fr) minmax(300px, 3fr)', lg: 'minmax(0, 7fr) minmax(340px, 3fr)' },
+            }}
+          >
+            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ ...panel, display: 'flex', gap: 0.75, flexWrap: 'wrap' }} role="group" aria-label="Filter challenges">
+                {FILTERS.map(f => (
+                  <Chip
+                    key={f}
+                    label={f}
+                    size="small"
+                    onClick={() => setFilter(f)}
+                    aria-pressed={filter === f}
+                    sx={{
+                      bgcolor: filter === f ? alpha(theme.palette.primary.main, 0.15) : 'transparent',
+                      color: filter === f ? 'primary.light' : muted,
+                      fontWeight: 600, fontSize: '0.8125rem',
+                      border: `1px solid ${filter === f ? alpha(theme.palette.primary.main, 0.3) : border}`,
+                      '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
+                    }}
+                  />
+                ))}
               </Box>
-              <Grid container spacing={2}>
-                {chs.map(ch => {
-                  const cd = DIFF[ch.difficulty] || DIFF.beginner;
-                  return (
-                    <Grid item xs={12} sm={6} md={4} key={ch.id}>
-                      <Card onClick={() => open(ch)} sx={{
-                        bgcolor: surface, cursor: 'pointer', height: '100%', position: 'relative',
-                        border: ch.completed
-                          ? `1px solid ${alpha(theme.palette.success.main, 0.25)}`
-                          : `1px solid ${border}`,
-                        borderRadius: '14px', transition: 'all 0.2s ease',
-                        overflow: 'hidden',
-                        '&:hover': {
-                          borderColor: alpha(theme.palette[cd.hue].main, 0.4),
-                          transform: 'translateY(-3px)',
-                          boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, dark ? 0.4 : 0.12)}`,
-                        },
-                        '&::before': {
-                          content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                          bgcolor: ch.completed ? 'success.main' : theme.palette[cd.hue].main,
-                          opacity: ch.completed ? 0.6 : 0.4,
-                        },
-                      }}>
-                        <CardContent sx={{ p: 2.5, pb: '20px !important' }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                              <Chip label={ch.owasp_ref} size="small" sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.light', fontSize: '0.8125rem', fontWeight: 600, height: 20 }} />
-                              {KB_CHALLENGES.has(ch.id) && (
-                                <Chip label="KB" size="small" sx={{ bgcolor: alpha(theme.palette.warning.main, 0.1), color: 'warning.main', fontSize: '0.8125rem', fontWeight: 600, height: 20 }} />
-                              )}
-                            </Box>
-                            {ch.completed && <CheckIcon sx={{ color: 'success.main', fontSize: '1.15rem' }} />}
-                          </Box>
-                          <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: '1rem', mb: 0.75, lineHeight: 1.3 }}>
-                            {ch.title}
-                          </Typography>
-                          <Typography sx={{
-                            color: muted, fontSize: '0.9375rem', mb: 2, lineHeight: 1.55,
-                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                          }}>
-                            {ch.description}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Chip label={cd.label} size="small" sx={{
-                              bgcolor: alpha(theme.palette[cd.hue].main, 0.1),
-                              color: `${cd.hue}.main`,
-                              fontSize: '0.8125rem', fontWeight: 600, height: 18,
-                            }} />
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                              <StarIcon sx={{ fontSize: '0.9375rem', color: 'warning.main' }} />
-                              <Typography sx={{ color: 'warning.main', fontWeight: 700, fontSize: '0.9375rem' }}>{ch.points}</Typography>
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-          );
-        })}
 
-        {filtered.length === 0 && !error && (
-          <Box sx={{ textAlign: 'center', py: 8, opacity: 0.5 }}>
-            <TrophyIcon sx={{ fontSize: 48, mb: 1 }} />
-            <Typography sx={{ fontSize: '1rem' }}>No challenges match your filter.</Typography>
+              {sortedGroups.map(([difficulty, chs]) => {
+                const dc = DIFF[difficulty] || DIFF.beginner;
+                return (
+                  <Box key={difficulty} component="section" aria-label={`${dc.label} challenges`} sx={panel}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+                      <Chip label={dc.label} size="small" sx={{
+                        bgcolor: alpha(theme.palette[dc.hue].main, 0.1),
+                        color: `${dc.hue}.main`,
+                        fontWeight: 700, fontSize: '0.8125rem',
+                        border: `1px solid ${alpha(theme.palette[dc.hue].main, 0.2)}`,
+                      }} />
+                      <Typography sx={meta}>
+                        {chs.length} challenge{chs.length !== 1 ? 's' : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'grid', gap: 1.25, gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(3, minmax(0, 1fr))' } }}>
+                      {chs.map(ch => {
+                        const cd = DIFF[ch.difficulty] || DIFF.beginner;
+                        return (
+                          <Box
+                            key={ch.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open challenge ${ch.title}`}
+                            onClick={() => open(ch)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(ch); }
+                            }}
+                            sx={{
+                              ...inset,
+                              p: 1.75, cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                              transition: 'border-color 0.15s',
+                              borderColor: ch.completed ? alpha(theme.palette.success.main, 0.35) : undefined,
+                              '&:hover': { borderColor: alpha(theme.palette[cd.hue].main, 0.6) },
+                              '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 },
+                              '&::before': {
+                                content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                                bgcolor: ch.completed ? 'success.main' : theme.palette[cd.hue].main,
+                                opacity: ch.completed ? 0.6 : 0.4,
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Chip label={ch.owasp_ref} size="small" sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.light', fontWeight: 600, ...chipSx }} />
+                                {KB_CHALLENGES.has(ch.id) && (
+                                  <Chip label="KB" size="small" sx={{ bgcolor: alpha(theme.palette.warning.main, 0.1), color: 'warning.main', fontWeight: 600, ...chipSx }} />
+                                )}
+                              </Box>
+                              {ch.completed && <CheckIcon aria-label="Solved" sx={{ color: 'success.main', fontSize: '1.1rem' }} />}
+                            </Box>
+                            <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: '0.95rem', mb: 0.5, lineHeight: 1.3 }}>
+                              {ch.title}
+                            </Typography>
+                            <Typography sx={{
+                              ...meta, fontSize: '0.85rem', mb: 1.5,
+                              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                            }}>
+                              {ch.description}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Chip label={cd.label} size="small" sx={{
+                                bgcolor: alpha(theme.palette[cd.hue].main, 0.1),
+                                color: `${cd.hue}.main`,
+                                fontWeight: 600, ...chipSx,
+                              }} />
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                                <StarIcon sx={{ fontSize: '0.95rem', color: 'warning.main' }} />
+                                <Typography sx={{ color: 'warning.main', fontWeight: 700, fontSize: '0.9rem' }}>{ch.points}</Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                );
+              })}
+
+              {filtered.length === 0 && !error && (
+                <Box sx={{ ...panel, textAlign: 'center', py: 6, color: 'text.secondary' }}>
+                  <TrophyIcon sx={{ fontSize: 40, mb: 1, opacity: 0.6 }} />
+                  <Typography sx={{ fontSize: '1rem' }}>No challenges match your filter.</Typography>
+                </Box>
+              )}
+            </Box>
+
+            <HubRail label="Challenge progress">
+              <Box sx={panel}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+                  <Typography component="h2" sx={sectionTitle}>Progress</Typography>
+                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{pct}%</Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={pct} aria-label="Challenge progress" sx={{
+                  height: 6, borderRadius: 3, mb: 1,
+                  bgcolor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                  '& .MuiLinearProgress-bar': { borderRadius: 3, bgcolor: 'primary.main' },
+                }} />
+                <Typography sx={{ ...meta, mb: 1.25 }}>{done} of {challenges.length} completed</Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Stat label="Points" value={totalPts} total={maxPts} color="warning.main" />
+                  <Stat label="Solved" value={done} total={challenges.length} color="secondary.main" />
+                </Box>
+              </Box>
+
+              <RailPanel
+                title="Agentic Kill Chain"
+                lead="Poison an eCommerce agent through a review or an invoice PDF, trigger it with a routine request, then see what human approval stops."
+              >
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate(killchainPath())}
+                    sx={{ textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Open the kill chain
+                  </Button>
+                </Box>
+              </RailPanel>
+            </HubRail>
           </Box>
-        )}
+        </Box>
       </Container>
     </Box>
   );

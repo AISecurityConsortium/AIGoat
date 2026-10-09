@@ -623,6 +623,8 @@ async def host_turn(
     decision: str | None = None,
 ) -> dict[str, Any]:
     level = defense_level if defense_level in (0, 1, 2) else 0
+    if lab_id == "killchain-1":
+        raise ValidationError("The Agentic Kill Chain runs in its own workbench: POST /api/killchain/turn.")
     if lab_id and is_halted(user.id, lab_id):
         raise ValidationError("This lab is halted. Reset the lab before starting another run.")
     if run_id and decision:

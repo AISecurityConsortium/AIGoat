@@ -53,6 +53,7 @@ export function HintLadder({ labId }) {
   const load = async () => {
     const { data } = await apiClient.get(API_CONFIG.ENDPOINTS.LAB_PROGRESS(labId), { headers: authHeaders() });
     setHints(data.hints || []);
+    if (data.hint_total) setTotal(data.hint_total);
   };
 
   useEffect(() => {

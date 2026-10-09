@@ -1,21 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Alert, Box, Button, Chip, CircularProgress, Container, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Container, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { apiClient } from '../config/api';
 import API_CONFIG from '../config/api';
-import AgentConsole from './agent/AgentConsole';
+import AgentWorkbench from './agent/AgentWorkbench';
 import McpConsole from './mcp/McpConsole';
 import McpHostLab from './mcp/McpHostLab';
 import McpRecordedSession from './mcp/McpRecordedSession';
-import PerimeterTrace, { borderAngles } from './common/PerimeterTrace';
-import { RelatedMap, SectionCard, LabPrimer } from './common';
+import { borderAngles } from './common/PerimeterTrace';
+import { SectionCard, LabPrimer } from './common';
+import LabHeader from './common/LabHeader';
+import LabSwitcher from './common/LabSwitcher';
 import { LabExpectations } from './common/LabPrimer';
 import { EvidenceSubmission } from './labs/LabGuide';
-import { CheckCircleOutline as CheckIcon } from '@mui/icons-material';
 import { invalidateLabsCache, useLabs } from '../hooks/useLabs';
-import { MCP_NAV_GROUPS } from '../utils/labTeaching';
+import { AGENT_NAV_GROUPS, MCP_NAV_GROUPS, labChipLabel } from '../utils/labTeaching';
+
+const mcpChipLabel = (id) => (id.startsWith('mcp') ? `MCP${id.slice(3)}` : id);
 
 const completionKey = () => `aigoat_owasp_completed_${localStorage.getItem('username') || 'anonymous'}`;
 
@@ -38,7 +41,6 @@ const LabWorkspace = () => {
   const labId = paramId || searchParams.get('lab');
   const [lab, setLab] = useState(null);
   const [error, setError] = useState(null);
-  const [seedGoal, setSeedGoal] = useState('');
   const [goalMet, setGoalMet] = useState(false);
   const [pushedEvaluation, setPushedEvaluation] = useState(null);
   const ringRef = useRef(null);
@@ -55,6 +57,10 @@ const LabWorkspace = () => {
       navigate('/attacks', { replace: true });
       return undefined;
     }
+    if (labId === 'killchain-1') {
+      navigate('/challenges?killchain=1', { replace: true });
+      return undefined;
+    }
     let cancelled = false;
     const token = localStorage.getItem('token');
     apiClient.get(API_CONFIG.ENDPOINTS.LAB_DETAIL(labId), {
@@ -63,7 +69,6 @@ const LabWorkspace = () => {
       if (cancelled) return;
       if (data.surface === 'agent.runner' || data.surface === 'mcp.client' || data.surface === 'mcp.host') {
         setLab(data);
-        setSeedGoal('');
         setGoalMet(Boolean(data.completed_at));
         return;
       }
@@ -162,8 +167,6 @@ const LabWorkspace = () => {
   const labNames = Object.fromEntries((catalog || []).map((item) => [item.id, item.name]));
   const completedIds = new Set((catalog || []).filter((item) => item.completed_at).map((item) => item.id));
   const series = MCP_NAV_GROUPS.find((group) => group.series && group.labs.includes(lab.id));
-  const seriesIndex = series ? series.labs.indexOf(lab.id) : -1;
-  const seriesNext = series ? series.labs[seriesIndex + 1] : '';
   const onCompletionChange = (done) => {
     setGoalMet(done);
     if (labId && String(labId).startsWith('mcp') && !done) setAttackLabComplete(labId, false);
@@ -172,7 +175,7 @@ const LabWorkspace = () => {
   };
 
   return (
-    <Container maxWidth={mcpLab ? 'xl' : 'md'} sx={{ py: mcpLab ? 2 : 4 }}>
+    <Container maxWidth={mcpLab || isAgentLab ? 'xl' : 'md'} sx={{ py: mcpLab || isAgentLab ? 2 : 4 }}>
       <style>
         {`@property --aigoat-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }`}
       </style>
@@ -186,53 +189,29 @@ const LabWorkspace = () => {
         >
           {back.label}
         </Button>
-        {mcpLab && (
+        {(mcpLab || isAgentLab) && (
           <>
-            <Box aria-hidden="true" sx={{ width: '1px', alignSelf: 'stretch', bgcolor: 'divider' }} />
-            <Box component="nav" aria-label="MCP labs" sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1.5, rowGap: 0.5, alignItems: 'center', minWidth: 0, flex: '1 1 0' }}>
-              {MCP_NAV_GROUPS.map((group) => (
-                <Box key={group.id} role="group" aria-label={group.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.62rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.25, whiteSpace: 'nowrap' }}>
-                    {group.label}
-                  </Typography>
-                  {group.labs.map((id, index) => {
-                    const current = id === lab.id;
-                    const step = group.steps?.[id];
-                    return (
-                      <React.Fragment key={id}>
-                        {group.series && index > 0 && (
-                          <Typography aria-hidden="true" sx={{ fontSize: '0.7rem', color: 'text.disabled' }}>→</Typography>
-                        )}
-                        <Tooltip title={step ? `Step ${index + 1}: ${labNames[id] || id}` : (labNames[id] || id)}>
-                          <Chip
-                            component={RouterLink}
-                            to={`/labs/${id}`}
-                            label={`MCP${id.slice(3)}`}
-                            size="small"
-                            clickable
-                            aria-current={current ? 'page' : undefined}
-                            icon={completedIds.has(id) ? <CheckIcon sx={{ fontSize: '0.8rem !important' }} /> : undefined}
-                            color={current ? 'primary' : 'default'}
-                            variant="outlined"
-                            sx={{
-                              height: 20,
-                              textDecoration: 'none',
-                              fontWeight: current ? 700 : 500,
-                              '& .MuiChip-label': { fontSize: '0.7rem', px: 0.6 },
-                              ...(current ? {} : { opacity: 0.72 }),
-                            }}
-                          />
-                        </Tooltip>
-                      </React.Fragment>
-                    );
-                  })}
-                </Box>
-              ))}
-            </Box>
+            <Box aria-hidden="true" sx={{ display: { xs: 'none', sm: 'block' }, width: '1px', alignSelf: 'stretch', bgcolor: 'divider' }} />
+            <LabSwitcher
+              groups={isAgentLab ? AGENT_NAV_GROUPS : MCP_NAV_GROUPS}
+              ariaLabel={isAgentLab ? 'Agentic labs' : 'MCP labs'}
+              currentId={lab.id}
+              labNames={labNames}
+              completedIds={completedIds}
+              labelFor={isAgentLab ? labChipLabel : mcpChipLabel}
+            />
           </>
         )}
       </Box>
-      {mcpClient && lab.ui?.recorded_session ? (
+      {isAgentLab ? (
+        <AgentWorkbench
+          lab={lab}
+          labId={labId}
+          goalMet={goalMet}
+          labNames={labNames}
+          onCompletionChange={onCompletionChange}
+        />
+      ) : mcpClient && lab.ui?.recorded_session ? (
         <McpRecordedSession
           labId={labId}
           lab={lab}
@@ -253,65 +232,13 @@ const LabWorkspace = () => {
             lab={lab}
             pushedEvaluation={pushedEvaluation}
             header={(
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-                  <Typography component="h1" sx={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.3, flex: '1 1 auto', minWidth: 0 }}>
-                    <Box component="span" sx={{ color: 'primary.light', mr: 1 }}>{String(lab.id).toUpperCase()}</Box>
-                    {String(lab.name || '').replace(/^MCP\d+\s*[-–]\s*/, '')}
-                  </Typography>
-                  {goalMet && (
-                    <Chip label="Lab complete" size="small" color="success" variant="outlined" sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.72rem', fontWeight: 700 } }} />
-                  )}
-                  {(lab.risks || []).length > 0 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mr: 0.25 }}>Risks</Typography>
-                      {lab.risks.map((risk) => (
-                        <Chip
-                          key={risk}
-                          label={String(risk).split(':').pop()}
-                          size="small"
-                          variant="outlined"
-                          sx={{ height: 20, '& .MuiChip-label': { fontSize: '0.7rem', px: 0.75 } }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-                {series && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-                      {`${series.label} series · Step ${seriesIndex + 1} of ${series.labs.length}: ${series.steps[lab.id]}`}
-                    </Typography>
-                    {seriesNext && (
-                      <Button
-                        component={RouterLink}
-                        to={`/labs/${seriesNext}`}
-                        size="small"
-                        sx={{ textTransform: 'none', fontSize: '0.78rem', py: 0, minHeight: 0 }}
-                      >
-                        {`Next: MCP${seriesNext.slice(3)} ${series.steps[seriesNext]} →`}
-                      </Button>
-                    )}
-                  </Box>
-                )}
-                <Box
-                  sx={{
-                    position: 'relative',
-                    mt: 1.25,
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: '8px',
-                    border: (t) => `1px solid ${goalMet ? alpha(t.palette.success.main, 0.5) : alpha(t.palette.primary.light, 0.22)}`,
-                    bgcolor: (t) => alpha(goalMet ? t.palette.success.main : t.palette.primary.main, 0.05),
-                  }}
-                >
-                  {!goalMet && <PerimeterTrace radius={8} />}
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Objective
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.9rem', lineHeight: 1.5, mt: 0.25 }}>{lab.description}</Typography>
-                </Box>
-              </Box>
+              <LabHeader
+                lab={lab}
+                goalMet={goalMet}
+                objective={lab.description}
+                series={series}
+                labelFor={mcpChipLabel}
+              />
             )}
             completed={goalMet}
             onGoalMet={onCompletionChange}
@@ -416,27 +343,7 @@ const LabWorkspace = () => {
             />
           )}
         </Box>
-      ) : (
-        <Box>
-          <SectionCard title="In this lab" dense>
-            <RelatedMap
-              dense
-              risks={lab.risks || []}
-              surface={lab.surface}
-              relatedLabIds={lab.related_lab_ids || []}
-            />
-          </SectionCard>
-          <Box sx={{ mt: 2 }}>
-            <LabPrimer
-              lab={lab}
-              onTryPayload={lab.surface === 'agent.runner' ? setSeedGoal : undefined}
-            />
-          </Box>
-          <Box sx={{ mt: 2 }}>
-            <AgentConsole labId={labId} lab={lab} seedGoal={seedGoal} />
-          </Box>
-        </Box>
-      )}
+      ) : null}
     </Container>
   );
 };

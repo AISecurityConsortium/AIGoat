@@ -194,13 +194,18 @@ class OllamaClient:
         tools: list[dict[str, Any]] | None = None,
         model: str | None = None,
     ) -> dict[str, Any]:
+        # Ollama's /api/chat has no top-level "system" field (that belongs to /api/generate).
+        # An unknown key is silently dropped, so the model never saw the system prompt. The
+        # system text has to travel as the first message with role "system". The caller's list
+        # is copied, not modified, and any messages it already holds keep their order.
+        chat_messages = list(messages)
+        if system:
+            chat_messages.insert(0, {"role": "system", "content": system})
         payload: dict[str, Any] = {
             "model": model or self.model,
-            "messages": messages,
+            "messages": chat_messages,
             "stream": False,
         }
-        if system:
-            payload["system"] = system
         if options:
             payload["options"] = options
         if tools:

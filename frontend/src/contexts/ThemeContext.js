@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { createTheme } from '@mui/material/styles';
 
 const ThemeContext = createContext();
@@ -369,7 +369,6 @@ export const ThemeToggleProvider = ({ children }) => {
     const saved = localStorage.getItem('aigoat-theme');
     return saved || 'dark';
   });
-  const [liquidGlass, setLiquidGlass] = useState(() => localStorage.getItem('aigoat_liquid_glass') !== '0');
 
   const toggleTheme = () => {
     setMode((prev) => {
@@ -379,24 +378,10 @@ export const ThemeToggleProvider = ({ children }) => {
     });
   };
 
-  const toggleLiquidGlass = () => {
-    setLiquidGlass((prev) => {
-      const next = !prev;
-      localStorage.setItem('aigoat_liquid_glass', next ? '1' : '0');
-      return next;
-    });
-  };
-
-  const theme = useMemo(() => {
-    const base = mode === 'dark' ? darkTheme : lightTheme;
-    if (!liquidGlass) return base;
-    return createTheme(base, {
-      palette: { background: { default: 'transparent' } },
-    });
-  }, [mode, liquidGlass]);
+  const theme = mode === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme, liquidGlass, toggleLiquidGlass, theme }}>
+    <ThemeContext.Provider value={{ mode, toggleTheme, theme }}>
       {children}
     </ThemeContext.Provider>
   );

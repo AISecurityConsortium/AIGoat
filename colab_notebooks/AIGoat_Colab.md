@@ -16,3 +16,10 @@ Follow these steps to get the AIGoat Colab notebook up and running:
 4.  **Execute All Cells:**
     *   After the notebook has finished loading in Colab, Select `Runtime` to GPU.
     *   Select `Run all` to execute every cell in the notebook sequentially.
+
+5.  **Optional: add a tool-calling model:**
+    *   The notebook installs Mistral, which is enough for the chat and RAG labs.
+    *   The agent labs, the MCP host labs and the Agentic Kill Chain work best with a tool-capable model. Run the optional cell "7b" (`qwen3.5:9b`, about 6.6 GB) before the backend starts. A GPU runtime is recommended.
+
+6.  **Open the app:**
+    *   Click the link printed by the last cell. Log in with `alice / password123` (also `bob`, `charlie`, `frank`) or `admin / admin123`. The admin assistant, the RAG page and the Agentic Kill Chain (`/challenges?killchain=1`) are staff-only.

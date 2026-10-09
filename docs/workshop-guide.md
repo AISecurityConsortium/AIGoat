@@ -386,7 +386,7 @@ Each migrated lab has a blank sheet at `docs/workshop/validation/<lab-id>.md`. A
 | Slow model responses | Ensure at least 8GB RAM is available. Consider using a smaller model like `tinyllama` |
 | Frontend not loading | Check that the backend is healthy first (frontend depends on it). Check browser console for CORS errors |
 | Challenge flag not appearing | The exploit must be genuinely detected server-side. Submitting random flags will be rejected even if the flag format is correct |
-| RAG not returning results | Ensure the knowledge base has been synced. Visit the Knowledge Base page and click the sync button |
+| RAG not returning results | Ensure the knowledge base has been synced. Visit the RAG page and click the sync button |
 
 ---
 

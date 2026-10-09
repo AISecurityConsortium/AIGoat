@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, Navigate, useSearchParams } from 'react-router-dom';
 import {
   Alert, Box, Button, Chip, FormControlLabel, Switch, TextField, Typography,
 } from '@mui/material';
@@ -10,61 +10,6 @@ import DefenseLevelToggle from '../DefenseLevelToggle';
 import { SectionCard } from '../common';
 import { SCORED_TOOL } from '../../utils/labTeaching';
 import { useDefense } from '../../contexts/DefenseContext';
-
-const parseJson = (value) => {
-  if (typeof value !== 'string') return value;
-  const trimmed = value.trim();
-  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return value;
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return value;
-  }
-};
-
-const unwrapObservation = (raw) => {
-  const data = parseJson(raw);
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
-  const text = data.text;
-  if (Array.isArray(text) && text.length === 1) return parseJson(text[0]);
-  if (typeof text === 'string') {
-    const inner = parseJson(text);
-    if (inner !== text) return inner;
-  }
-  return data;
-};
-
-const formatObservation = (raw) => {
-  const data = unwrapObservation(raw);
-  if (data && typeof data === 'object' && !Array.isArray(data) && data.redacted) {
-    const control = data.control_id ? ` by ${data.control_id}` : '';
-    return `Redacted${control}. ${data.reason || ''}`.trim();
-  }
-  if (data && Array.isArray(data.reviews)) {
-    if (data.reviews.length === 0) return 'No reviews.';
-    return data.reviews.map((row) => {
-      const who = row.username || 'unknown';
-      const rating = row.rating == null ? '' : `, rating ${row.rating}`;
-      return `${who}${rating}: ${row.comment || ''}`;
-    }).join('\n');
-  }
-  if (data && data.refunded === true) {
-    return `Refund confirmed for order ${data.order_id}.`;
-  }
-  if (typeof data === 'string') return data;
-  try {
-    return JSON.stringify(data, null, 2);
-  } catch {
-    return String(raw || '');
-  }
-};
-
-const decisionColor = (decision) => {
-  if (decision === 'allow') return 'success';
-  if (decision === 'deny') return 'error';
-  if (decision === 'require_approval') return 'warning';
-  return 'default';
-};
 
 const authHeaders = () => {
   const token = localStorage.getItem('token');
@@ -198,7 +143,7 @@ const chatReply = (answer, steps) => {
   return sentences[0] || 'The desk did not return a plain answer. The raw result is in This turn.';
 };
 
-const AdminAssistantPage = () => {
+const AdminAssistantView = () => {
   const [params] = useSearchParams();
   // The admin assistant is the ASI01 goal-hijack surface. Default to that lab so
   // a visit from the nav (no ?lab= param) still runs the evaluator and applies
@@ -627,6 +572,13 @@ const AdminAssistantPage = () => {
       />
     </Box>
   );
+};
+
+// The Agentic Kill Chain has its own workbench under Challenges.
+const AdminAssistantPage = () => {
+  const [params] = useSearchParams();
+  if (params.get('lab') === 'killchain-1') return <Navigate to="/challenges?killchain=1" replace />;
+  return <AdminAssistantView />;
 };
 
 export default AdminAssistantPage;

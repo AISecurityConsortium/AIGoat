@@ -53,6 +53,7 @@ from app.api.auth import router as auth_router
 from app.api.challenge_chat import router as challenge_chat_router
 from app.api.challenges import router as challenge_router
 from app.api.chat import router as chat_router
+from app.api.killchain import router as killchain_router
 from app.api.labs import router as lab_router
 from app.api.mcp import router as mcp_router
 from app.api.profile import router as profile_router
@@ -78,3 +79,4 @@ app.include_router(taxonomy_router)
 app.include_router(surfaces_router)
 app.include_router(agent_router)
 app.include_router(mcp_router)
+app.include_router(killchain_router)

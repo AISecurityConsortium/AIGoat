@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundError
 from app.core.lab_loader import get_lab_by_id
+from app.mcp.progress import record_lab_result
 from app.models import User
 from app.schemas.agent import (
     AgentApproveIn,
@@ -43,7 +44,7 @@ async def create_run(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    return await start_run(
+    payload = await start_run(
         db,
         user,
         lab_id=body.lab_id,
@@ -51,6 +52,8 @@ async def create_run(
         session_token=body.session_token,
         defense_level=body.defense_level,
     )
+    await record_lab_result(db, user, body.lab_id, payload.get("evaluation"))
+    return payload
 
 
 @router.get("/runs/{run_id}", response_model=AgentRunOut)
@@ -69,13 +72,15 @@ async def approve_run(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    return await resolve_approval(
+    payload = await resolve_approval(
         db,
         user,
         run_id,
         step_seq=body.step_seq,
         decision=body.decision,
     )
+    await record_lab_result(db, user, payload.get("lab_id"), payload.get("evaluation"))
+    return payload
 
 
 @router.post("/runs/{run_id}/cancel", response_model=AgentRunOut)

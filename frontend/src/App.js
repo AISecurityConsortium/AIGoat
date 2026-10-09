@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -38,7 +38,7 @@ import { ChatProvider } from './contexts/ChatContext';
 import { DefenseProvider } from './contexts/DefenseContext';
 import { useFeatureFlag } from './hooks/useFeatureFlags';
 import TrainingOffer from './components/common/TrainingOffer';
-import './liquidGlass.css';
+import ReleaseVersion from './components/common/ReleaseVersion';
 
 const GITHUB_REPO = 'AISecurityConsortium/AIGoat';
 
@@ -70,9 +70,12 @@ const Footer = () => {
             sx={{ width: 28, height: 28, borderRadius: '8px', opacity: 0.85 }}
           />
           <Box>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-              AI Goat
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6 }}>
+              <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                AI Goat
+              </Typography>
+              <ReleaseVersion sx={{ fontSize: '0.65rem', color: text, position: 'relative', top: '-0.05rem' }} />
+            </Box>
             <Typography sx={{ fontSize: '0.875rem', color: text, lineHeight: 1.3 }}>
               AI Security Learning Platform
             </Typography>
@@ -134,12 +137,7 @@ const DynamicKnowledgeBase = () => {
 };
 
 function AppContent() {
-  const { theme, liquidGlass, mode } = useThemeMode();
-  useEffect(() => {
-    document.body.classList.toggle('liquid-glass', liquidGlass);
-    document.body.dataset.glassMode = mode;
-    return () => document.body.classList.remove('liquid-glass');
-  }, [liquidGlass, mode]);
+  const { theme } = useThemeMode();
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

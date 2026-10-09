@@ -12,9 +12,16 @@ export function riskPath(qualifiedId) {
   return `/owasp-top-10/${encodeURIComponent(fw)}/${encodeURIComponent(code)}`;
 }
 
+export const KILLCHAIN_ID = 'killchain-1';
+
+export function killchainPath() {
+  return '/challenges?killchain=1';
+}
+
 export function labPath(lab) {
   const id = typeof lab === 'string' ? lab : lab?.id;
   if (!id) return '/attacks';
+  if (id === KILLCHAIN_ID) return killchainPath();
   const surface = typeof lab === 'string' ? null : lab?.surface;
   if (surface === 'agent.runner' || surface === 'mcp.client') {
     return `/labs/${encodeURIComponent(id)}`;

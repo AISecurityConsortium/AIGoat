@@ -47,7 +47,6 @@ import {
   AccountBalanceWallet as WalletIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
-  BlurOn as BlurOnIcon,
   SwapHoriz as SwapHorizIcon,
 } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
@@ -56,6 +55,7 @@ import { useThemeMode } from '../contexts/ThemeContext';
 import { apiClient as axios } from '../config/api';
 import { useFeatureFlag } from '../hooks/useFeatureFlags';
 import DefenseLevelToggle from './DefenseLevelToggle';
+import ReleaseVersion from './common/ReleaseVersion';
 import { formatUsd } from '../utils/money';
 
 const SHOP_ROUTES = ['/home', '/cart', '/orders', '/coupons'];
@@ -161,7 +161,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { searchBarQuery, setSearchBarQuery } = useSearch();
-  const { mode, toggleTheme, liquidGlass, toggleLiquidGlass } = useThemeMode();
+  const { mode, toggleTheme } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:1279px)');
   const isWide = useMediaQuery('(min-width:1440px)');
@@ -253,9 +253,11 @@ const Header = () => {
       localStorage.setItem('username', target);
       const params = new URLSearchParams(location.search);
       const fromPath = location.pathname.match(/^\/labs\/([^/]+)/);
-      const labId = fromPath?.[1] || params.get('lab') || '';
+      const labId = fromPath?.[1] || params.get('lab') || (params.get('killchain') ? 'killchain-1' : '');
       if (target === 'admin') {
         window.location.assign(labId ? `/admin/assistant?lab=${encodeURIComponent(labId)}` : '/admin/assistant');
+      } else if (labId === 'killchain-1') {
+        window.location.assign('/challenges?killchain=1');
       } else if (labId) {
         window.location.assign(`/labs/${encodeURIComponent(labId)}`);
       } else {
@@ -287,17 +289,20 @@ const Header = () => {
           alt="AI Goat"
           sx={{ height: 34, width: 'auto', mr: 1.5, borderRadius: '6px' }}
         />
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            color: 'text.primary',
-            letterSpacing: '-0.01em',
-            fontSize: '1rem',
-          }}
-        >
-          AI Goat
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              color: 'text.primary',
+              letterSpacing: '-0.01em',
+              fontSize: '1rem',
+            }}
+          >
+            AI Goat
+          </Typography>
+          <ReleaseVersion />
+        </Box>
       </Box>
 
       <Box
@@ -335,7 +340,7 @@ const Header = () => {
           label="Console"
           items={[
             ...(ragSystemEnabled && !ragLoading
-              ? [{ to: '/knowledge-base', label: 'Knowledge Base' }]
+              ? [{ to: '/knowledge-base', label: 'RAG' }]
               : []),
             { to: '/mcp', label: 'MCP' },
             { to: '/agent', label: 'Agent' },
@@ -401,16 +406,6 @@ const Header = () => {
       )}
 
       {isLoggedIn && !isShopper && <DefenseLevelToggle compact={!isWide} />}
-
-      <IconButton
-        onClick={toggleLiquidGlass}
-        aria-label={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
-        title={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
-        aria-pressed={liquidGlass}
-        sx={{ color: liquidGlass ? 'primary.light' : 'text.secondary', ml: 0.5 }}
-      >
-        <BlurOnIcon sx={{ fontSize: '1.15rem', opacity: liquidGlass ? 1 : 0.45 }} />
-      </IconButton>
 
       {!isLoggedIn && (
         <IconButton
@@ -517,11 +512,6 @@ const Header = () => {
                 </Box>
               )}
             </Box>
-
-            <MenuItem onClick={toggleLiquidGlass} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
-              <ListItemIcon><BlurOnIcon sx={{ color: 'text.secondary' }} fontSize="small" /></ListItemIcon>
-              <ListItemText>{liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}</ListItemText>
-            </MenuItem>
 
             <MenuItem onClick={toggleTheme} sx={{ color: 'text.primary', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.active } }}>
               <ListItemIcon>
@@ -740,7 +730,7 @@ const Header = () => {
       {isLoggedIn && (
         <MobileSection title="Console">
           {ragSystemEnabled && !ragLoading && (
-            <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="Knowledge Base" />
+            <MobileNavItem to="/knowledge-base" icon={<LibraryBooksIcon />} label="RAG" />
           )}
           <MobileNavItem to="/mcp" icon={<SecurityIcon />} label="MCP" />
           <MobileNavItem to="/agent" icon={<AIIcon />} label="Agent" />
@@ -817,9 +807,12 @@ const Header = () => {
     <Toolbar sx={{ minHeight: '56px !important', justifyContent: 'space-between', gap: 0.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', minWidth: 0 }} onClick={() => navigate('/home')}>
         <Box component="img" src="/media/images/logo.jpg" alt="AI Goat" sx={{ height: 30, width: 'auto', mr: 1, borderRadius: '6px', flexShrink: 0 }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          AI Goat
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.6, minWidth: 0 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            AI Goat
+          </Typography>
+          <ReleaseVersion />
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
@@ -889,15 +882,6 @@ const Header = () => {
             {personaName === 'admin' ? 'Alice' : 'Admin'}
           </Button>
         )}
-        <IconButton
-          onClick={toggleLiquidGlass}
-          aria-label={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
-          title={liquidGlass ? 'Turn off liquid glass' : 'Turn on liquid glass'}
-          aria-pressed={liquidGlass}
-          sx={{ color: liquidGlass ? 'primary.light' : 'text.secondary' }}
-        >
-          <BlurOnIcon sx={{ fontSize: '1.15rem', opacity: liquidGlass ? 1 : 0.45 }} />
-        </IconButton>
         <IconButton onClick={() => setMobileOpen(true)} sx={{ color: 'text.primary' }} aria-label="Open menu">
           <MenuIcon />
         </IconButton>

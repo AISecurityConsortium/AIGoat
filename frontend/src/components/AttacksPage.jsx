@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Container, Typography, Box, Card, CardContent, Collapse, IconButton,
-  Alert, Skeleton, Button,
+  Container, Typography, Box, Collapse, IconButton,
+  Alert, Skeleton, Button, Chip,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
   ExpandMore as ExpandMoreIcon,
+  ArrowForward as ArrowForwardIcon,
   CheckCircle as CheckIcon,
   RadioButtonUnchecked as UncheckedIcon,
 } from '@mui/icons-material';
@@ -13,9 +14,12 @@ import { useLocation, useSearchParams, Link, useNavigate } from 'react-router-do
 import { useLabs } from '../hooks/useLabs';
 import { useFramework, useFrameworks } from '../hooks/useFrameworks';
 import {
-  PageHeader, RiskChip, DifficultyChip, DefenseLevelChip, DEFENSE_LEVEL_LABELS,
+  RiskChip, DifficultyChip, DefenseLevelChip, DEFENSE_LEVEL_LABELS,
   CodeBlock, EmptyState, ProgressBar, SectionCard, RelatedMap,
 } from './common';
+import HubHero from './common/HubHero';
+import HubRail, { RailPanel } from './common/HubRail';
+import { chipSx, inset, meta, panel, sectionTitle } from './common/panelStyles';
 import { riskPath } from '../utils/taxonomyLinks';
 import { LAB_SERIES } from '../utils/labTeaching';
 import {
@@ -48,41 +52,30 @@ const LEGACY_ID_MAP = {
 
 const LEVEL_ORDER = ['0', '1', '2'];
 
-const FRAMEWORK_TONES = {
-  'owasp-llm-2026': {
-    main: '#4f46e5',
-    ink: '#3730a3',
-    inkDark: '#c7d2fe',
-    soft: 'rgba(79,70,229,0.08)',
-    softDark: 'rgba(99,102,241,0.16)',
-  },
-  'owasp-mcp-2025': {
-    main: '#0f766e',
-    ink: '#115e59',
-    inkDark: '#99f6e4',
-    soft: 'rgba(15,118,110,0.04)',
-    softDark: 'rgba(45,212,191,0.07)',
-  },
-  'owasp-agentic-2026': {
-    main: '#e0a15a',
-    ink: '#9a6230',
-    inkDark: '#f6d2a8',
-    onMain: '#4a2c12',
-    soft: 'rgba(224,161,90,0.045)',
-    softDark: 'rgba(224,161,90,0.07)',
-  },
+const ATTACK_STEPS = [
+  'Pick a framework and a risk. Each risk lists the labs that practice it.',
+  'Open a lab, read the goal, and try the example prompts.',
+  'Repeat at each defense level and compare what changes. Mark the lab complete when done.',
+];
+
+const ATTACK_FLOW = {
+  caption: 'Every lab is mapped to a risk. Completion is saved in this browser only.',
+  steps: [
+    { title: 'Framework', detail: 'LLM, MCP or Agentic' },
+    { title: 'Risk', detail: 'one entry, one code', accent: true },
+    { title: 'Lab', detail: 'goal, prompts, expected results' },
+    { title: 'Defense level', detail: 'L0, L1 and L2', warn: true },
+  ],
 };
 
-const toneOf = (frameworkId) => FRAMEWORK_TONES[frameworkId] || FRAMEWORK_TONES['owasp-llm-2026'];
+const HUB_LINKS = [
+  { to: '/mcp', label: 'MCP labs' },
+  { to: '/agent', label: 'Agentic labs' },
+  { to: '/knowledge-base', label: 'RAG labs' },
+];
 
-const toneColors = (tone, theme) => {
-  const dark = theme.palette.mode === 'dark';
-  return {
-    main: tone.main,
-    ink: dark ? tone.inkDark : tone.ink,
-    soft: dark ? tone.softDark : tone.soft,
-    onMain: tone.onMain || '#ffffff',
-  };
+const LABEL_SX = {
+  color: 'text.secondary', fontWeight: 600, fontSize: '0.8125rem', textTransform: 'uppercase', mb: 1, letterSpacing: '0.04em',
 };
 
 const LAB_ID_RENAME_2026 = {
@@ -260,7 +253,19 @@ const AttacksPage = () => {
   const cat = categories[activeTab] || { code: '', title: '', labs: [] };
   const catLabs = cat.labs || [];
   const completedCount = catLabs.filter((l) => completed[l.id]).length;
-  const activeTone = toneOf(frameworkFilter);
+  const frameworkLabs = labs;
+  const frameworkDone = frameworkLabs.filter((l) => completed[l.id]).length;
+  const activeFilters = [
+    surfaceFilter && { key: 'surface', label: `surface: ${surfaceFilter}` },
+    difficultyFilter && { key: 'difficulty', label: `difficulty: ${difficultyFilter}` },
+    statusFilter && { key: 'status', label: `status: ${statusFilter}` },
+  ].filter(Boolean);
+
+  const clearFilter = (key) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
 
   const selectFramework = (id) => {
     const next = new URLSearchParams(searchParams);
@@ -294,404 +299,441 @@ const AttacksPage = () => {
   };
 
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
-      <Container maxWidth="lg">
-        <PageHeader
-          title="Attack Labs"
-          subtitle="Hands-on exercises for each mapped risk. Try the example prompts, compare results across defense levels."
-        />
-
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3 }}
-            action={<Button color="inherit" size="small" onClick={refetch}>Retry</Button>}
-          >
-            Could not load labs. Confirm you are signed in and the API is running.
-          </Alert>
-        )}
-
-        {loading && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-            <Skeleton variant="rounded" height={56} />
-            <Skeleton variant="rounded" height={88} />
-          </Box>
-        )}
-
-        <Box
-          role="tablist"
-          aria-label="Security frameworks"
-          onKeyDown={handlePillKeyDown}
-          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.25, mb: 1.5 }}
-        >
-          {orderedFrameworks.map((fw) => {
-            const selected = fw.id === frameworkFilter;
-            const count = pillCounts[fw.id] || 0;
-            const tone = toneOf(fw.id);
-            return (
-              <Box
-                key={fw.id}
-                role="tab"
-                tabIndex={selected ? 0 : -1}
-                aria-selected={selected}
-                onClick={() => selectFramework(fw.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    selectFramework(fw.id);
-                  }
-                }}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 1,
-                  px: 1.75,
-                  py: 1.35,
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  overflow: 'hidden',
-                  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-                  bgcolor: (t) => {
-                    const colors = toneColors(tone, t);
-                    return selected ? colors.main : (t.palette.custom?.surface?.elevated ?? t.palette.background.paper);
-                  },
-                  color: (t) => (selected ? toneColors(tone, t).onMain : toneColors(tone, t).ink),
-                  border: (t) => (selected
-                    ? '1px solid transparent'
-                    : `1px solid ${alpha(tone.main, t.palette.mode === 'dark' ? 0.32 : 0.2)}`),
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: (t) => {
-                      const colors = toneColors(tone, t);
-                      return selected ? colors.main : colors.soft;
-                    },
-                  },
-                  '&:focus-visible': {
-                    outline: '2px solid',
-                    outlineColor: tone.main,
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                <Typography sx={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.2, color: 'inherit' }}>
-                  {shortFrameworkLabel(fw)}
-                </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: 'inherit', opacity: selected ? 0.92 : 0.75, flexShrink: 0 }}>
-                  {count} {count === 1 ? 'lab' : 'labs'}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Box>
-
-        <Box
-          role="tablist"
-          aria-label="Lab categories"
-          onKeyDown={handleTabKeyDown}
-          sx={(t) => {
-            const colors = toneColors(activeTone, t);
-            return {
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-              gap: 1,
-              mb: 3,
-              p: 1.25,
-              borderRadius: '14px',
-              bgcolor: colors.soft,
-              border: `1px solid ${alpha(activeTone.main, t.palette.mode === 'dark' ? 0.22 : 0.12)}`,
-            };
-          }}
-        >
-          {categories.map((c, i) => {
-            const hasLabs = c.labs.length > 0;
-            const isActive = activeTab === i;
-            const labLabel = hasLabs
-              ? `${c.labs.length} ${c.labs.length === 1 ? 'lab' : 'labs'}`
-              : (c.code === 'MCP05' ? 'Refused' : 'Soon');
-            return (
-              <Box
-                key={c.code}
-                role="tab"
-                tabIndex={isActive ? 0 : -1}
-                aria-selected={isActive}
-                onClick={() => setActiveTab(i)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setActiveTab(i);
-                  }
-                }}
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '72px minmax(0, 1fr) auto',
-                  alignItems: 'center',
-                  gap: 1.25,
-                  px: 1.15,
-                  py: 1,
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.15s, border-color 0.15s',
-                  bgcolor: (t) => {
-                    if (isActive) return t.palette.mode === 'dark' ? alpha(activeTone.main, 0.28) : '#ffffff';
-                    if (!hasLabs) return 'transparent';
-                    return t.palette.mode === 'dark' ? alpha('#000', 0.18) : alpha('#fff', 0.72);
-                  },
-                  border: (t) => {
-                    if (isActive) return `1.5px solid ${activeTone.main}`;
-                    if (!hasLabs) return `1.5px dashed ${alpha(activeTone.main, 0.35)}`;
-                    return `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`;
-                  },
-                  opacity: hasLabs ? 1 : 0.72,
-                  '&:hover': {
-                    bgcolor: (t) => (t.palette.mode === 'dark' ? alpha(activeTone.main, 0.22) : '#ffffff'),
-                  },
-                  '&:focus-visible': {
-                    outline: '2px solid',
-                    outlineColor: activeTone.main,
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                <Typography sx={{
-                  fontSize: '0.8125rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.02em',
-                  textAlign: 'center',
-                  lineHeight: 1,
-                  px: 0.75,
-                  py: 0.7,
-                  borderRadius: '7px',
-                  color: isActive ? '#fff' : (t) => toneColors(activeTone, t).ink,
-                  bgcolor: isActive ? activeTone.main : (t) => alpha(activeTone.main, t.palette.mode === 'dark' ? 0.28 : 0.14),
-                }}>
-                  {c.code}
-                </Typography>
-                <Typography sx={{
-                  fontSize: '0.9375rem',
-                  fontWeight: 600,
-                  lineHeight: 1.3,
-                  color: 'text.primary',
-                }}>
-                  {c.title}
-                </Typography>
-                <Typography sx={{
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: (t) => (hasLabs ? toneColors(activeTone, t).ink : (t.palette.custom?.text?.muted ?? 'text.secondary')),
-                  fontStyle: hasLabs ? 'normal' : 'italic',
-                }}>
-                  {labLabel}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Box>
-
-        {cat.code && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h5" sx={{ color: (t) => toneColors(activeTone, t).ink, fontWeight: 700 }}>
-              {cat.code}: {cat.title}
-            </Typography>
-          </Box>
-        )}
-
-        {catLabs.length > 0 && (
-          <ProgressBar value={completedCount} total={catLabs.length} />
-        )}
-
-        {!loading && !error && catLabs.length === 0 ? (
-          cat.code === 'MCP05' ? (
-            <EmptyState
-              title="We refused to build this"
-              description="Command injection would mean a tool argument reaches a shell. The agentic track shows the same sink inside a disposable Docker sandbox."
-              action={(
-                <Button component={Link} to="/labs/asi05-1" variant="outlined" sx={{ textTransform: 'none' }}>
-                  Open the sandboxed executor lab
-                </Button>
-              )}
-            />
-          ) : (
-            <EmptyState
-              title="Coming Soon"
-              description={cat.code ? `Labs for ${cat.code} are under development.` : 'No labs match these filters.'}
-            />
-          )
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {catLabs.map((lab) => {
-              const isExpanded = expandedLab === lab.id;
-              const isDone = !!completed[lab.id];
-              const expected = lab.expected_by_level || {};
-              return (
-                <Card
-                  key={lab.id}
-                  sx={{
-                    bgcolor: (t) => t.palette.custom?.surface?.elevated ?? 'background.paper',
-                    border: (t) => `1px solid ${isDone ? alpha(t.palette.secondary.main, 0.2) : (t.palette.custom?.border?.subtle ?? t.palette.divider)}`,
-                    borderRadius: '12px',
-                    overflow: 'visible',
-                  }}
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 2 }}>
+      <Container maxWidth="xl">
+        <Box sx={{ maxWidth: 1560, mx: 'auto' }}>
+          <HubHero
+            eyebrow="Hands-on labs"
+            title="Attack Labs"
+            description="Hands-on exercises for each mapped risk. Try the example prompts, compare results across defense levels."
+            steps={ATTACK_STEPS}
+            flow={ATTACK_FLOW}
+            actions={(
+              <>
+                <Button
+                  component={Link}
+                  to="/owasp-top-10"
+                  variant="contained"
+                  size="small"
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                  sx={{ textTransform: 'none', fontWeight: 700 }}
                 >
-                  <CardContent sx={{ p: 0 }}>
-                    <Box
-                      onClick={() => expandLab(lab)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          expandLab(lab);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-expanded={isExpanded}
-                      sx={{
-                        display: 'flex', alignItems: 'center', gap: 2, px: 3, py: 2,
-                        cursor: 'pointer', '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.hover ?? alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.02) },
-                      }}
-                    >
-                      <IconButton
-                        size="small"
-                        aria-label={isDone ? 'Mark incomplete' : 'Mark complete'}
-                        onClick={(e) => { e.stopPropagation(); toggleComplete(lab.id); }}
-                        sx={{ color: isDone ? 'secondary.main' : (t) => t.palette.custom?.text?.muted ?? 'text.secondary' }}
+                  Browse frameworks
+                </Button>
+                {HUB_LINKS.map((item) => (
+                  <Button
+                    key={item.to}
+                    component={Link}
+                    to={item.to}
+                    variant="outlined"
+                    size="small"
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </>
+            )}
+          />
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={<Button color="inherit" size="small" onClick={refetch}>Retry</Button>}
+            >
+              Could not load labs. Confirm you are signed in and the API is running.
+            </Alert>
+          )}
+
+          {loading && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+              <Skeleton variant="rounded" height={56} />
+              <Skeleton variant="rounded" height={88} />
+            </Box>
+          )}
+
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 1.5,
+              alignItems: 'start',
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 7fr) minmax(300px, 3fr)', lg: 'minmax(0, 7fr) minmax(340px, 3fr)' },
+            }}
+          >
+            <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={panel}>
+                <Box
+                  role="tablist"
+                  aria-label="Security frameworks"
+                  onKeyDown={handlePillKeyDown}
+                  sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1, mb: 1.5 }}
+                >
+                  {orderedFrameworks.map((fw) => {
+                    const selected = fw.id === frameworkFilter;
+                    const count = pillCounts[fw.id] || 0;
+                    return (
+                      <Box
+                        key={fw.id}
+                        role="tab"
+                        tabIndex={selected ? 0 : -1}
+                        aria-selected={selected}
+                        onClick={() => selectFramework(fw.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            selectFramework(fw.id);
+                          }
+                        }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 1,
+                          px: 1.5,
+                          py: 1,
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          bgcolor: selected
+                            ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
+                            : (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
+                          border: (t) => (selected
+                            ? `1.5px solid ${t.palette.primary.main}`
+                            : `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`),
+                          color: selected ? 'primary.main' : 'text.primary',
+                          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 },
+                        }}
                       >
-                        {isDone ? <CheckIcon /> : <UncheckedIcon />}
-                      </IconButton>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '1rem' }}>{lab.name}</Typography>
-                          <RiskChip
-                            code={lab.owasp}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const qualified = (lab.risks || []).find((r) => r.endsWith(`:${lab.owasp}`))
-                                || (lab.risks || [])[0]
-                                || `owasp-llm-2026:${lab.owasp}`;
-                              navigate(riskPath(qualified));
-                            }}
-                          />
-                          {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
-                        </Box>
-                        <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.9375rem', mt: 0.25 }}>
-                          {lab.description}
+                        <Typography sx={{ fontSize: '0.9375rem', fontWeight: 700, lineHeight: 1.2, color: 'inherit' }}>
+                          {shortFrameworkLabel(fw)}
+                        </Typography>
+                        <Typography sx={{ ...meta, fontWeight: 600, flexShrink: 0, color: 'inherit', opacity: 0.8 }}>
+                          {count} {count === 1 ? 'lab' : 'labs'}
                         </Typography>
                       </Box>
-                      <ExpandMoreIcon sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-                    </Box>
+                    );
+                  })}
+                </Box>
 
-                    <Collapse in={isExpanded}>
-                      <Box sx={{ px: 3, pb: 3, borderTop: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}` }}>
-                        {lab.description && (
-                          <Box sx={{ mt: 2, mb: 3 }}>
-                            <SectionCard tone="info" dense title="Goal">
-                              <Typography sx={{ color: (t) => t.palette.custom?.text?.accent ?? 'primary.light', fontSize: '1rem' }}>
+                <Box
+                  role="tablist"
+                  aria-label="Lab categories"
+                  onKeyDown={handleTabKeyDown}
+                  sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 0.75 }}
+                >
+                  {categories.map((c, i) => {
+                    const hasLabs = c.labs.length > 0;
+                    const isActive = activeTab === i;
+                    const labLabel = hasLabs
+                      ? `${c.labs.length} ${c.labs.length === 1 ? 'lab' : 'labs'}`
+                      : (c.code === 'MCP05' ? 'Refused' : 'Soon');
+                    return (
+                      <Box
+                        key={c.code}
+                        role="tab"
+                        tabIndex={isActive ? 0 : -1}
+                        aria-selected={isActive}
+                        onClick={() => setActiveTab(i)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setActiveTab(i);
+                          }
+                        }}
+                        sx={{
+                          ...inset,
+                          display: 'grid',
+                          gridTemplateColumns: '64px minmax(0, 1fr) auto',
+                          alignItems: 'center',
+                          gap: 1,
+                          px: 1,
+                          py: 0.85,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          opacity: hasLabs ? 1 : 0.7,
+                          borderStyle: hasLabs ? 'solid' : 'dashed',
+                          borderColor: isActive ? 'primary.main' : 'divider',
+                          borderWidth: isActive ? '1.5px' : '1px',
+                          bgcolor: isActive
+                            ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
+                            : inset.bgcolor,
+                          '&:hover': { borderColor: 'primary.main' },
+                          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            lineHeight: 1,
+                            px: 0.5,
+                            py: 0.6,
+                            borderRadius: '6px',
+                            color: isActive ? '#fff' : 'primary.light',
+                            bgcolor: isActive ? 'primary.main' : (t) => alpha(t.palette.primary.main, 0.14),
+                          }}
+                        >
+                          {c.code}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.3 }}>
+                          {c.title}
+                        </Typography>
+                        <Typography sx={{ ...meta, fontWeight: 700, fontStyle: hasLabs ? 'normal' : 'italic' }}>
+                          {labLabel}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+
+              <Box sx={panel}>
+                {cat.code && (
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 700, fontSize: '1.2rem', mb: 1 }}>
+                    {cat.code}: {cat.title}
+                  </Typography>
+                )}
+
+                {catLabs.length > 0 && (
+                  <ProgressBar value={completedCount} total={catLabs.length} />
+                )}
+
+                {!loading && !error && catLabs.length === 0 ? (
+                  cat.code === 'MCP05' ? (
+                    <EmptyState
+                      title="We refused to build this"
+                      description="Command injection would mean a tool argument reaches a shell. The agentic track shows the same sink inside a disposable Docker sandbox."
+                      action={(
+                        <Button component={Link} to="/labs/asi05-1" variant="outlined" sx={{ textTransform: 'none' }}>
+                          Open the sandboxed executor lab
+                        </Button>
+                      )}
+                    />
+                  ) : (
+                    <EmptyState
+                      title="Coming Soon"
+                      description={cat.code ? `Labs for ${cat.code} are under development.` : 'No labs match these filters.'}
+                    />
+                  )
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                    {catLabs.map((lab) => {
+                      const isExpanded = expandedLab === lab.id;
+                      const isDone = !!completed[lab.id];
+                      const expected = lab.expected_by_level || {};
+                      return (
+                        <Box
+                          key={lab.id}
+                          sx={{
+                            ...inset,
+                            borderColor: (t) => (isDone ? alpha(t.palette.secondary.main, 0.35) : t.palette.divider),
+                          }}
+                        >
+                          <Box
+                            onClick={() => expandLab(lab)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                expandLab(lab);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={isExpanded}
+                            sx={{
+                              display: 'flex', alignItems: 'center', gap: 1.5, px: 1.5, py: 1.25,
+                              cursor: 'pointer', borderRadius: '8px',
+                              '&:hover': { bgcolor: (t) => t.palette.custom?.overlay?.hover ?? alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03) },
+                              '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 },
+                            }}
+                          >
+                            <IconButton
+                              size="small"
+                              aria-label={isDone ? 'Mark incomplete' : 'Mark complete'}
+                              onClick={(e) => { e.stopPropagation(); toggleComplete(lab.id); }}
+                              sx={{ color: isDone ? 'secondary.main' : 'text.secondary' }}
+                            >
+                              {isDone ? <CheckIcon /> : <UncheckedIcon />}
+                            </IconButton>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>{lab.name}</Typography>
+                                <RiskChip
+                                  code={lab.owasp}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    const qualified = (lab.risks || []).find((r) => r.endsWith(`:${lab.owasp}`))
+                                      || (lab.risks || [])[0]
+                                      || `owasp-llm-2026:${lab.owasp}`;
+                                    navigate(riskPath(qualified));
+                                  }}
+                                />
+                                {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
+                              </Box>
+                              <Typography sx={{ ...meta, fontSize: '0.85rem', mt: 0.25 }}>
                                 {lab.description}
                               </Typography>
-                            </SectionCard>
-                          </Box>
-                        )}
-
-                        {(lab.example_payloads || []).length > 0 && (
-                          <>
-                            <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.9375rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
-                              Show me
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-                              {(lab.example_payloads || []).map((prompt, i) => (
-                                <CodeBlock key={`${lab.id}-p${i}`} code={prompt} language="prompt" />
-                              ))}
                             </Box>
-                          </>
-                        )}
-
-                        {lab.objective && (
-                          <Box sx={{ mb: 3 }}>
-                            <SectionCard dense title="How this attack works">
-                              <Typography sx={{ fontSize: '1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-                                {lab.objective}
-                              </Typography>
-                              {LAB_SERIES[lab.id] && (
-                                <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.6, mt: 1 }}>
-                                  {LAB_SERIES[lab.id]}
-                                </Typography>
-                              )}
-                            </SectionCard>
+                            <ExpandMoreIcon sx={{ color: 'text.secondary', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                           </Box>
-                        )}
 
-                        <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.9375rem', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.04em' }}>
-                          Expected Results by Defense Level
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {LEVEL_ORDER.filter((level) => expected[level] || expected[Number(level)]).map((level) => {
-                            const text = expected[level] || expected[Number(level)];
-                            return (
-                              <Box key={level} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                                <DefenseLevelChip level={Number(level)} />
-                                <Box>
-                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.8125rem', fontWeight: 600 }}>
-                                    {DEFENSE_LEVEL_LABELS[Number(level)]}
-                                  </Typography>
-                                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.9375rem', lineHeight: 1.5 }}>
-                                    {text}
-                                  </Typography>
+                          <Collapse in={isExpanded}>
+                            <Box sx={{ px: 2, pb: 2, pt: 1.5, borderTop: (t) => `1px solid ${t.palette.divider}` }}>
+                              {lab.description && (
+                                <Box sx={{ mb: 2 }}>
+                                  <SectionCard tone="info" dense title="Goal">
+                                    <Typography sx={{ color: (t) => t.palette.custom?.text?.accent ?? 'primary.light', fontSize: '0.95rem' }}>
+                                      {lab.description}
+                                    </Typography>
+                                  </SectionCard>
                                 </Box>
+                              )}
+
+                              {(lab.example_payloads || []).length > 0 && (
+                                <>
+                                  <Typography sx={LABEL_SX}>Show me</Typography>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                                    {(lab.example_payloads || []).map((prompt, i) => (
+                                      <CodeBlock key={`${lab.id}-p${i}`} code={prompt} language="prompt" />
+                                    ))}
+                                  </Box>
+                                </>
+                              )}
+
+                              {lab.objective && (
+                                <Box sx={{ mb: 2 }}>
+                                  <SectionCard dense title="How this attack works">
+                                    <Typography sx={{ fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                                      {lab.objective}
+                                    </Typography>
+                                    {LAB_SERIES[lab.id] && (
+                                      <Typography sx={{ fontSize: '0.9rem', lineHeight: 1.6, mt: 1 }}>
+                                        {LAB_SERIES[lab.id]}
+                                      </Typography>
+                                    )}
+                                  </SectionCard>
+                                </Box>
+                              )}
+
+                              <Typography sx={LABEL_SX}>Expected Results by Defense Level</Typography>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {LEVEL_ORDER.filter((level) => expected[level] || expected[Number(level)]).map((level) => {
+                                  const text = expected[level] || expected[Number(level)];
+                                  return (
+                                    <Box key={level} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                                      <DefenseLevelChip level={Number(level)} />
+                                      <Box>
+                                        <Typography sx={{ ...meta, fontWeight: 600 }}>
+                                          {DEFENSE_LEVEL_LABELS[Number(level)]}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: '0.9rem', lineHeight: 1.5 }}>
+                                          {text}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  );
+                                })}
                               </Box>
-                            );
-                          })}
+                              <RelatedMap
+                                risks={lab.risks || []}
+                                surface={lab.surface}
+                                relatedLabIds={lab.related_lab_ids || []}
+                              />
+                              {lab.surface === 'agent.runner' && (
+                                <Button
+                                  component={Link}
+                                  to={`/labs/${lab.id}`}
+                                  variant="outlined"
+                                  size="small"
+                                  sx={{ mt: 2 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Open agent console
+                                </Button>
+                              )}
+                              {lab.surface === 'mcp.client' && (
+                                <Button
+                                  component={Link}
+                                  to={`/labs/${lab.id}`}
+                                  variant="outlined"
+                                  size="small"
+                                  sx={{ mt: 2 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Open MCP console
+                                </Button>
+                              )}
+                              {lab.surface === 'mcp.host' && (
+                                <Button
+                                  component={Link}
+                                  to={lab.id === 'killchain-1' ? '/challenges?killchain=1' : `/labs/${lab.id}`}
+                                  variant="outlined"
+                                  size="small"
+                                  sx={{ mt: 2 }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Start the two-step lab
+                                </Button>
+                              )}
+                            </Box>
+                          </Collapse>
                         </Box>
-                        <RelatedMap
-                          risks={lab.risks || []}
-                          surface={lab.surface}
-                          relatedLabIds={lab.related_lab_ids || []}
-                        />
-                        {lab.surface === 'agent.runner' && (
-                          <Button
-                            component={Link}
-                            to={`/labs/${lab.id}`}
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 2 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Open agent console
-                          </Button>
-                        )}
-                        {lab.surface === 'mcp.client' && (
-                          <Button
-                            component={Link}
-                            to={`/labs/${lab.id}`}
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 2 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Open MCP console
-                          </Button>
-                        )}
-                        {lab.surface === 'mcp.host' && (
-                          <Button
-                            component={Link}
-                            to={`/labs/${lab.id}`}
-                            variant="outlined"
-                            size="small"
-                            sx={{ mt: 2 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Start the two-step lab
-                          </Button>
-                        )}
-                      </Box>
-                    </Collapse>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      );
+                    })}
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            <HubRail label="Lab context">
+              <Box sx={panel}>
+                <Typography component="h2" sx={sectionTitle}>
+                  {framework?.name || shortFrameworkLabel({ id: frameworkFilter })}
+                </Typography>
+                <Typography sx={{ ...meta, mt: 0.25, mb: 1 }}>
+                  {frameworkDone} of {frameworkLabs.length} labs marked complete in this framework.
+                </Typography>
+                {frameworkLabs.length > 0 && (
+                  <ProgressBar value={frameworkDone} total={frameworkLabs.length} />
+                )}
+                {cat.riskId && (
+                  <Button
+                    component={Link}
+                    to={riskPath(cat.riskId)}
+                    size="small"
+                    sx={{ mt: 1, textTransform: 'none' }}
+                  >
+                    Read about {cat.code}
+                  </Button>
+                )}
+              </Box>
+
+              {activeFilters.length > 0 && (
+                <RailPanel title="Active filters" lead="Set from a link elsewhere in AIGoat. Remove one to see more labs.">
+                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 0.75 }}>
+                    {activeFilters.map((filter) => (
+                      <Chip
+                        key={filter.key}
+                        size="small"
+                        label={filter.label}
+                        onDelete={() => clearFilter(filter.key)}
+                        sx={chipSx}
+                      />
+                    ))}
+                  </Box>
+                </RailPanel>
+              )}
+
+              <RailPanel
+                title="Defense levels"
+                lead="Each lab lists what to expect at every level, so you can compare how the defenses change the result."
+                items={[0, 1, 2].map((level) => DEFENSE_LEVEL_LABELS[level])}
+              />
+            </HubRail>
           </Box>
-        )}
+        </Box>
       </Container>
     </Box>
   );

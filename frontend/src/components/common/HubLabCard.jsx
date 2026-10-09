@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button, Chip, Typography } from '@mui/material';
 import { ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import SectionCard from './SectionCard';
@@ -24,9 +24,12 @@ const HubLabCard = ({ lab, index }) => {
         </Typography>
         {code && <RiskChip code={code} />}
         {lab.difficulty && <DifficultyChip difficulty={lab.difficulty} />}
+        {lab.completed_at && (
+          <Chip label="Complete" size="small" color="success" variant="outlined" sx={{ height: 22, '& .MuiChip-label': { fontSize: '0.72rem', fontWeight: 700 } }} />
+        )}
       </Box>
       <Typography sx={{ color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.5, mb: series || done ? 1 : 1.5 }}>
-        {oneLine(lab.objective) || lab.description}
+        {lab.ui?.summary || oneLine(lab.objective) || lab.description}
       </Typography>
       {series && (
         <Typography sx={{ fontSize: '0.9375rem', lineHeight: 1.5, mb: 1 }}>
@@ -40,7 +43,7 @@ const HubLabCard = ({ lab, index }) => {
       )}
       <Button
         component={RouterLink}
-        to={`/labs/${lab.id}`}
+        to={lab.id === 'killchain-1' ? '/challenges?killchain=1' : `/labs/${lab.id}`}
         size="small"
         variant="outlined"
         endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
@@ -62,6 +65,8 @@ HubLabCard.propTypes = {
     objective: PropTypes.string,
     description: PropTypes.string,
     surface: PropTypes.string,
+    completed_at: PropTypes.string,
+    ui: PropTypes.shape({ summary: PropTypes.string, done_when: PropTypes.string }),
     expected_by_level: PropTypes.objectOf(PropTypes.string),
   }).isRequired,
   index: PropTypes.number.isRequired,

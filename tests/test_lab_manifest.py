@@ -317,7 +317,8 @@ class TestMigratedLabContent:
         assert "llm03-3" in ids
         assert "asi02-1" in ids
         assert "asi04-1" in ids
-        assert len(ids) == 45
+        assert "killchain-1" in ids
+        assert len(ids) == 46
 
     def test_original_ids_still_resolve(self):
         for lab_id in _ORIGINAL_LAB_IDS:

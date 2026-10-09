@@ -2,6 +2,9 @@ app:
   name: "AI Goat"
   debug: true
   secret_key: "aigoat-dev-secret-change-in-production"
+  # Loopback origins. RFC1918 and localhost are also allowed by
+  # LOCAL_ORIGIN_REGEX in app/middleware/cors.py, so a browser that
+  # opens the API on the host VLAN IP is accepted.
   allowed_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
   media_dir: "./media"
 

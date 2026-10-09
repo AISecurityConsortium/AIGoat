@@ -25,6 +25,8 @@ NeMo is used when `nemoguardrails` is installed. Otherwise the same checks run l
 
 `asi06-2` is the same memory plant, for practicing Level 2. It is not an eleventh risk.
 
+The capstone [Agentic Kill Chain](../killchain/README.md) (`killchain-1`) chains review or PDF poisoning through two memory stores into simulated exfiltration and a $1 checkout. It is not an eleventh ASI lab.
+
 Start from [the architecture inventory](00-architecture.md) and [the coverage matrix](01-owasp-mapping.md). Code and config changes are listed in [CHANGES.md](CHANGES.md).
 
 Reset and halt from the shell, with `AIGOAT_TOKEN` set to a bearer token:

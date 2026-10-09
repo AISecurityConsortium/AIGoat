@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Button,
@@ -22,7 +23,18 @@ import { useDefense } from '../../contexts/DefenseContext';
 
 const score = (value) => (value === null || value === undefined ? 'n/a' : Number(value).toFixed(3));
 
-const RetrievalTraceInspector = () => {
+const Frame = ({ bare, title, children }) => (
+  bare ? (
+    <Box>
+      <Typography component="h2" sx={{ fontWeight: 700, fontSize: '0.95rem', mb: 0.5 }}>{title}</Typography>
+      {children}
+    </Box>
+  ) : <SectionCard title={title}>{children}</SectionCard>
+);
+
+Frame.propTypes = { bare: PropTypes.bool.isRequired, title: PropTypes.string.isRequired, children: PropTypes.node.isRequired };
+
+const RetrievalTraceInspector = ({ bare = false }) => {
   const { defenseLevel, levelChosenThisSession } = useDefense();
   const [query, setQuery] = useState('');
   const [hybrid, setHybrid] = useState(false);
@@ -53,7 +65,7 @@ const RetrievalTraceInspector = () => {
   };
 
   return (
-    <SectionCard title="Retrieval trace">
+    <Frame bare={bare} title="Retrieval trace">
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
         Runs retrieval only, with no model call. Dropped chunks stay visible.
       </Typography>
@@ -156,8 +168,10 @@ const RetrievalTraceInspector = () => {
           </Table>
         </Box>
       )}
-    </SectionCard>
+    </Frame>
   );
 };
+
+RetrievalTraceInspector.propTypes = { bare: PropTypes.bool };
 
 export default RetrievalTraceInspector;

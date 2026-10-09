@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Typography } from '@mui/material';
 
-const McpFlow = ({ steps, caption, stacked = false, compact = false }) => {
+const McpFlow = ({ steps, caption = '', stacked = false, compact = false }) => {
   const label = [
     ...steps.map((step) => `${step.title}: ${step.detail}`),
     caption,
@@ -72,12 +72,6 @@ McpFlow.propTypes = {
   caption: PropTypes.string,
   stacked: PropTypes.bool,
   compact: PropTypes.bool,
-};
-
-McpFlow.defaultProps = {
-  caption: '',
-  stacked: false,
-  compact: false,
 };
 
 export default McpFlow;

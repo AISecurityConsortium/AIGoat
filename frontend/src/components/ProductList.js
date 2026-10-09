@@ -37,6 +37,7 @@ import { getApiUrl } from '../config/api';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useSearch } from '../contexts/SearchContext';
 import { StartHerePanel } from './common';
+import ReleaseVersion from './common/ReleaseVersion';
 import TrainingOffer from './common/TrainingOffer';
 import { formatUsd } from '../utils/money';
 
@@ -64,6 +65,10 @@ const HeroSection = () => {
       <Box
         sx={{
           flex: isMobile ? 1 : '0 0 48%',
+          width: isMobile ? '100%' : undefined,
+          maxWidth: '100%',
+          minWidth: 0,
+          boxSizing: 'border-box',
           p: isMobile ? 3 : 5,
           zIndex: 2,
         }}
@@ -89,6 +94,16 @@ const HeroSection = () => {
           }}>
             AI Goat Shop
           </Box>
+          <ReleaseVersion
+            sx={{
+              ml: 0.4,
+              fontSize: '0.8rem',
+              lineHeight: 1,
+              verticalAlign: 'baseline',
+              position: 'relative',
+              top: isMobile ? '-1.35rem' : '-2rem',
+            }}
+          />
         </Typography>
         <Typography
           variant="body1"

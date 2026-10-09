@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Any
 
@@ -9,6 +10,11 @@ from app.agent.broker import BrokerOutcome, IntentGate
 from app.defense.control import ControlAction
 from app.services.agent_service import AgentLoop, AgentResult, AgentStep
 from app.services.tool_registry import ToolRegistry
+
+logger = logging.getLogger(__name__)
+
+# Shown when a run ends and the model produced nothing usable. The loop never returns a silent blank.
+NO_ANSWER_TEXT = "I could not produce a final answer for this request."
 
 
 def parse_json_tool(text: str) -> tuple[str, str, dict[str, Any]] | None:
@@ -301,14 +307,25 @@ class GatedAgentLoop(AgentLoop):
             return ("no model", "finish", {"answer": ""})
         messages = self._messages(goal, history)
         turn = await self._chat(messages)
-        if turn.tool_calls:
-            first = turn.tool_calls[0]
+        # A call without a name cannot be dispatched. It is ignored, not sent to the gate as "".
+        usable = [
+            call for call in (turn.tool_calls or [])
+            if isinstance(call, dict) and str(call.get("name") or "").strip()
+        ]
+        if usable:
+            first = usable[0]
             args = first.get("arguments") or {}
             if not isinstance(args, dict):
                 args = {}
             raw = getattr(turn, "assistant_message", None)
-            self._native_message = raw or _native_assistant_message(turn.content or "", turn.tool_calls)
-            return (turn.content or "", str(first.get("name") or ""), args)
+            if len(turn.tool_calls) == 1 and raw:
+                self._native_message = raw
+            else:
+                # Only the first call runs. Replaying a message that lists more would leave calls
+                # with no matching tool result, which breaks the next request. The model can ask
+                # for the others on a later round.
+                self._native_message = _native_assistant_message(turn.content or "", [first])
+            return (turn.content or "", str(first.get("name")), args)
         self._native_message = None
         parsed = parse_json_tool(turn.content)
         if not parsed:
@@ -329,8 +346,45 @@ class GatedAgentLoop(AgentLoop):
         """
         if self.llm is None:
             return ""
-        turn = await self._chat(self._messages(goal, history), use_tools=False)
-        return turn.content or ""
+        try:
+            turn = await self._chat(self._messages(goal, history), use_tools=False)
+        except Exception:
+            logger.exception("Agent final-answer request failed")
+            return ""
+        return str(turn.content or "")
+
+    def _usable_answer(self, answer: str) -> str:
+        """Prefer the model's words. Fall back to the last tool result, then to a fixed notice."""
+        if self.steps and _looks_unhelpful(answer):
+            answer = render_tool_payload(self.steps[-1].observation or "") or answer
+        if self.llm is not None and not answer.strip():
+            return NO_ANSWER_TEXT
+        return answer
+
+    async def _wrap_up(
+        self,
+        goal: str,
+        *,
+        reason: str,
+        success: bool,
+        note: str,
+        ask_model: bool = True,
+    ) -> AgentResult:
+        """End the run with a closing step and an answer. Tools are not offered on this turn."""
+        answer = await self._final_answer(goal, self.steps) if ask_model else ""
+        answer = self._usable_answer(answer)
+        self.steps.append(AgentStep(
+            thought=answer,
+            action="finish",
+            action_input={"answer": answer},
+            observation=note,
+            decision="allow",
+        ))
+        return AgentResult(success=success, answer=answer, steps=self.steps, terminated_reason=reason)
+
+    @staticmethod
+    def _call_key(action: str, action_input: dict[str, Any] | None) -> str:
+        return f"{action}:{json.dumps(action_input or {}, sort_keys=True, default=str)}"
 
     def _tool_names(self) -> list[str]:
         if not hasattr(self.tools, "list_tools"):
@@ -357,29 +411,33 @@ class GatedAgentLoop(AgentLoop):
         return ChatTurn(content=content or "", tool_calls=[])
 
     async def run(self, goal: str) -> AgentResult:
-        seen: set[str] = set()
-        while len(self.steps) < self.max_steps:
-            thought, action, action_input = await self.plan(goal, self.steps)
+        """Drive plan, dispatch and observe until the model answers or a limit is reached.
+
+        ``max_steps`` bounds ``len(self.steps)``: every tool step plus the closing ``finish`` step,
+        counted across approval pauses. With a model, the last slot is reserved for the answer, so
+        a run executes at most ``max_steps - 1`` tools and always ends with a tool-free answer
+        turn instead of a blank. A run can make at most ``max_steps`` model requests.
+        """
+        # Calls made before an approval pause still count as repeats after the resume.
+        seen: set[str] = {
+            self._call_key(step.action, step.action_input)
+            for step in self.steps
+            if step.action not in {"finish", ""}
+        }
+        limit = max(self.max_steps - 1, 1) if self.llm is not None else self.max_steps
+        while len(self.steps) < limit:
+            try:
+                thought, action, action_input = await self.plan(goal, self.steps)
+            except Exception:
+                logger.exception("Agent planning failed")
+                return await self._wrap_up(
+                    goal, reason="model_error", success=False, note="The model request failed.", ask_model=False,
+                )
             if action not in {"finish", ""}:
-                key = f"{action}:{json.dumps(action_input or {}, sort_keys=True, default=str)}"
+                key = self._call_key(action, action_input)
                 if self.llm is not None and key in seen:
                     # The model is repeating a tool call. Force a final answer.
-                    answer = await self._final_answer(goal, self.steps)
-                    if _looks_unhelpful(answer) and self.steps:
-                        answer = render_tool_payload(self.steps[-1].observation or "") or answer
-                    self.steps.append(AgentStep(
-                        thought="",
-                        action="finish",
-                        action_input={"answer": answer},
-                        observation="Agent terminated.",
-                        decision="allow",
-                    ))
-                    return AgentResult(
-                        success=True,
-                        answer=answer,
-                        steps=self.steps,
-                        terminated_reason="finish",
-                    )
+                    return await self._wrap_up(goal, reason="finish", success=True, note="Agent terminated.")
                 seen.add(key)
             step = AgentStep(
                 thought=thought,
@@ -389,8 +447,12 @@ class GatedAgentLoop(AgentLoop):
             )
             if action == "finish":
                 answer = action_input.get("answer", thought)
-                if self.steps and _looks_unhelpful(answer):
-                    answer = render_tool_payload(self.steps[-1].observation or "") or answer
+                answer = answer if isinstance(answer, str) else str(answer or "")
+                if self.llm is not None and not answer.strip() and self.steps:
+                    # The model ended its turn after tool results with nothing to say. Ask once, tool-free.
+                    answer = await self._final_answer(goal, self.steps)
+                answer = self._usable_answer(answer)
+                step.action_input = {**action_input, "answer": answer}
                 step.observation = "Agent terminated."
                 step.decision = "allow"
                 self.steps.append(step)
@@ -400,16 +462,41 @@ class GatedAgentLoop(AgentLoop):
                     steps=self.steps,
                     terminated_reason="finish",
                 )
-            outcome = await self.broker.dispatch(action, action_input)
+            try:
+                outcome = await self.broker.dispatch(action, action_input)
+            except Exception:
+                # Handler errors are already returned as an {"error": ...} observation by the registry.
+                # Reaching here means the gate itself failed. Treat the call as denied and stop.
+                logger.exception("Agent tool dispatch failed for %s", action)
+                step.observation = json.dumps({"error": "The tool call failed unexpectedly."})
+                step.decision = ControlAction.DENY.value
+                step.control_id = "agent.loop"
+                self.steps.append(step)
+                return await self._wrap_up(
+                    goal, reason="tool_error", success=False, note="The tool call failed.", ask_model=False,
+                )
             step.action_input = outcome.arguments or action_input
             raw_observation = _observation_text(outcome)
             observation = raw_observation
+            review_failed = False
             if outcome.invoked:
-                observation = await self.broker.review_tool_result(raw_observation)
+                try:
+                    observation = await self.broker.review_tool_result(raw_observation)
+                except Exception:
+                    # The tool already ran, so the decision stays truthful. The unreviewed result is
+                    # withheld, never handed to the model, and the run stops.
+                    logger.exception("Agent tool result review failed for %s", action)
+                    observation = json.dumps({"error": "The tool result could not be reviewed."})
+                    review_failed = True
             step.observation = observation
             step.decision = outcome.action.value
             step.control_id = outcome.control_id
             self.steps.append(step)
+            if review_failed:
+                return await self._wrap_up(
+                    goal, reason="tool_error", success=False, note="The tool result could not be reviewed.",
+                    ask_model=False,
+                )
             if outcome.action == ControlAction.REQUIRE_APPROVAL:
                 return AgentResult(
                     success=False,
@@ -423,12 +510,15 @@ class GatedAgentLoop(AgentLoop):
                         "control_id": outcome.control_id,
                     },
                 )
-        return AgentResult(
-            success=False,
-            answer="",
-            steps=self.steps,
-            terminated_reason="max_steps_exceeded",
-        )
+        if self.llm is None:
+            return AgentResult(
+                success=False,
+                answer="",
+                steps=self.steps,
+                terminated_reason="max_steps_exceeded",
+            )
+        # Out of tool steps. The model still gets one tool-free turn to say what it found.
+        return await self._wrap_up(goal, reason="max_steps_exceeded", success=False, note="Step limit reached.")
 
 
 class ShopAgentLoop(GatedAgentLoop):

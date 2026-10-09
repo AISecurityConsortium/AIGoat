@@ -30,28 +30,129 @@ export const MCP_NAV_GROUPS = [
     },
   },
   { id: 'trust', label: 'Trust & Integrations', labs: ['mcp09-1', 'mcp04-1'] },
-  { id: 'host', label: 'Agent / Host', labs: ['mcp06-1', 'mcp10-1'] },
+  { id: 'host', label: 'Agent / Host', labs: ['mcp06-1', 'mcp10-1', 'killchain-1'] },
   { id: 'ops', label: 'Security Operations', labs: ['mcp08-1'] },
 ];
 
 /** Fixed left-to-right order for the lab switcher. Do not sort this at render time. */
 export const MCP_NAV_ORDER = MCP_NAV_GROUPS.flatMap((group) => group.labs);
 
-export const AGENT_ORDER = [
-  'llm03-1',
-  'llm03-2',
-  'asi02-1',
-  'asi09-1',
-  'asi06-1',
-  'asi06-2',
-  'asi10-1',
-  'asi01-1',
-  'asi03-1',
-  'asi04-1',
-  'asi05-1',
-  'asi07-1',
-  'asi08-1',
+/**
+ * Agentic lab groups, shared by the hub page and the lab switcher. `series` groups
+ * are meant to be taken in order; navigation is never blocked.
+ */
+export const AGENT_NAV_GROUPS = [
+  {
+    id: 'tools',
+    label: 'Tool Authority',
+    title: 'Do not let a tool do more than the task needs',
+    detail: 'An allowed tool can still be asked for the wrong thing. Read the tool_call, not the reply.',
+    labs: ['llm03-1', 'llm03-2', 'asi02-1', 'asi03-1'],
+  },
+  {
+    id: 'text',
+    label: 'Planted Text',
+    title: 'Do not trust text the agent is handed',
+    detail: 'Tickets, tool descriptions, and messages from other agents are data. They must not choose the next tool.',
+    labs: ['asi01-1', 'asi04-1', 'asi07-1'],
+  },
+  {
+    id: 'memory',
+    label: 'Memory',
+    title: 'Do not trust what the agent remembers',
+    detail: 'A note saved once is read as policy on every later run. Each lab here is one step further.',
+    series: true,
+    labs: ['asi06-1', 'asi06-2', 'asi10-1'],
+    steps: {
+      'asi06-1': 'Plant the note',
+      'asi06-2': 'See Level 2 scan it',
+      'asi10-1': 'Contain it with Halt',
+    },
+  },
+  {
+    id: 'oversight',
+    label: 'Oversight & Limits',
+    title: 'Keep a person and a limit between the agent and the effect',
+    detail: 'Approval only helps if the approver reads the arguments. Execution and fan-out need hard limits.',
+    labs: ['asi09-1', 'asi05-1', 'asi08-1'],
+  },
+  {
+    id: 'capstone',
+    label: 'Capstone',
+    title: 'Put it together',
+    detail: 'One scenario that chains several of these decisions.',
+    labs: ['killchain-1'],
+  },
 ];
+
+/** Fixed teaching order for the agent hub and lab switcher. Do not sort this at render time. */
+export const AGENT_ORDER = AGENT_NAV_GROUPS.flatMap((group) => group.labs);
+
+export const AGENT_FLOWS = {
+  hub: {
+    caption: 'L1 pins unknown tools with tool.allowlist. L2 pauses refunds and exports, and drops planted notes with memory.scan.',
+    steps: [
+      { title: 'Goal', detail: 'what you ask' },
+      { title: 'Planner', detail: 'picks a tool' },
+      { title: 'Intent Gate', detail: 'controls decide', accent: true },
+      { title: 'tool_call', detail: 'the evidence', warn: true },
+    ],
+  },
+};
+
+/**
+ * RAG lab groups, shared by the RAG page hub view and the lab switcher. Every lab
+ * here runs on the rag.kb surface. Navigation is never blocked.
+ */
+export const RAG_NAV_GROUPS = [
+  {
+    id: 'poison',
+    label: 'Poisoned Content',
+    title: 'Do not trust what retrieval hands the model',
+    detail: 'A document anyone can write becomes trusted context the moment it is retrieved.',
+    labs: ['llm09-1', 'llm02-3', 'llm01-4', 'llm01-5'],
+  },
+  {
+    id: 'ranking',
+    label: 'Ranking & Context',
+    title: 'Do not let ranking decide what the model sees',
+    detail: 'Stuffed keywords and oversized chunks can crowd the grounded answer out of the prompt.',
+    labs: ['llm09-2', 'llm09-4'],
+  },
+  {
+    id: 'trust',
+    label: 'Trust & Access',
+    title: 'Do not let a document vouch for itself',
+    detail: 'Trust tier, freshness, and ownership are metadata a writer can set, or that the index ignores.',
+    labs: ['llm09-3', 'llm09-5', 'llm02-4'],
+  },
+];
+
+/** Fixed teaching order for the RAG hub view and lab switcher. Do not sort this at render time. */
+export const RAG_ORDER = RAG_NAV_GROUPS.flatMap((group) => group.labs);
+
+export const RAG_STEPS = [
+  'Turn on KB integration so Cracky answers from this knowledge base.',
+  'Add a normal document, sync the vector index, and ask about it. Then add a poisoned one.',
+  'Read the retrieval trace to see what was ranked, dropped, and placed in context. Repeat at Level 0, 1, and 2.',
+];
+
+export const RAG_FLOWS = {
+  hub: {
+    caption: 'L1 shows provenance and moderates output. L2 adds retrieval.acl and retrieval.injection_scan.',
+    steps: [
+      { title: 'Documents', detail: 'anyone can write' },
+      { title: 'Vector index', detail: 'embeddings in ChromaDB' },
+      { title: 'Retrieval', detail: 'ranked top-k chunks', accent: true },
+      { title: 'Prompt', detail: 'treated as trusted', warn: true },
+    ],
+  },
+};
+
+/** Short chip label for a lab id in the switchers: MCP03-1, ASI02-1, LLM03-1. */
+export const labChipLabel = (id) => (
+  id === 'killchain-1' ? 'killchain-1' : String(id).toUpperCase()
+);
 
 export const MCP_DECISIONS = [
   {
@@ -86,7 +187,6 @@ export const LAB_SERIES = {
   'asi06-2': 'Same note as ASI06. This pass is what Level 2 does with it.',
   'asi10-1': 'Same note as ASI06. The note is still there on the next run.',
   'asi01-1': 'Planted-ticket goal hijack on the admin assistant. The agent adopts the ticket as its goal.',
-  'asi02-1': 'The shop agent may apply coupons, but STAFF100 is staff-only. Level 1 still applies it; Level 2 denies the restricted coupon. The privileged argument is the agentic risk.',
   'asi04-1': 'Shadow catalog on the admin assistant. Level 1 restores the pinned description.',
   'asi07-1': 'One scripted tool in this run. There is no second model.',
   'asi08-1': 'One scripted fan-out. There is no second model.',
@@ -147,6 +247,7 @@ export const sortLabs = (labs, order) => {
 };
 
 export const doneWhen = (lab) => {
+  if (lab?.ui?.done_when) return String(lab.ui.done_when);
   const expected = lab?.expected_by_level || {};
   const text = expected['0'] || expected[0] || '';
   return String(text).split('\n').map((line) => line.trim()).filter(Boolean)[0] || '';

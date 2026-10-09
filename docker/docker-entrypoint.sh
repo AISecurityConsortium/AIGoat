@@ -126,7 +126,7 @@ python -m scripts.seed --sync-challenges
 ok "Challenge metadata synced"
 
 # ── Step 4: Start backend ─────────────────────────────────────
-info "Starting uvicorn on port ${BACKEND_PORT:-8000}..."
+info "Starting uvicorn on 0.0.0.0:${BACKEND_PORT:-8000}..."
 exec python -m uvicorn app.main:app \
     --host 0.0.0.0 \
     --port "${BACKEND_PORT:-8000}" \
