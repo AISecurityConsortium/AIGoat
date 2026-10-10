@@ -50,6 +50,6 @@ async def test_profile_requires_auth(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_knowledge_base_requires_auth(client: AsyncClient):
-    resp = await client.get("/api/knowledge-base/")
+async def test_surfaces_requires_auth(client: AsyncClient):
+    resp = await client.get("/api/surfaces/")
     assert resp.status_code == 401

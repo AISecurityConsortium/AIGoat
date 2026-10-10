@@ -1,341 +1,426 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Container, Typography, Box, Accordion, AccordionSummary, AccordionDetails,
-  Chip, Button, useMediaQuery, Paper,
+  Chip, Button, Alert, Skeleton, TextField,
 } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 import {
   ExpandMore as ExpandMoreIcon,
   ArrowForward as ArrowForwardIcon,
   OpenInNew as ExternalIcon,
-  CompareArrows as CompareIcon,
-  TrendingUp as TrendingUpIcon,
-  NewReleases as NewIcon,
-  SwapHoriz as SwapIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
+import { useFrameworks, useFramework } from '../hooks/useFrameworks';
+import { RiskChip, EmptyState } from './common';
+import HubHero from './common/HubHero';
+import HubRail, { RailPanel } from './common/HubRail';
+import { chipSx, inset, meta, panel, sectionTitle } from './common/panelStyles';
+import { attacksRiskPath, attacksSurfacePath } from '../utils/taxonomyLinks';
+import { DEFAULT_FRAMEWORK, sortFrameworks } from '../utils/frameworkOrder';
 
-const OWASP_ITEMS = [
-  {
-    code: 'LLM01',
-    title: 'Prompt Injection',
-    description: 'Manipulating LLMs via crafted inputs that override system instructions, leading to unauthorized actions or data leaks. This includes both direct injection (user input) and indirect injection (poisoned external data).',
-    risk: 'Attackers can bypass safety guardrails, exfiltrate sensitive data, perform unauthorized actions, or manipulate the AI into generating harmful content.',
-  },
-  {
-    code: 'LLM02',
-    title: 'Sensitive Information Disclosure',
-    description: 'LLMs may inadvertently reveal confidential data in their responses, including PII, credentials, API keys, or proprietary system details embedded in training data or context.',
-    risk: 'Exposure of customer data, internal credentials, financial information, or business logic that can be exploited for further attacks.',
-  },
-  {
-    code: 'LLM03',
-    title: 'Supply Chain',
-    description: 'Vulnerabilities arising from compromised training data, pre-trained models, plugins, or third-party components integrated into LLM-based applications.',
-    risk: 'Backdoors in models, poisoned dependencies, or malicious plugins can compromise the entire application silently.',
-  },
-  {
-    code: 'LLM04',
-    title: 'Data and Model Poisoning',
-    description: 'Manipulation of training data or fine-tuning processes to introduce biases, backdoors, or vulnerabilities into the model, affecting its outputs and reliability.',
-    risk: 'Corrupted model outputs, biased decisions, backdoor triggers that produce attacker-controlled responses for specific inputs.',
-  },
-  {
-    code: 'LLM05',
-    title: 'Improper Output Handling',
-    description: 'Failing to validate, sanitize, or encode LLM outputs before passing them to downstream components, enabling injection attacks like XSS, SSRF, or code execution.',
-    risk: 'Cross-site scripting through AI-generated content, server-side request forgery, or remote code execution via unsanitized outputs.',
-  },
-  {
-    code: 'LLM06',
-    title: 'Excessive Agency',
-    description: 'Granting LLMs too much autonomy, permissions, or functionality without proper guardrails, allowing them to take unintended or harmful actions on behalf of users.',
-    risk: 'Unauthorized data modifications, unintended API calls, privilege escalation, or actions that violate business rules.',
-  },
-  {
-    code: 'LLM07',
-    title: 'System Prompt Leakage',
-    description: 'Extraction of the system prompt or internal instructions through social engineering, prompt injection, or other techniques, revealing the application\'s logic and constraints.',
-    risk: 'Exposed system prompts reveal security measures, business rules, and attack surface, enabling more targeted and effective exploits.',
-  },
-  {
-    code: 'LLM08',
-    title: 'Vector and Embedding Weaknesses',
-    description: 'Vulnerabilities in retrieval-augmented generation (RAG) systems where vector databases or embedding pipelines can be manipulated to inject malicious content or retrieve inappropriate data.',
-    risk: 'Poisoned knowledge bases, manipulated search results, or unauthorized access to sensitive documents through embedding manipulation.',
-  },
-  {
-    code: 'LLM09',
-    title: 'Misinformation',
-    description: 'LLMs generating false, misleading, or fabricated information (hallucinations) that appears authoritative and convincing, potentially leading to wrong decisions.',
-    risk: 'Users acting on incorrect AI-generated information, reputational damage, legal liability, or cascading errors in automated systems.',
-  },
-  {
-    code: 'LLM10',
-    title: 'Unbounded Consumption',
-    description: 'Lack of rate limiting, resource controls, or cost management for LLM interactions, allowing denial-of-service attacks or runaway costs through excessive API consumption.',
-    risk: 'Service disruption, excessive cloud costs, resource exhaustion, or denial-of-service affecting all users of the application.',
-  },
+const LLM_2025_TO_2026 = [
+  { tag: 'Unchanged', hue: 'default', code: 'LLM01', title: 'Prompt Injection', note: 'same title and rank' },
+  { tag: 'Unchanged', hue: 'default', code: 'LLM02', title: 'Sensitive Information Disclosure', note: 'same title and rank' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM03', title: 'Excessive Agency', note: 'was LLM06' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM04', title: 'Supply Chain', note: 'was LLM03' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM05', title: 'Data and Model Poisoning', note: 'was LLM04' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM06', title: 'Unbounded Consumption', note: 'was LLM10' },
+  { tag: 'Moved up', hue: 'warning', code: 'LLM07', title: 'Misinformation', note: 'was LLM09' },
+  { tag: 'Renamed', hue: 'secondary', code: 'LLM08', title: 'Hidden Context Exposure', note: 'was LLM07 System Prompt Leakage' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM09', title: 'Vector and Embedding Weaknesses', note: 'was LLM08' },
+  { tag: 'Moved down', hue: 'info', code: 'LLM10', title: 'Improper Output Handling', note: 'was LLM05' },
 ];
 
-const CHANGES_2025 = [
-  { icon: <NewIcon sx={{ fontSize: '0.9rem' }} />, type: 'New', text: 'LLM07: System Prompt Leakage — elevated from a sub-topic to its own category, reflecting the growing attack surface around system prompt extraction.' },
-  { icon: <NewIcon sx={{ fontSize: '0.9rem' }} />, type: 'New', text: 'LLM08: Vector and Embedding Weaknesses — newly added to address risks in RAG architectures and vector databases that didn\'t exist in the 2023/24 list.' },
-  { icon: <SwapIcon sx={{ fontSize: '0.9rem' }} />, type: 'Renamed', text: 'LLM02: "Insecure Output Handling" was renamed to "Sensitive Information Disclosure" — the scope broadened to cover all forms of data leakage, not just output handling.' },
-  { icon: <SwapIcon sx={{ fontSize: '0.9rem' }} />, type: 'Renamed', text: 'LLM10: "Model Theft" was replaced by "Unbounded Consumption" — shifting focus from IP theft to denial-of-service and cost exploitation attacks.' },
-  { icon: <TrendingUpIcon sx={{ fontSize: '0.9rem' }} />, type: 'Reordered', text: 'LLM04: "Data and Model Poisoning" merged the former "Training Data Poisoning" with model integrity concerns, reflecting the full lifecycle of data corruption attacks.' },
-  { icon: <CompareIcon sx={{ fontSize: '0.9rem' }} />, type: 'Removed', text: '"Insecure Plugin Design" and "Overreliance" were removed as standalone items — their risks are now covered under Supply Chain (LLM03) and Misinformation (LLM09).' },
+const FRAMEWORK_STEPS = [
+  'Pick a framework. The same technique can appear under more than one list.',
+  'Open a risk to read its summary and see the labs and challenges mapped to it.',
+  'Use Try in Attack Lab to practice that risk against the model.',
 ];
 
-const OwaspTop10Page = () => {
-  const theme = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const navigate = useNavigate();
-  const isMobile = useMediaQuery('(max-width:900px)');
-  const isDark = theme.palette.mode === 'dark';
+const FRAMEWORK_FLOW = {
+  caption: 'AIGoat maps its labs and challenges to these lists. The notes are teaching commentary, not official explanations.',
+  steps: [
+    { title: 'Framework', detail: 'an OWASP list' },
+    { title: 'Risk', detail: 'one entry, one code', accent: true },
+    { title: 'Lab', detail: 'hands-on, per defense level' },
+    { title: 'Challenge', detail: 'scored with a flag', warn: true },
+  ],
+};
 
-  const handleChange = (panel) => (_event, isExpanded) => {
-    setExpanded(isExpanded ? panel : false);
+const heroButtonSx = { textTransform: 'none', fontWeight: 600 };
+const riskButtonSx = {
+  color: 'primary.light',
+  borderColor: (t) => t.palette.custom?.brand?.primaryMuted ?? alpha(t.palette.primary.main, 0.25),
+  borderRadius: '8px',
+  textTransform: 'none',
+  fontWeight: 600,
+  fontSize: '0.875rem',
+};
+
+const FrameworkTabs = ({ frameworks, selectedId, onSelect }) => {
+  const handleKeyDown = (event) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    const idx = frameworks.findIndex((fw) => fw.id === selectedId);
+    if (idx < 0) return;
+    const next = event.key === 'ArrowRight'
+      ? (idx + 1) % frameworks.length
+      : (idx - 1 + frameworks.length) % frameworks.length;
+    onSelect(frameworks[next].id);
   };
 
-  const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
-  const chipColor = isDark ? '#c8d0db' : '#475569';
-  const chipBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
-
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: { xs: 3, md: 5 } }}>
-      <Container maxWidth="md">
-        {/* Header */}
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', fontSize: isMobile ? '1.7rem' : '2.3rem', letterSpacing: '-0.03em', mb: 1.5 }}>
-            OWASP Top 10 for LLM Applications
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 560, lineHeight: 1.7, mb: 2.5, fontSize: '0.9rem' }}>
-            The definitive guide to security risks in Large Language Model applications.
-            Updated for 2025 with new categories reflecting the evolving threat landscape
-            around RAG systems, system prompts, and agentic AI.
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              size="small"
-              endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
-              component="a"
-              href="https://genai.owasp.org/llm-top-10/"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                textTransform: 'none', fontWeight: 600, fontSize: '0.78rem', borderRadius: '8px',
-                borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
-                color: (t) => t.palette.custom?.text?.accent ?? 'primary.main',
-                '&:hover': { borderColor: 'primary.main', bgcolor: (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.06) },
-              }}
-            >
-              Official OWASP LLM Top 10
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              endIcon={<ExternalIcon sx={{ fontSize: '0.75rem !important' }} />}
-              component="a"
-              href="https://genai.owasp.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                textTransform: 'none', fontWeight: 600, fontSize: '0.78rem', borderRadius: '8px',
-                borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
-                color: (t) => t.palette.custom?.text?.body ?? 'text.primary',
-                '&:hover': { borderColor: 'primary.main', bgcolor: (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.06) },
-              }}
-            >
-              OWASP Gen AI Project
-            </Button>
-          </Box>
-        </Box>
-
-        {/* What's Changed in 2025 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2.5, md: 3 },
-            mb: 5,
-            borderRadius: '14px',
-            bgcolor: (t) => t.palette.custom?.surface?.elevated ?? 'background.paper',
-            border: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-            <CompareIcon sx={{ fontSize: '1.1rem', color: 'primary.main' }} />
-            <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: 'text.primary', letterSpacing: '-0.01em' }}>
-              What changed from 2023/24 to 2025
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {CHANGES_2025.map((item, i) => {
-              const typeColor = item.type === 'New' ? (isDark ? '#4ade80' : '#16a34a')
-                : item.type === 'Renamed' ? (isDark ? '#818cf8' : '#6366f1')
-                : item.type === 'Reordered' ? (isDark ? '#fbbf24' : '#d97706')
-                : (isDark ? '#94a3b8' : '#64748b');
-              return (
-                <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                  <Chip
-                    icon={item.icon}
-                    label={item.type}
-                    size="small"
-                    sx={{
-                      mt: 0.25,
-                      flexShrink: 0,
-                      bgcolor: alpha(typeColor, 0.1),
-                      color: typeColor,
-                      border: `1px solid ${alpha(typeColor, 0.2)}`,
-                      fontWeight: 700,
-                      fontSize: '0.62rem',
-                      height: 24,
-                      '& .MuiChip-icon': { color: 'inherit', ml: 0.5 },
-                    }}
-                  />
-                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                    {item.text}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Paper>
-
-        {/* Section label */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: 'text.primary', letterSpacing: '-0.01em' }}>
-            All 10 Categories
-          </Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-            Click to expand details
-          </Typography>
-        </Box>
-
-        {/* Accordion list */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {OWASP_ITEMS.map((item, idx) => (
-            <Accordion
-              key={item.code}
-              expanded={expanded === item.code}
-              onChange={handleChange(item.code)}
-              sx={{
-                bgcolor: (t) => t.palette.custom?.surface?.elevated ?? 'background.paper',
-                border: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
-                borderRadius: '10px !important',
-                '&:before': { display: 'none' },
-                overflow: 'hidden',
-                transition: 'border-color 0.2s',
-                ...(expanded === item.code && {
-                  borderColor: (t) => t.palette.custom?.border?.strong ?? t.palette.primary.main,
-                }),
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon sx={{ color: 'text.secondary', fontSize: '1.1rem' }} />}
-                sx={{
-                  px: 2.5, py: 0.25, minHeight: 48,
-                  '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5, my: 1 },
-                }}
-              >
-                <Chip
-                  label={item.code}
-                  size="small"
-                  sx={{
-                    bgcolor: chipBg,
-                    color: chipColor,
-                    fontWeight: 700,
-                    fontSize: '0.7rem',
-                    border: `1px solid ${chipBorder}`,
-                    minWidth: 56,
-                    height: 24,
-                  }}
-                />
-                <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.88rem', flex: 1 }}>
-                  {item.title}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-                <Box sx={{ borderTop: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`, pt: 2 }}>
-                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', lineHeight: 1.7, mb: 2, fontSize: '0.85rem' }}>
-                    {item.description}
-                  </Typography>
-                  <Box sx={{ bgcolor: (t) => alpha(t.palette.error.main, 0.05), border: (t) => `1px solid ${alpha(t.palette.error.main, 0.12)}`, borderRadius: '8px', p: 1.75, mb: 2.5 }}>
-                    <Typography sx={{ color: 'error.light', fontWeight: 700, fontSize: '0.68rem', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Risk / Impact
-                    </Typography>
-                    <Typography sx={{ color: 'error.light', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                      {item.risk}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: '0.8rem !important' }} />}
-                      onClick={() => navigate(`/attacks#${item.code}`)}
-                      sx={{
-                        color: 'primary.light',
-                        borderColor: (t) => t.palette.custom?.brand?.primaryMuted ?? alpha(t.palette.primary.main, 0.25),
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.78rem',
-                        '&:hover': { borderColor: 'primary.main', bgcolor: (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.08) },
-                      }}
-                    >
-                      Try in Attack Lab
-                    </Button>
-                    <Button
-                      variant="text"
-                      size="small"
-                      endIcon={<ExternalIcon sx={{ fontSize: '0.7rem !important' }} />}
-                      component="a"
-                      href={`https://genai.owasp.org/llmrisk/${item.code.toLowerCase()}-prompt-injection/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        color: 'text.secondary',
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        '&:hover': { color: 'primary.main' },
-                      }}
-                    >
-                      Read on OWASP
-                    </Button>
-                  </Box>
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          ))}
-        </Box>
-
-        {/* Bottom CTA */}
-        <Box sx={{ mt: 5, textAlign: 'center' }}>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mb: 2, lineHeight: 1.6 }}>
-            Ready to test these vulnerabilities hands-on? Jump into the Attack Labs 
-            and practice exploiting real LLM weaknesses in a safe environment.
-          </Typography>
-          <Button
-            variant="contained"
-            size="medium"
-            endIcon={<ArrowForwardIcon />}
-            onClick={() => navigate('/attacks')}
+    <Box
+      role="tablist"
+      aria-label="Security frameworks"
+      onKeyDown={handleKeyDown}
+      sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}
+    >
+      {frameworks.map((fw) => {
+        const selected = fw.id === selectedId;
+        return (
+          <Box
+            key={fw.id}
+            role="tab"
+            tabIndex={selected ? 0 : -1}
+            aria-selected={selected}
+            aria-controls="framework-risk-list"
+            onClick={() => onSelect(fw.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(fw.id);
+              }
+            }}
             sx={{
-              bgcolor: (t) => t.palette.custom?.brand?.primary ?? 'primary.main',
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              px: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              px: 2,
               py: 1,
               borderRadius: '10px',
-              '&:hover': { bgcolor: (t) => t.palette.primary.dark },
+              cursor: 'pointer',
+              minWidth: { xs: 80, md: 110 },
+              textAlign: 'center',
+              transition: 'all 0.15s',
+              bgcolor: selected
+                ? (t) => t.palette.custom?.overlay?.active ?? alpha(t.palette.primary.main, 0.1)
+                : (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
+              border: selected
+                ? (t) => `1.5px solid ${t.palette.primary.main}`
+                : (t) => `1.5px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
+              '&:focus-visible': {
+                outline: '2px solid',
+                outlineColor: 'primary.main',
+                outlineOffset: 2,
+              },
             }}
           >
-            Launch Attack Labs
-          </Button>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: selected ? 'primary.main' : 'text.primary', lineHeight: 1.2 }}>
+              {fw.version}
+            </Typography>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, mt: 0.25, lineHeight: 1.2, color: selected ? 'primary.main' : 'text.secondary' }}>
+              {fw.name.replace('OWASP ', '').replace(' for LLM Applications', '')}
+            </Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
+
+const ChangeRow = ({ row }) => (
+  <Box component="li" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, flexWrap: 'wrap' }}>
+    <Chip size="small" label={row.tag} color={row.hue} sx={chipSx} />
+    <Typography sx={{ fontSize: '0.82rem', lineHeight: 1.5, color: 'text.primary' }}>
+      <Box component="span" sx={{ fontWeight: 700 }}>{row.code}</Box>
+      {' '}{row.title}
+      <Box component="span" sx={{ color: 'text.secondary' }}>
+        {' '}({row.note})
+      </Box>
+    </Typography>
+  </Box>
+);
+
+const OwaspTop10Page = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { frameworks, loading: listLoading, error: listError, refetch: refetchList } = useFrameworks();
+  const orderedFrameworks = useMemo(() => sortFrameworks(frameworks), [frameworks]);
+  const selectedId = searchParams.get('framework') || DEFAULT_FRAMEWORK;
+  const query = searchParams.get('q') || '';
+  const { framework, loading: detailLoading, error: detailError, refetch: refetchDetail } = useFramework(selectedId);
+
+  const filteredRisks = useMemo(() => {
+    const risks = framework?.risks || [];
+    const needle = query.trim().toLowerCase();
+    if (!needle) return risks;
+    return risks.filter((risk) =>
+      `${risk.code} ${risk.title} ${risk.summary}`.toLowerCase().includes(needle)
+    );
+  }, [framework, query]);
+
+  const setFrameworkId = (id) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('framework', id);
+    setSearchParams(next);
+  };
+
+  const setQuery = (value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('q', value);
+    else next.delete('q');
+    setSearchParams(next, { replace: true });
+  };
+
+  const loading = listLoading || detailLoading;
+  const error = listError || detailError;
+
+  return (
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 2 }}>
+      <Container maxWidth="xl">
+        <Box sx={{ maxWidth: 1560, mx: 'auto' }}>
+          <HubHero
+            eyebrow="Frameworks"
+            title="AI Security Frameworks"
+            description="Educational taxonomies that AIGoat maps labs and challenges to. Switch frameworks to see how the same techniques appear under different lists."
+            steps={FRAMEWORK_STEPS}
+            flow={FRAMEWORK_FLOW}
+            actions={(
+              <>
+                <Button
+                  variant="contained"
+                  size="small"
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                  onClick={() => navigate('/attacks')}
+                  sx={{ ...heroButtonSx, fontWeight: 700 }}
+                >
+                  Launch Attack Labs
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ExternalIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                  component="a"
+                  href={framework?.url || 'https://genai.owasp.org/llm-top-10/'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={heroButtonSx}
+                >
+                  Official list
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                  onClick={() => navigate('/threat-modeling')}
+                  sx={heroButtonSx}
+                >
+                  Threat modeling
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ExternalIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                  component="a"
+                  href="https://genai.owasp.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={heroButtonSx}
+                >
+                  OWASP Gen AI Project
+                </Button>
+              </>
+            )}
+          />
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={<Button color="inherit" size="small" onClick={() => { refetchList(); refetchDetail(); }}>Retry</Button>}
+            >
+              Could not load this framework. Check that the API is running.
+            </Alert>
+          )}
+
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 1.5,
+              alignItems: 'start',
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 7fr) minmax(300px, 3fr)', lg: 'minmax(0, 7fr) minmax(340px, 3fr)' },
+            }}
+          >
+            <Box sx={{ ...panel, p: 2, minWidth: 0 }}>
+              <Typography component="h2" sx={{ ...sectionTitle, mb: 1 }}>Risks</Typography>
+
+              {listLoading && !frameworks.length && (
+                <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton key={i} variant="rounded" width={110} height={52} />
+                  ))}
+                </Box>
+              )}
+
+              {orderedFrameworks.length > 0 && (
+                <FrameworkTabs frameworks={orderedFrameworks} selectedId={selectedId} onSelect={setFrameworkId} />
+              )}
+
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Filter by code, title, or summary"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                inputProps={{ 'aria-label': 'Filter risks' }}
+                sx={{ mb: 1.5 }}
+              />
+
+              {loading && !framework && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} variant="rounded" height={56} />
+                  ))}
+                </Box>
+              )}
+
+              {!loading && framework && filteredRisks.length === 0 && (
+                <EmptyState
+                  title="No risks match"
+                  description={query ? 'Try a different filter.' : 'This framework has no risks yet.'}
+                />
+              )}
+
+              <Box id="framework-risk-list" role="tabpanel" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {filteredRisks.map((risk) => (
+                  <Accordion
+                    key={risk.id}
+                    disableGutters
+                    elevation={0}
+                    sx={{
+                      ...inset,
+                      borderRadius: '8px !important',
+                      '&:before': { display: 'none' },
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon sx={{ color: 'text.secondary', fontSize: '1.1rem' }} />}
+                      sx={{
+                        px: 1.5, py: 0, minHeight: 44,
+                        '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.25, my: 0.75, flexWrap: 'wrap' },
+                      }}
+                    >
+                      <RiskChip code={risk.code} framework={framework.name} />
+                      <Typography sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.95rem', flex: 1, minWidth: 160 }}>
+                        {risk.title}
+                      </Typography>
+                      <Typography sx={{ ...meta, mr: 1 }}>
+                        {(risk.lab_ids || []).length} labs
+                        {risk.writeup ? ' · writeup' : ''}
+                        {' · '}
+                        {(risk.challenge_ids || []).length} challenges
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ px: 1.5, pb: 1.5, pt: 0 }}>
+                      <Box sx={{ borderTop: (t) => `1px solid ${t.palette.divider}`, pt: 1.5 }}>
+                        <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', lineHeight: 1.65, mb: 1.5, fontSize: '0.9rem' }}>
+                          {risk.summary}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 1.5 }}>
+                          {(risk.attack_surfaces || []).map((surface) => (
+                            <Chip
+                              key={surface}
+                              label={surface}
+                              size="small"
+                              component={RouterLink}
+                              to={attacksSurfacePath(surface)}
+                              clickable
+                              sx={{ ...chipSx, textDecoration: 'none' }}
+                            />
+                          ))}
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                            onClick={() => navigate(`/owasp-top-10/${framework.id}/${risk.code}`)}
+                            sx={riskButtonSx}
+                          >
+                            View risk
+                          </Button>
+                          {(risk.lab_ids || []).length > 0 && (
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              endIcon={<ArrowForwardIcon sx={{ fontSize: '0.9375rem !important' }} />}
+                              onClick={() => navigate(attacksRiskPath(framework.id, risk.code))}
+                              sx={riskButtonSx}
+                            >
+                              Try in Attack Lab
+                            </Button>
+                          )}
+                        </Box>
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </Box>
+            </Box>
+
+            <HubRail label="Framework details">
+              {framework && (
+                <Box sx={panel}>
+                  <Typography component="h2" sx={sectionTitle}>{framework.name}</Typography>
+                  <Typography sx={{ ...meta, mt: 0.25, mb: 1 }}>
+                    v{framework.version}
+                    {framework.status ? ` · ${framework.status}` : ''}
+                    {framework.publisher ? ` · ${framework.publisher}` : ''}
+                    {` · ${framework.risks?.length || 0} risks`}
+                  </Typography>
+                  {(framework.status === 'beta' || framework.status === 'draft') && framework.maturity_note && (
+                    <Alert severity="warning" role="note" sx={{ mb: 1 }}>
+                      {framework.maturity_note}
+                    </Alert>
+                  )}
+                  <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? 'text.primary', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                    {framework.attribution}
+                  </Typography>
+                  <Typography sx={{ ...meta, mt: 1 }}>
+                    Source licence: {framework.source_license}
+                  </Typography>
+                  {framework.id === 'owasp-mcp-2025' && (
+                    <Button component={RouterLink} to="/mcp" size="small" sx={{ mt: 1, textTransform: 'none' }}>
+                      Practice on the MCP page
+                    </Button>
+                  )}
+                  {framework.id === 'owasp-agentic-2026' && (
+                    <Button component={RouterLink} to="/agent" size="small" sx={{ mt: 1, textTransform: 'none' }}>
+                      Practice on the Agent page
+                    </Button>
+                  )}
+                </Box>
+              )}
+
+              {selectedId === 'owasp-llm-2026' && (
+                <RailPanel title="What changed from 2025 to 2026">
+                  <Typography sx={{ ...meta, mt: 0.25, mb: 1 }}>
+                    OWASP re-ranked the LLM Top 10 for 2026 as agents, tools, and retrieval moved from side channels
+                    to the default architecture. AIGoat maps labs to the 2026 list only. Titles below are OWASP labels;
+                    the notes are AIGoat teaching commentary, not the official explanations.
+                  </Typography>
+                  <Box component="ul" sx={{ m: 0, pl: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    {LLM_2025_TO_2026.map((row) => <ChangeRow key={row.code} row={row} />)}
+                  </Box>
+                  <Typography sx={{ ...meta, mt: 1.25 }}>
+                    Nothing was added or removed. Agent-specific risks moved to the Agentic Applications list.
+                  </Typography>
+                </RailPanel>
+              )}
+            </HubRail>
+          </Box>
         </Box>
       </Container>
     </Box>

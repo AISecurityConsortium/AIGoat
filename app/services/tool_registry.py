@@ -38,6 +38,7 @@ class Tool:
     handler: ToolHandler
     requires_approval: bool = False
     parameter_schema: dict[str, Any] = field(default_factory=dict)
+    origin: str = ""
 
 
 class ToolRegistry:
@@ -69,6 +70,21 @@ class ToolRegistry:
                 "description": t.description,
                 "parameters": t.parameter_schema,
                 "requires_approval": t.requires_approval,
+            }
+            for t in self._tools.values()
+        ]
+
+    def ollama_tools(self) -> list[dict[str, Any]]:
+        from app.agent.schema import as_json_schema
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": as_json_schema(t.parameter_schema),
+                },
             }
             for t in self._tools.values()
         ]

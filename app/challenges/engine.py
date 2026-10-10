@@ -40,6 +40,13 @@ def compute_flag(challenge_id: int, user_id: int) -> str:
     return f"AIGOAT{{{digest[:32].upper()}}}"
 
 
+def compute_lab_flag(lab_id: str, user_id: int, attempt: int) -> str:
+    """Per-learner lab flag. Distinct payload from challenge flags. Not stored."""
+    payload = f"aigoat:lab:v1:{lab_id}:{user_id}:{attempt}".encode("utf-8")
+    digest = hmac.new(_get_runtime_secret(), payload, hashlib.sha256).hexdigest()
+    return f"AIGOAT{{{digest[:32].upper()}}}"
+
+
 def verify_flag(challenge_id: int, user_id: int, submitted: str) -> bool:
     expected = compute_flag(challenge_id, user_id)
     return hmac.compare_digest(submitted.strip(), expected)

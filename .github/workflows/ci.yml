@@ -84,6 +84,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --silent
 
+      - name: Unit and component tests
+        run: npx react-scripts test --watchAll=false
+        env:
+          CI: true
+
       - name: Lint (via build)
         run: npx react-scripts build
         env:

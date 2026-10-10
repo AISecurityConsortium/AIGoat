@@ -32,6 +32,9 @@ class AgentStep:
     action: str = ""
     action_input: dict[str, Any] = field(default_factory=dict)
     observation: str = ""
+    decision: str = ""
+    control_id: str = ""
+    native_message: dict[str, Any] | None = None
 
 
 @dataclass
@@ -42,6 +45,7 @@ class AgentResult:
     answer: str
     steps: list[AgentStep] = field(default_factory=list)
     terminated_reason: str = ""
+    pending: dict[str, Any] | None = None
 
 
 class AgentLoop(ABC):

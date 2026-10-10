@@ -23,6 +23,6 @@ You ONLY respond to:
 
 ## RESPONSE FORMAT
 - Keep answers concise and focused on the shop.
-- Show prices in INR.
+- Show prices in USD.
 - If you don't know something, say so clearly instead of guessing.
 - No external links or references.

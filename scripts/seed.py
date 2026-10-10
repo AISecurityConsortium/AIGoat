@@ -17,7 +17,7 @@ import sys
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session, init_db
@@ -32,6 +32,8 @@ from app.models import (
     Payment,
     Product,
     Review,
+    SupportMessage,
+    SupportTicket,
     User,
     UserProfile,
 )
@@ -302,6 +304,104 @@ async def seed_reviews(session: AsyncSession, users: list[User], products: list[
     await session.commit()
 
 
+# Benign shop requests. Learners still plant their own payloads as Alice.
+SUPPORT_TICKET_FIXTURES = (
+    {
+        "username": "alice",
+        "subject": "Where is my hoodie?",
+        "status": "open",
+        "messages": (
+            ("alice", "Hi, I ordered the red team hoodie last week and have not seen a shipping update."),
+        ),
+    },
+    {
+        "username": "bob",
+        "subject": "Coupon code did not apply",
+        "status": "open",
+        "messages": (
+            ("bob", "SAVE10 was rejected at checkout. The cart was over the minimum."),
+            ("admin", "Thanks. What is the order number on the confirmation page?"),
+            ("bob", "It never confirmed. The cart still shows the full price."),
+        ),
+    },
+    {
+        "username": "charlie",
+        "subject": "Can I exchange a tee for a larger size?",
+        "status": "open",
+        "messages": (
+            ("charlie", "The Jailbreak Whisperer tee fits small. Can I exchange the medium for a large?"),
+        ),
+    },
+    {
+        "username": "frank",
+        "subject": "Sticker pack sent to the wrong address",
+        "status": "closed",
+        "messages": (
+            ("frank", "The sticker pack went to my old apartment. Can you send another to the address on my profile?"),
+            ("admin", "A replacement shipped today. Closing this ticket."),
+        ),
+    },
+    {
+        "username": "alice",
+        "subject": "Order arrived, thank you",
+        "status": "closed",
+        "messages": (
+            ("alice", "The poster set arrived and looks right. Thank you."),
+            ("admin", "Glad it got there. We will close this one."),
+        ),
+    },
+)
+
+
+async def seed_support_tickets(session: AsyncSession, users: list[User]) -> None:
+    """Insert the demo inbox if those subjects are missing. Safe to run again."""
+    by_name = {user.username: user for user in users}
+    for spec in SUPPORT_TICKET_FIXTURES:
+        owner = by_name.get(spec["username"])
+        if owner is None:
+            continue
+        found = await session.execute(
+            select(SupportTicket).where(
+                SupportTicket.user_id == owner.id,
+                SupportTicket.subject == spec["subject"],
+            )
+        )
+        ticket = found.scalar_one_or_none()
+        if ticket is None:
+            ticket = SupportTicket(
+                user_id=owner.id,
+                subject=spec["subject"],
+                body=spec["messages"][0][1],
+                status=spec["status"],
+            )
+            session.add(ticket)
+            await session.flush()
+        message_count = await session.scalar(
+            select(func.count()).select_from(SupportMessage).where(SupportMessage.ticket_id == ticket.id)
+        )
+        if message_count:
+            continue
+        for author_name, text in spec["messages"]:
+            author = by_name.get(author_name)
+            if author is None:
+                continue
+            session.add(SupportMessage(
+                ticket_id=ticket.id,
+                user_id=author.id,
+                body=text,
+            ))
+    await session.commit()
+
+
+async def sync_support_tickets() -> None:
+    import app.models as _models  # noqa: F401 — register models with Base.metadata
+    assert _models
+    await init_db()
+    async with async_session() as session:
+        result = await session.execute(select(User))
+        await seed_support_tickets(session, list(result.scalars().all()))
+
+
 async def seed_orders(session: AsyncSession, users: list[User], products: list[Product]) -> None:
     demo_users = [u for u in users if u.username in ("alice", "bob", "charlie", "frank")]
     statuses = ["delivered"] * 4 + ["cancelled"] * 1 + ["shipped"] * 1 + ["pending", "processing"]
@@ -339,26 +439,92 @@ async def seed_orders(session: AsyncSession, users: list[User], products: list[P
                 session.add(OrderItem(order_id=order.id, product_id=prod.id, quantity=qty, price=price))
             session.add(Payment(order_id=order.id, card_number=ship["card_number"], card_type=ship["card_type"], amount=final))
     await session.commit()
+    await ensure_asi02_victim_order(session, demo_users, products)
+
+
+async def ensure_asi02_victim_order(
+    session: AsyncSession, users: list[User], products: list[Product]
+) -> Order:
+    """Deterministic order ORD-1003 for the ASI02 tool-misuse lab (apply coupon to order 1003)."""
+    existing = (
+        await session.execute(select(Order).where(Order.custom_order_id == "ORD-1003"))
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+    victim = next((u for u in users if u.username == "bob"), users[0])
+    ship = USER_SHIPPING[victim.username]
+    selected = random.sample(products, min(2, len(products))) if products else []
+    items = [(p, 1, float(p.price)) for p in selected]
+    total = sum(qty * price for _, qty, price in items) or 59.0
+    order = Order(
+        user_id=victim.id,
+        total_amount=total,
+        discount_amount=0.0,
+        final_amount=total,
+        status="delivered",
+        shipping_first_name=ship["first_name"],
+        shipping_last_name=ship["last_name"],
+        shipping_email=ship["email"],
+        shipping_phone=ship["phone"],
+        shipping_address=ship["address"],
+        shipping_city=ship["city"],
+        shipping_state=ship["state"],
+        shipping_zip_code=ship["zip_code"],
+        shipping_country=ship["country"],
+        custom_order_id="ORD-1003",
+        created_at=datetime.now(timezone.utc) - timedelta(days=12),
+    )
+    session.add(order)
+    await session.flush()
+    for prod, qty, price in items:
+        session.add(OrderItem(order_id=order.id, product_id=prod.id, quantity=qty, price=price))
+    session.add(
+        Payment(
+            order_id=order.id,
+            card_number=ship["card_number"],
+            card_type=ship["card_type"],
+            amount=total,
+        )
+    )
+    await session.commit()
+    return order
 
 
 async def seed_coupon(session: AsyncSession) -> None:
     now = datetime.now(timezone.utc)
     r = await session.execute(select(Coupon).where(Coupon.code == "WELCOME20"))
-    if r.scalar_one_or_none():
-        return
-    session.add(Coupon(
-        code="WELCOME20",
-        name="Welcome Discount",
-        description="Welcome discount for new customers",
-        discount_type="percentage",
-        discount_value=20,
-        minimum_order_amount=50,
-        usage_limit=100,
-        usage_limit_per_user=1,
-        valid_from=now - timedelta(days=30),
-        valid_until=now + timedelta(days=365),
-        is_active=True,
-    ))
+    if r.scalar_one_or_none() is None:
+        session.add(Coupon(
+            code="WELCOME20",
+            name="Welcome Discount",
+            description="Welcome discount for new customers",
+            discount_type="percentage",
+            discount_value=20,
+            minimum_order_amount=50,
+            usage_limit=100,
+            usage_limit_per_user=1,
+            valid_from=now - timedelta(days=30),
+            valid_until=now + timedelta(days=365),
+            is_active=True,
+        ))
+    # Restricted staff override for the ASI02 tool-misuse lab. A customer-facing
+    # agent should never apply it. Full comp, staff audience only.
+    staff = await session.execute(select(Coupon).where(Coupon.code == "STAFF100"))
+    if staff.scalar_one_or_none() is None:
+        session.add(Coupon(
+            code="STAFF100",
+            name="Staff Override",
+            description="Staff-only full comp. Not valid for customer orders.",
+            discount_type="percentage",
+            discount_value=100,
+            minimum_order_amount=0,
+            usage_limit=9999,
+            usage_limit_per_user=9999,
+            target_audience="staff",
+            valid_from=now - timedelta(days=30),
+            valid_until=now + timedelta(days=365),
+            is_active=True,
+        ))
     await session.commit()
 
 
@@ -381,6 +547,54 @@ async def seed_challenges(session: AsyncSession) -> None:
     await session.commit()
 
 
+async def sync_challenge_metadata(session: AsyncSession) -> tuple[int, int]:
+    """Update challenge rows from CHALLENGE_DEFINITIONS without wiping attempts.
+
+    A workshop image that already has ChallengeAttempt rows keeps those attempts;
+    metadata (including owasp_ref) is overwritten from CHALLENGE_DEFINITIONS.
+    Rows are matched by position (ordered by id). Missing trailing rows are
+    inserted when the DB has fewer challenges than definitions; attempts are
+    never deleted.
+    """
+    result = await session.execute(select(Challenge).order_by(Challenge.id.asc()))
+    existing = list(result.scalars().all())
+    updated = 0
+    inserted = 0
+    for i, defn in enumerate(CHALLENGE_DEFINITIONS):
+        fields = {
+            "title": defn["title"],
+            "description": defn["description"],
+            "difficulty": defn["difficulty"],
+            "points": defn["points"],
+            "owasp_ref": defn["owasp_ref"],
+            "evaluator_key": defn["evaluator_key"],
+            "hints": defn["hints"],
+            "target_route": defn.get("target_route"),
+        }
+        if i < len(existing):
+            row = existing[i]
+            for key, value in fields.items():
+                setattr(row, key, value)
+            updated += 1
+        else:
+            session.add(Challenge(**fields))
+            inserted += 1
+    await session.commit()
+    return updated, inserted
+
+
+async def run_sync_challenges() -> None:
+    import app.models as _models  # noqa: F401 — register models with Base.metadata
+    assert _models
+    await init_db()
+    async with async_session() as session:
+        updated, inserted = await sync_challenge_metadata(session)
+    print(
+        f"Challenge metadata synced: {updated} updated, {inserted} inserted "
+        f"(attempts preserved)."
+    )
+
+
 async def seed_knowledge_base(session: AsyncSession, products: list[Product]) -> None:
     existing = await session.execute(select(KnowledgeBaseEntry).limit(1))
     if existing.scalar_one_or_none():
@@ -394,6 +608,8 @@ async def seed_knowledge_base(session: AsyncSession, products: list[Product]) ->
             title=gen["title"],
             content=gen["content"],
             category=gen["category"],
+            is_user_injected=False,
+            trust_tier="system",
         )
         session.add(entry)
     await session.commit()
@@ -408,6 +624,7 @@ async def run_seed() -> None:
         users = list(users_map.values())
         products = await seed_products(session)
         await seed_reviews(session, users, products)
+        await seed_support_tickets(session, users)
         await seed_orders(session, users, products)
         await seed_coupon(session)
         await seed_challenges(session)
@@ -416,4 +633,9 @@ async def run_seed() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(run_seed())
+    if len(sys.argv) > 1 and sys.argv[1] == "--sync-challenges":
+        asyncio.run(run_sync_challenges())
+    elif len(sys.argv) > 1 and sys.argv[1] == "--sync-support":
+        asyncio.run(sync_support_tickets())
+    else:
+        asyncio.run(run_seed())

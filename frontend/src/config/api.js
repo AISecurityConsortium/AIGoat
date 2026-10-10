@@ -1,8 +1,23 @@
 import axios from 'axios';
 
-// API Configuration
+const envUrl = process.env.REACT_APP_API_URL;
+
+const resolveApiBase = () => {
+  if (typeof envUrl === 'string') {
+    return envUrl;
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+    if (port === '3000' || port === '3001') {
+      return `${protocol}//${hostname}:8000`;
+    }
+    return '';
+  }
+  return 'http://localhost:8000';
+};
+
 const API_CONFIG = {
-  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  BASE_URL: resolveApiBase(),
 
   ENDPOINTS: {
     // Authentication
@@ -45,6 +60,7 @@ const API_CONFIG = {
     
     // Knowledge Base
     KNOWLEDGE_BASE: '/api/knowledge-base/',
+    KNOWLEDGE_BASE_TRACE: '/api/knowledge-base/trace',
     
     // Admin
     ADMIN_DASHBOARD: '/api/admin/dashboard/',
@@ -62,6 +78,40 @@ const API_CONFIG = {
     
     // Ollama Status
     OLLAMA_STATUS: '/api/ollama/status/',
+
+    // Taxonomy (public, no auth)
+    FRAMEWORKS: '/api/frameworks/',
+    FRAMEWORK_DETAIL: (id) => `/api/frameworks/${id}`,
+    RISKS: '/api/risks/',
+    RISK_DETAIL: (id) => `/api/risks/${encodeURIComponent(id)}`,
+
+    // Labs
+    LABS: '/api/labs/',
+    LAB_DETAIL: (id) => `/api/labs/${id}`,
+    LAB_START: (id) => `/api/labs/${id}/start`,
+    LAB_RESET: (id) => `/api/labs/${id}/reset`,
+    LAB_HALT: (id) => `/api/labs/${id}/halt`,
+    LAB_PROGRESS: (id) => `/api/labs/${id}/progress`,
+    LAB_HINT: (id) => `/api/labs/${id}/hints/next`,
+    LAB_SUBMIT: (id) => `/api/labs/${id}/submit`,
+    LAB_SOLUTION: (id) => `/api/labs/${id}/solution`,
+    LAB_FIXTURE: (id) => `/api/labs/${id}/fixture`,
+    KILLCHAIN: '/api/killchain',
+
+    // Surfaces
+    SURFACES: '/api/surfaces/',
+    SURFACE_EXECUTE: (id) => `/api/surfaces/${id}/execute`,
+
+    AGENT_RUNS: '/api/agent/runs',
+    AGENT_RUN: (id) => `/api/agent/runs/${id}`,
+    AGENT_APPROVE: (id) => `/api/agent/runs/${id}/approve`,
+    AGENT_CANCEL: (id) => `/api/agent/runs/${id}/cancel`,
+    AGENT_MEMORY: '/api/agent/memory',
+
+    MCP_SERVERS: '/api/mcp/servers',
+    MCP_DISCOVER: (id) => `/api/mcp/servers/${id}/discover`,
+    MCP_TOOLS: (id) => `/api/mcp/servers/${id}/tools`,
+    MCP_CALL: (id, tool) => `/api/mcp/servers/${id}/tools/${tool}/call`,
 
     // Workshop / Challenges
     CHALLENGES: '/api/workshop/challenges',

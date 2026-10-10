@@ -4,7 +4,7 @@ How the challenge system works end-to-end and what context is available at each 
 
 ## Flag Generation
 
-Flags are **never stored** — they are computed at runtime using HMAC-SHA256:
+Flags are **never stored**; they are computed at runtime using HMAC-SHA256:
 
     flag = AIGOAT{HMAC-SHA256(runtime_secret, "challenge_id:user_id")[:32]}
 

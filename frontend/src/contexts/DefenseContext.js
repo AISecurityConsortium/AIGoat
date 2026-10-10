@@ -3,9 +3,9 @@ import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 
 const LEVELS = {
-  0: { level: 0, name: 'Vulnerable', shortLabel: 'L0', color: '#ef4444', icon: '🔓', description: 'No protection — all attacks succeed' },
-  1: { level: 1, name: 'Hardened', shortLabel: 'L1', color: '#fbbf24', icon: '🛡️', description: 'Basic prompt hardening active' },
-  2: { level: 2, name: 'Guardrailed', shortLabel: 'L2', color: '#4ade80', icon: '🔒', description: 'Input/output guardrails active' },
+  0: { level: 0, name: 'Vulnerable', shortLabel: 'L0', color: '#ef4444', icon: '🔓', description: 'No protection. Attacks succeed.' },
+  1: { level: 1, name: 'Hardened', shortLabel: 'L1', color: '#fbbf24', icon: '🛡️', description: 'Filters and hardens prompts.' },
+  2: { level: 2, name: 'Guardrailed', shortLabel: 'L2', color: '#4ade80', icon: '🔒', description: 'Adds input and output guardrails.' },
 };
 
 const DefenseContext = createContext();
@@ -16,6 +16,10 @@ export const DefenseProvider = ({ children }) => {
     return stored !== null ? parseInt(stored, 10) : 0;
   });
   const [loading, setLoading] = useState(false);
+  // True once the learner picks a level in this browser session. Until then a
+  // lab's recommended starting level applies. Deliberately not persisted: an
+  // explicit choice should last the session, not forever.
+  const [levelChosenThisSession, setLevelChosenThisSession] = useState(false);
 
   const levelDetails = LEVELS[defenseLevel] || LEVELS[0];
 
@@ -51,6 +55,7 @@ export const DefenseProvider = ({ children }) => {
       await axios.post(getApiUrl('/api/chat/defense-level'), { level: numLevel }, { headers });
 
       setDefenseLevel(numLevel);
+      setLevelChosenThisSession(true);
       localStorage.setItem('aigoat_defense_level', String(numLevel));
 
       window.dispatchEvent(new CustomEvent('defenseLevelChanged', { detail: { level: numLevel } }));
@@ -58,6 +63,7 @@ export const DefenseProvider = ({ children }) => {
     } catch (err) {
       // Fallback: still update locally even if backend fails
       setDefenseLevel(numLevel);
+      setLevelChosenThisSession(true);
       localStorage.setItem('aigoat_defense_level', String(numLevel));
       window.dispatchEvent(new CustomEvent('defenseLevelChanged', { detail: { level: numLevel } }));
       return { success: true, warning: 'Backend sync failed, saved locally' };
@@ -67,7 +73,16 @@ export const DefenseProvider = ({ children }) => {
   }, []);
 
   return (
-    <DefenseContext.Provider value={{ defenseLevel, levelDetails, changeDefenseLevel, loading, LEVELS }}>
+    <DefenseContext.Provider
+      value={{
+        defenseLevel,
+        levelDetails,
+        changeDefenseLevel,
+        loading,
+        LEVELS,
+        levelChosenThisSession,
+      }}
+    >
       {children}
     </DefenseContext.Provider>
   );

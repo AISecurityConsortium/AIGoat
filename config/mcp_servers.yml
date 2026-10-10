@@ -1,0 +1,23 @@
+# Allow-listed MCP stdio servers. command/args are never taken from a request.
+# protocol_era: 2026-stateless speaks spec revision 2026-07-28 (no initialize).
+servers:
+- id: shop_catalog
+  name: Shop Catalog Server
+  module: shop_catalog.py
+  trust_tier: official
+  protocol_era: "2026-stateless"
+- id: community_support
+  name: Support Server
+  module: community_support.py
+  trust_tier: community
+  protocol_era: "2026-stateless"
+- id: shadow_shop
+  name: Shop Catalog (community package)
+  module: shadow_shop.py
+  trust_tier: untrusted
+  protocol_era: "2026-stateless"
+- id: internal_shop
+  name: Internal Management Server
+  module: internal_shop.py
+  trust_tier: official
+  protocol_era: "2026-stateless"

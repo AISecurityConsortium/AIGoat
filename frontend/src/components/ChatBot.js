@@ -13,6 +13,7 @@ import {
   Zoom,
   InputAdornment,
   Button,
+  Tooltip,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -20,6 +21,7 @@ import {
   SmartToy as BotIcon,
   Chat as ChatIcon,
   Remove as MinimizeIcon,
+  Stop as StopIcon,
 } from '@mui/icons-material';
 import { useSearch } from '../contexts/SearchContext';
 import { useChat } from '../contexts/ChatContext';
@@ -61,16 +63,19 @@ const THINKING_PHRASES = [
 const ChatBot = () => {
   const { chatInput, setChatInput } = useSearch();
   const { isChatOpen, openChat } = useChat();
-  const { defenseLevel, levelDetails } = useDefense();
+  const { defenseLevel, levelDetails, levelChosenThisSession } = useDefense();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [thinkingPhrase, setThinkingPhrase] = useState(0);
   const messagesEndRef = useRef(null);
   const prevDefenseLevel = useRef(defenseLevel);
+  const streamAbortRef = useRef(null);
 
   const isLoggedIn = !!localStorage.getItem('token');
+  const isAdmin = localStorage.getItem('username') === 'admin';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,8 +172,18 @@ const ChatBot = () => {
     }
   }, [isLoggedIn, loadChatHistory]);
 
+  const stopStream = useCallback(() => {
+    streamAbortRef.current?.abort();
+  }, []);
+
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
+
+    // Ollama runs one generation at a time. Drop the open stream first so this
+    // turn is not queued until the previous reply finishes printing.
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
 
     const userMessage = {
       id: Date.now(),
@@ -181,6 +196,7 @@ const ChatBot = () => {
     setMessages(prev => [...prev, userMessage]);
     setChatInput('');
     setLoading(true);
+    setStreaming(true);
     setError('');
 
     try {
@@ -196,11 +212,19 @@ const ChatBot = () => {
       if (activeLabId) {
         chatBody.lab_id = activeLabId;
       }
+      // Send the level only once the learner has chosen one this session, so a
+      // lab's recommended starting level still applies on first use.
+      if (levelChosenThisSession) {
+        chatBody.defense_level = defenseLevel;
+      }
       const resp = await fetch(getApiUrl('/api/chat/stream'), {
         method: 'POST',
         headers,
         body: JSON.stringify(chatBody),
+        signal: controller.signal,
       });
+
+      if (controller.signal.aborted) return;
 
       if (!resp.ok) {
         const status = resp.status;
@@ -221,14 +245,16 @@ const ChatBot = () => {
       let buffer = '';
 
       while (true) {
+        if (controller.signal.aborted) break;
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || controller.signal.aborted) break;
         buffer += decoder.decode(value, { stream: true });
 
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 
         for (const line of lines) {
+          if (controller.signal.aborted) break;
           const trimmed = line.trim();
           if (!trimmed.startsWith('data: ')) continue;
           try {
@@ -247,7 +273,19 @@ const ChatBot = () => {
           }
         }
       }
+      if (controller.signal.aborted) {
+        try {
+          await reader.cancel();
+        } catch {
+          // The body is already closed.
+        }
+        setMessages(prev => prev.filter(m => !(m.id === botMsgId && !m.text)));
+      }
     } catch (err) {
+      if (err.name === 'AbortError' || controller.signal.aborted) {
+        setMessages(prev => prev.filter(m => !(m.id === botMsgId && !m.text)));
+        return;
+      }
       console.error('Error sending message:', err);
 
       let errorText = "Sorry, I'm having trouble connecting right now. Please try again later.";
@@ -261,7 +299,11 @@ const ChatBot = () => {
         { id: botMsgId, text: errorText, sender: 'bot', timestamp: new Date() },
       ]);
     } finally {
-      setLoading(false);
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+        setStreaming(false);
+        setLoading(false);
+      }
     }
   };
 
@@ -310,7 +352,7 @@ const ChatBot = () => {
             sx={{
               bgcolor: (t) => t.palette.custom?.surface?.elevated ?? alpha(t.palette.primary.main, 0.08),
               color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary,
-              fontSize: '0.68rem',
+              fontSize: '0.8125rem',
               height: 24,
               border: '1px solid',
               borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
@@ -344,7 +386,7 @@ const ChatBot = () => {
               ? (t) => alpha(t.palette.custom?.brand?.primary ?? t.palette.primary.main, 0.25)
               : (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
             color: (t) => t.palette.text.primary,
-            fontSize: '0.875rem',
+            fontSize: '0.9375rem',
             lineHeight: 1.4,
             wordWrap: 'break-word',
           }}
@@ -364,7 +406,7 @@ const ChatBot = () => {
                 variant="body2"
                 sx={{
                   color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary,
-                  fontSize: '0.82rem',
+                  fontSize: '0.9375rem',
                   fontStyle: 'italic',
                 }}
               >
@@ -397,9 +439,31 @@ const ChatBot = () => {
                   {message.text}
                 </Typography>
               )}
+              {isBotMessage && message.citations && message.citations.length > 0 && (
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {message.citations.map((cite, idx) => (
+                    <Box
+                      key={`${cite.chunk_id || idx}`}
+                      sx={{
+                        borderLeft: '2px solid',
+                        borderColor: cite.verified === false ? 'warning.main' : 'divider',
+                        pl: 1,
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                        {cite.verified === false ? 'Unverified citation: ' : ''}
+                        {cite.title || cite.chunk_id}
+                      </Typography>
+                      <Typography variant="caption" sx={{ display: 'block', fontFamily: 'monospace' }}>
+                        {cite.quote}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
               <Typography
                 variant="caption"
-                sx={{ display: 'block', mt: 0.5, opacity: 0.7, fontSize: '0.7rem' }}
+                sx={{ display: 'block', mt: 0.5, opacity: 0.7, fontSize: '0.8125rem' }}
               >
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Typography>
@@ -410,7 +474,7 @@ const ChatBot = () => {
     );
   };
 
-  if (!isLoggedIn) return null;
+  if (!isLoggedIn || isAdmin) return null;
 
   return (
     <>
@@ -418,21 +482,28 @@ const ChatBot = () => {
       
       {/* Floating Chat Button */}
       <Zoom in={!isChatOpen}>
-        <Fab
-          color="primary"
-          aria-label="chat"
-          onClick={handleToggleChat}
+        <Box
           sx={{
             position: 'fixed',
-            bottom: 20,
+            bottom: { xs: 96, sm: 24 },
             right: 20,
             zIndex: 1000,
-            bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
-            '&:hover': { bgcolor: (t) => t.palette.primary.dark },
           }}
         >
-          <ChatIcon />
-        </Fab>
+          <Tooltip title="Shop assistant, not the lab" placement="left">
+            <Fab
+              color="primary"
+              aria-label="Shop assistant, not the lab"
+              onClick={handleToggleChat}
+              sx={{
+                bgcolor: (t) => t.palette.custom?.brand?.primary ?? t.palette.primary.main,
+                '&:hover': { bgcolor: (t) => t.palette.primary.dark },
+              }}
+            >
+              <ChatIcon />
+            </Fab>
+          </Tooltip>
+        </Box>
       </Zoom>
 
       {/* Chat Window */}
@@ -440,7 +511,7 @@ const ChatBot = () => {
         <Box
           sx={{
             position: 'fixed',
-            bottom: 20,
+            bottom: { xs: 96, sm: 24 },
             right: 20,
             zIndex: 1001,
             width: isMinimized ? 280 : 380,
@@ -487,15 +558,28 @@ const ChatBot = () => {
               >
                 <BotIcon fontSize="small" />
               </Avatar>
-              <Typography variant="subtitle1" sx={{ color: (t) => t.palette.text.primary, fontWeight: 600, flex: 1 }}>
-                Cracky AI
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="subtitle1" sx={{ color: (t) => t.palette.text.primary, fontWeight: 600, lineHeight: 1.2 }}>
+                  Cracky AI
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary,
+                    fontSize: '0.8125rem',
+                    display: 'block',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Shop assistant, not the lab
+                </Typography>
+              </Box>
               <Chip
                 label={levelDetails.shortLabel}
                 size="small"
                 sx={{
                   height: 20,
-                  fontSize: '0.65rem',
+                  fontSize: '0.8125rem',
                   fontWeight: 700,
                   bgcolor: `${levelDetails.color}30`,
                   color: levelDetails.color,
@@ -530,7 +614,7 @@ const ChatBot = () => {
                       sx={{
                         minWidth: 'auto',
                         p: 0,
-                        fontSize: '0.75rem',
+                        fontSize: '0.9375rem',
                         color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary,
                         '&:hover': { color: (t) => t.palette.error.main, bgcolor: 'transparent' },
                       }}
@@ -578,7 +662,7 @@ const ChatBot = () => {
                             variant="body2"
                             sx={{
                               color: (t) => t.palette.custom?.text?.muted ?? t.palette.text.secondary,
-                              fontSize: '0.82rem',
+                              fontSize: '0.9375rem',
                               fontWeight: 500,
                               animation: 'fadeInUp 0.4s ease-out',
                             }}
@@ -615,6 +699,29 @@ const ChatBot = () => {
                     borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider,
                   }}
                 >
+                  {streaming && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="inherit"
+                        onClick={stopStream}
+                        startIcon={<StopIcon sx={{ fontSize: 16 }} />}
+                        aria-label="Stop generating"
+                        sx={{
+                          fontSize: '0.8125rem',
+                          textTransform: 'none',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.25,
+                          borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
+                          color: (t) => t.palette.text.secondary,
+                        }}
+                      >
+                        Stop
+                      </Button>
+                    </Box>
+                  )}
                   <TextField
                     fullWidth
                     variant="outlined"
@@ -648,7 +755,7 @@ const ChatBot = () => {
                     }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        fontSize: '0.875rem',
+                        fontSize: '0.9375rem',
                         height: 44,
                         borderRadius: 20,
                         backgroundColor: (t) => alpha(t.palette.custom?.surface?.main ?? t.palette.background.paper, 0.6),
@@ -672,7 +779,7 @@ const ChatBot = () => {
                     }}
                   />
                   {error && (
-                    <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem', '& .MuiAlert-message': { fontSize: '0.75rem' } }}>
+                    <Alert severity="error" sx={{ mt: 1, fontSize: '0.9375rem', '& .MuiAlert-message': { fontSize: '0.9375rem' } }}>
                       {error}
                     </Alert>
                   )}

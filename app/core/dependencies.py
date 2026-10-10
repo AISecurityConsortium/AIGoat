@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import AuthenticationError
+from app.core.exceptions import AuthenticationError, ForbiddenError
 from app.core.security import verify_token
 from app.models import User
 
@@ -45,3 +45,16 @@ async def get_current_user(
     if not user:
         raise AuthenticationError("User not found")
     return user
+
+
+def require_admin(user: User) -> User:
+    """Shared staff gate used by admin and RAG delete routes."""
+    if not user.is_staff:
+        raise ForbiddenError("Access denied. Admin privileges required.")
+    return user
+
+
+async def get_current_admin(
+    user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    return require_admin(user)

@@ -16,6 +16,12 @@
 #
 #   db_data        – app database; cleared by "docker-compose down -v"
 #                    for a fresh start (re-seeds on next startup).
+#
+# BINDING
+#   Published ports use host 0.0.0.0, so the stack is reachable on the
+#   machine's VLAN address (http://<vlan-ip>:3000), not only localhost.
+#   In-container healthchecks still call localhost: that check runs
+#   inside the backend container, where uvicorn is listening on 0.0.0.0.
 # ─────────────────────────────────────────────────────────────
 
 name: aigoat
@@ -24,10 +30,14 @@ services:
   ollama:
     image: ollama/ollama
     ports:
-      - "11434:11434"
+      - host_ip: 0.0.0.0
+        published: 11434
+        target: 11434
+        protocol: tcp
     volumes:
       - ollama_models:/root/.ollama
     environment:
+      - OLLAMA_HOST=0.0.0.0:11434
       - OLLAMA_NUM_PARALLEL=1
     healthcheck:
       test: ["CMD", "ollama", "list"]
@@ -42,7 +52,10 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "8000:8000"
+      - host_ip: 0.0.0.0
+        published: 8000
+        target: 8000
+        protocol: tcp
     volumes:
       - ./config.yml:/app/config/config.yml
       - ../prompts:/app/prompts
@@ -68,7 +81,10 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - host_ip: 0.0.0.0
+        published: 3000
+        target: 3000
+        protocol: tcp
     depends_on:
       backend:
         condition: service_healthy

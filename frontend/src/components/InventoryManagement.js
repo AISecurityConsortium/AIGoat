@@ -39,6 +39,7 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { apiClient as axios } from '../config/api';
+import { formatUsd } from '../utils/money';
 
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);
@@ -129,12 +130,7 @@ const InventoryManagement = () => {
     return <CheckCircleIcon />;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = formatUsd;
 
   if (loading) {
     return (

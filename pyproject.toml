@@ -1,6 +1,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "soundness: absence-of-execution canaries (D9 skill runtime, T004)",
+]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
@@ -20,5 +23,12 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/seed.py" = ["E402"]   # sys.path manipulation requires imports after path setup
+"scripts/record_defense_golden.py" = ["E402"]  # same sys.path setup as seed.py
 "app/main.py" = ["E402"]       # routers must be imported after app object is created
 "app/api/profile.py" = ["E402"]  # inline import inside function for lazy loading
+"alembic/versions/*.py" = ["E402"]  # generated migrations import after path setup
+
+[tool.ruff.lint.isort]
+# The local alembic/ script directory would otherwise be classified as first-party,
+# splitting `from alembic import ...` away from other third-party imports.
+known-third-party = ["alembic"]

@@ -11,6 +11,28 @@ from app.challenges.evaluators.chained_exploit import ChainedExploitEvaluator
 from app.challenges.evaluators.context_override import ContextOverrideEvaluator
 from app.challenges.evaluators.context_poisoning import ContextPoisoningEvaluator
 from app.challenges.evaluators.excessive_agency import ExcessiveAgencyEvaluator
+from app.challenges.evaluators.mcp_host import (
+    AdminExportEvaluator,
+    McpAuditEvaluator,
+    McpHostGoalHijackEvaluator,
+    McpHostIntentSubversionEvaluator,
+    McpHostOversharingEvaluator,
+    McpHostSupplyEvaluator,
+    McpPrivilegeEvaluator,
+    McpTrustEvaluator,
+    SandboxedExecutorEvaluator,
+    ScriptedCascadeEvaluator,
+    ScriptedHandoffEvaluator,
+)
+from app.challenges.evaluators.mcp_protocol import (
+    McpDecoyEvaluator,
+    McpPoisoningEvaluator,
+    McpRugPullEvaluator,
+    McpSchemaDriftEvaluator,
+    McpShadowDescriptionEvaluator,
+    McpShadowEvaluator,
+)
+from app.challenges.evaluators.memory_poison import MemoryPoisonEvaluator
 from app.challenges.evaluators.multistep_injection import MultiStepInjectionEvaluator
 from app.challenges.evaluators.prompt_injection import PromptInjectionEvaluator
 from app.challenges.evaluators.rag_manipulation import RAGManipulationEvaluator
@@ -18,6 +40,7 @@ from app.challenges.evaluators.role_confusion import RoleConfusionEvaluator
 from app.challenges.evaluators.state_exploitation import StateExploitationEvaluator
 from app.challenges.evaluators.supply_chain import SupplyChainEvaluator
 from app.challenges.evaluators.system_prompt_extraction import SystemPromptExtractionEvaluator
+from app.challenges.evaluators.tool_agency import ToolAgencyEvaluator
 from app.challenges.evaluators.unbounded_consumption import UnboundedConsumptionEvaluator
 
 _REGISTRY: dict[str, ChallengeEvaluator] = {
@@ -32,6 +55,25 @@ _REGISTRY: dict[str, ChallengeEvaluator] = {
     "state exploitation": StateExploitationEvaluator(),
     "supply chain": SupplyChainEvaluator(),
     "excessive agency": ExcessiveAgencyEvaluator(),
+    "tool agency": ToolAgencyEvaluator(),
+    "memory poison": MemoryPoisonEvaluator(),
+    "mcp poisoning": McpPoisoningEvaluator(),
+    "mcp rug pull": McpRugPullEvaluator(),
+    "mcp decoy": McpDecoyEvaluator(),
+    "mcp shadow": McpShadowEvaluator(),
+    "mcp shadow description": McpShadowDescriptionEvaluator(),
+    "mcp schema drift": McpSchemaDriftEvaluator(),
+    "mcp host goal hijack": McpHostGoalHijackEvaluator(),
+    "mcp host oversharing": McpHostOversharingEvaluator(),
+    "mcp host intent subversion": McpHostIntentSubversionEvaluator(),
+    "mcp host supply": McpHostSupplyEvaluator(),
+    "mcp privilege": McpPrivilegeEvaluator(),
+    "mcp trust": McpTrustEvaluator(),
+    "mcp audit": McpAuditEvaluator(),
+    "admin export": AdminExportEvaluator(),
+    "scripted handoff": ScriptedHandoffEvaluator(),
+    "scripted cascade": ScriptedCascadeEvaluator(),
+    "sandbox executor": SandboxedExecutorEvaluator(),
     "unbounded consumption": UnboundedConsumptionEvaluator(),
 }
 

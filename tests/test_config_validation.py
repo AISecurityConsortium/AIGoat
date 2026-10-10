@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import AppConfig, OllamaConfig, RagConfig
+from app.core.config import AppConfig, ChatConfig, OllamaConfig, RagConfig
 
 
 class TestAppConfig:
@@ -19,6 +19,11 @@ class TestAppConfig:
     def test_valid_secret_key_accepted(self):
         cfg = AppConfig(secret_key="my-secret")
         assert cfg.secret_key == "my-secret"
+
+    def test_allowed_origins_include_loopback(self):
+        cfg = AppConfig(secret_key="x")
+        assert "http://localhost:3000" in cfg.allowed_origins
+        assert "http://127.0.0.1:3000" in cfg.allowed_origins
 
 
 class TestOllamaConfig:
@@ -37,6 +42,15 @@ class TestOllamaConfig:
     def test_https_accepted(self):
         cfg = OllamaConfig(base_url="https://ollama.example.com")
         assert cfg.base_url == "https://ollama.example.com"
+
+    def test_timeout_default_is_ninety(self):
+        cfg = OllamaConfig(base_url="http://localhost:11434")
+        assert cfg.timeout == 90
+
+
+class TestChatConfig:
+    def test_max_tokens_default_matches_yaml(self):
+        assert ChatConfig().max_tokens == 2048
 
 
 class TestRagConfig:

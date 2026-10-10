@@ -6,7 +6,35 @@ from pathlib import Path
 import pytest
 import yaml
 
-from app.core.lab_loader import LabDefinition, LabManifest, get_all_labs, get_lab_by_id
+from app.core.lab_loader import (
+    LabDefinition,
+    LabManifest,
+    get_all_labs,
+    get_lab_by_id,
+    get_lab_dict,
+)
+
+
+def _completion_words(node) -> set[str]:
+    words: set[str] = set()
+
+    def walk(value) -> None:
+        if isinstance(value, dict):
+            for key in ("tool", "server"):
+                item = value.get(key)
+                if isinstance(item, str) and item:
+                    words.add(item.casefold())
+            shown = value.get("shown_contains")
+            if isinstance(shown, dict) and isinstance(shown.get("tool"), str):
+                words.add(shown["tool"].casefold())
+            for child in value.values():
+                walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+
+    walk(node)
+    return words
 
 
 class TestLabDefinition:
@@ -139,3 +167,269 @@ class TestLabManifestEnvOverride:
         finally:
             monkeypatch.delenv("LABS_CONFIG_PATH", raising=False)
             lab_loader.load_lab_manifest.cache_clear()
+
+
+_LEGACY_LAB_DICT_KEYS = {
+    "id",
+    "name",
+    "owasp",
+    "status",
+    "defense_override",
+    "prompt_file",
+    "challenge_evaluator",
+    "description",
+}
+
+
+class TestExtendedLabSchema:
+    def test_fourteen_labs_still_load(self):
+        ids = {lab.id for lab in get_all_labs()}
+        assert {
+            "llm01-1", "llm01-2", "llm01-3", "llm02-1", "llm02-2", "llm02-3",
+            "llm03-1", "llm04-1", "llm05-1", "llm06-1", "llm07-1", "llm08-1",
+            "llm09-1", "llm10-1",
+        } <= ids
+        assert len(ids) >= 14
+
+    def test_llm01_owasp_alias_unchanged(self):
+        lab = get_lab_by_id("llm01-1")
+        assert lab is not None
+        assert lab.owasp == "LLM01"
+
+    def test_owasp_synthesises_2026_risk(self):
+        lab = LabDefinition(id="synth-1", name="Synth", owasp="LLM01")
+        assert lab.risks == ("owasp-llm-2026:LLM01",)
+
+    def test_llm01_maps_to_2026(self):
+        lab = get_lab_by_id("llm01-1")
+        assert lab is not None
+        assert "owasp-llm-2026:LLM01" in lab.risks
+
+    def test_default_surface_is_chat_cracky(self):
+        lab = get_lab_by_id("llm01-1")
+        assert lab is not None
+        assert lab.surface == "chat.cracky"
+
+    def test_llm03_defense_override_still_none(self):
+        lab = get_lab_by_id("llm04-1")
+        assert lab is not None
+        assert lab.defense_override is None
+
+    def test_surface_config_mirrors_defense_override(self):
+        for lab in get_all_labs():
+            assert lab.surface_config.get("defense_override") == lab.defense_override
+
+    def test_get_lab_dict_keeps_legacy_keys(self):
+        dumped = get_lab_dict("llm01-1")
+        assert dumped is not None
+        assert _LEGACY_LAB_DICT_KEYS <= set(dumped)
+
+    def test_directory_two_files_load(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        from app.core import lab_loader
+
+        (tmp_path / "a.yml").write_text(
+            yaml.dump({"labs": [{"id": "dir-a", "name": "A", "owasp": "LLM01"}]})
+        )
+        (tmp_path / "b.yml").write_text(
+            yaml.dump({"labs": [{"id": "dir-b", "name": "B", "owasp": "LLM02"}]})
+        )
+        monkeypatch.setattr(lab_loader, "_configured_labs_dir", lambda: tmp_path)
+        lab_loader.load_lab_manifest.cache_clear()
+        try:
+            ids = {lab.id for lab in lab_loader.get_all_labs()}
+            assert "dir-a" in ids
+            assert "dir-b" in ids
+        finally:
+            lab_loader.load_lab_manifest.cache_clear()
+
+    def test_directory_id_collision_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        from app.core import lab_loader
+
+        payload = yaml.dump({"labs": [{"id": "dup-1", "name": "Dup", "owasp": "LLM01"}]})
+        (tmp_path / "one.yml").write_text(payload)
+        (tmp_path / "two.yml").write_text(payload)
+        monkeypatch.setattr(lab_loader, "_configured_labs_dir", lambda: tmp_path)
+        lab_loader.load_lab_manifest.cache_clear()
+        try:
+            with pytest.raises(ValueError, match="dup-1"):
+                lab_loader.load_lab_manifest()
+        finally:
+            lab_loader.load_lab_manifest.cache_clear()
+
+    def test_invalid_surface_raises_naming_lab(self):
+        with pytest.raises(ValueError, match="llm-bad"):
+            LabDefinition(id="llm-bad", name="Bad", owasp="LLM01", surface="not.a.surface")
+
+
+_ORIGINAL_LAB_IDS = (
+    "llm01-1",
+    "llm01-2",
+    "llm01-3",
+    "llm02-1",
+    "llm02-2",
+    "llm02-3",
+    "llm03-1",
+    "llm04-1",
+    "llm05-1",
+    "llm06-1",
+    "llm07-1",
+    "llm08-1",
+    "llm09-1",
+    "llm10-1",
+)
+_P7_RAG_LAB_IDS = (
+    "llm01-4",
+    "llm09-2",
+    "llm09-3",
+    "llm09-4",
+    "llm02-4",
+    "llm09-5",
+    "llm01-5",
+)
+_P8_AGENT_LAB_IDS = (
+    "llm03-1",
+    "llm03-2",
+    "asi09-1",
+)
+_D5_MEMORY_LAB_IDS = (
+    "asi06-1",
+    "asi06-2",
+)
+_P9_MCP_LAB_IDS = (
+    "mcp03-1",
+    "mcp03-2",
+    "mcp01-1",
+    "mcp09-1",
+)
+_ALLOWED_DIFFICULTY = {"beginner", "intermediate", "advanced"}
+
+
+class TestMigratedLabContent:
+    """T021: 21 frontend cards merged into the original 14 lab ids."""
+
+    def test_lab_count_is_thirty(self):
+        ids = {lab.id for lab in get_all_labs()}
+        assert set(_ORIGINAL_LAB_IDS) <= ids
+        assert set(_P7_RAG_LAB_IDS) <= ids
+        assert set(_P8_AGENT_LAB_IDS) <= ids
+        assert set(_P9_MCP_LAB_IDS) <= ids
+        assert set(_D5_MEMORY_LAB_IDS) <= ids
+        assert "llm03-3" in ids
+        assert "asi02-1" in ids
+        assert "asi04-1" in ids
+        assert "killchain-1" in ids
+        assert len(ids) == 46
+
+    def test_original_ids_still_resolve(self):
+        for lab_id in _ORIGINAL_LAB_IDS:
+            assert get_lab_by_id(lab_id) is not None, lab_id
+
+    def test_p8_agent_labs_use_agent_runner_surface(self):
+        for lab_id in (*_P8_AGENT_LAB_IDS, *_D5_MEMORY_LAB_IDS):
+            lab = get_lab_by_id(lab_id)
+            assert lab is not None, lab_id
+            assert lab.surface == "agent.runner", lab_id
+
+    def test_p9_mcp_labs_use_mcp_client_surface(self):
+        for lab_id in _P9_MCP_LAB_IDS:
+            lab = get_lab_by_id(lab_id)
+            assert lab is not None, lab_id
+            assert lab.surface == "mcp.client", lab_id
+
+    def test_p7_rag_labs_use_rag_kb_surface(self):
+        for lab_id in ("llm02-3", "llm09-1", *_P7_RAG_LAB_IDS):
+            lab = get_lab_by_id(lab_id)
+            assert lab is not None, lab_id
+            assert lab.surface == "rag.kb", lab_id
+
+    def test_every_lab_has_objective_and_payloads(self):
+        for lab in get_all_labs():
+            if lab.completion:
+                assert lab.briefing.strip(), lab.id
+                assert lab.solution, lab.id
+                continue
+            assert lab.objective.strip(), lab.id
+            assert lab.example_payloads, lab.id
+
+    def test_migrated_opening_does_not_name_the_scored_action(self):
+        for lab in get_all_labs():
+            if not lab.completion:
+                continue
+            banned = _completion_words(lab.completion)
+            labels = [str(stage.get("label") or "") for stage in lab.completion.get("stages") or []]
+            blob = " ".join([lab.briefing, *lab.hints[:3], *labels]).casefold()
+            for word in banned:
+                assert word not in blob, (lab.id, word)
+            assert len(lab.hints) == 5, lab.id
+            if lab.ui.get("autoplay") is False:
+                assert lab.design_note.get("hidden_because"), lab.id
+
+    def test_every_lab_has_three_expected_levels(self):
+        for lab in get_all_labs():
+            assert set(lab.expected_by_level) == {0, 1, 2}, lab.id
+
+    def test_difficulty_is_allowed(self):
+        for lab in get_all_labs():
+            assert lab.difficulty in _ALLOWED_DIFFICULTY, lab.id
+
+    def test_risks_are_qualified(self):
+        for lab in get_all_labs():
+            assert lab.risks, lab.id
+            assert all(r.startswith("owasp-") for r in lab.risks), lab.id
+
+    def test_evaluated_labs_have_prompt_file(self):
+        for lab in get_all_labs():
+            if lab.challenge_evaluator:
+                assert lab.prompt_file, lab.id
+
+
+class TestLlm2026OnlyMapping:
+    """T071: AIGoat tracks OWASP LLM Top 10 2026 only; 2025 is retired."""
+
+    def test_every_lab_has_2026_risk(self):
+        for lab in get_all_labs():
+            assert any(r.startswith("owasp-llm-2026:") for r in lab.risks), lab.id
+            assert not any(r.startswith("owasp-llm-2025:") for r in lab.risks), lab.id
+
+    def test_llm08_lab_maps_to_hidden_context_exposure(self):
+        lab = get_lab_by_id("llm08-1")
+        assert lab is not None
+        assert "owasp-llm-2026:LLM08" in lab.risks
+        assert lab.primary_risk == "owasp-llm-2026:LLM08"
+
+    def test_llm03_labs_map_to_excessive_agency(self):
+        lab = get_lab_by_id("llm03-3")
+        assert lab is not None
+        assert "owasp-llm-2026:LLM03" in lab.risks
+        assert lab.primary_risk == "owasp-llm-2026:LLM03"
+
+    def test_legacy_owasp_alias_is_2026(self):
+        lab = get_lab_by_id("llm08-1")
+        assert lab is not None
+        assert lab.owasp == "LLM08"
+
+    def test_every_lab_has_primary_risk(self):
+        for lab in get_all_labs():
+            assert lab.primary_risk, lab.id
+            if lab.id.startswith("llm"):
+                assert lab.primary_risk.startswith("owasp-llm-2026:"), lab.id
+            elif lab.id.startswith("mcp"):
+                assert lab.primary_risk.startswith("owasp-mcp-2025:"), lab.id
+            elif lab.id.startswith("asi"):
+                assert lab.primary_risk.startswith("owasp-agentic-2026:"), lab.id
+
+    def test_agentic_primary_labs_declare_maturity(self):
+        for lab in get_all_labs():
+            if not lab.primary_risk.startswith("owasp-agentic-2026:"):
+                continue
+            assert lab.detection and lab.kill_switch and lab.reset, lab.id
+            assert len(lab.hints) >= 3, lab.id
+            assert {row.level for row in lab.levels} == {0, 1, 2}, lab.id
+
+    def test_every_asi_risk_has_a_primary_lab(self):
+        for n in range(1, 11):
+            risk = f"owasp-agentic-2026:ASI{n:02d}"
+            matches = [lab for lab in get_all_labs() if lab.primary_risk == risk]
+            assert matches, risk
+            for lab in matches:
+                assert set(lab.expected_by_level) == {0, 1, 2}, lab.id

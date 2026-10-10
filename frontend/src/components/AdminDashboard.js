@@ -18,6 +18,7 @@ import {
   Avatar,
 } from '@mui/material';
 import OllamaStatus from './OllamaStatus';
+import { formatUsd } from '../utils/money';
 import {
   People as PeopleIcon,
   ShoppingBag as OrderIcon,
@@ -127,9 +128,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
-  };
+  const formatCurrency = formatUsd;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -194,14 +193,23 @@ const AdminDashboard = () => {
             Admin Dashboard
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchDashboardStats}
-          disabled={loading}
-        >
-          Refresh Data
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<AIIcon />}
+            onClick={() => navigate('/admin/assistant')}
+          >
+            Admin Assistant
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchDashboardStats}
+            disabled={loading}
+          >
+            Refresh Data
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -224,7 +232,7 @@ const AdminDashboard = () => {
             color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <MoneyIcon sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h4" component="div" fontWeight="bold">
@@ -234,12 +242,6 @@ const AdminDashboard = () => {
                     Total Revenue
                   </Typography>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUpIcon sx={{ fontSize: 16, mr: 1 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  +12.5% from last month
-                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -252,7 +254,7 @@ const AdminDashboard = () => {
             color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <OrderIcon sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h4" component="div" fontWeight="bold">
@@ -262,12 +264,6 @@ const AdminDashboard = () => {
                     Total Orders
                   </Typography>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUpIcon sx={{ fontSize: 16, mr: 1 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  +8.2% from last month
-                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -280,7 +276,7 @@ const AdminDashboard = () => {
             color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <PeopleIcon sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h4" component="div" fontWeight="bold">
@@ -290,12 +286,6 @@ const AdminDashboard = () => {
                     Total Users
                   </Typography>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUpIcon sx={{ fontSize: 16, mr: 1 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  +15.3% from last month
-                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -308,7 +298,7 @@ const AdminDashboard = () => {
             color: theme.palette.primary.contrastText || 'white'
           }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <InventoryIcon sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography variant="h4" component="div" fontWeight="bold">
@@ -318,12 +308,6 @@ const AdminDashboard = () => {
                     Total Products
                   </Typography>
                 </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUpIcon sx={{ fontSize: 16, mr: 1 }} />
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  +5.7% from last month
-                </Typography>
               </Box>
             </CardContent>
           </Card>

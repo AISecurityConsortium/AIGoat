@@ -18,6 +18,7 @@ import { apiClient as axios } from '../config/api';
 import { getApiUrl } from '../config/api';
 import { useTheme } from '@mui/material/styles';
 import CheckoutForm from './CheckoutForm';
+import { formatUsd } from '../utils/money';
 
 const Cart = () => {
   const theme = useTheme();
@@ -193,21 +194,21 @@ const Cart = () => {
                       '&:hover': { bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,1)' },
                     }}
                   >
-                    <DeleteIcon sx={{ fontSize: '0.85rem' }} />
+                    <DeleteIcon sx={{ fontSize: '0.9375rem' }} />
                   </IconButton>
                 </Box>
 
                 <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
                   <Typography
                     sx={{
-                      fontWeight: 700, fontSize: '0.75rem', color: 'text.primary',
+                      fontWeight: 700, fontSize: '0.9375rem', color: 'text.primary',
                       mb: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}
                   >
                     {item.product_name}
                   </Typography>
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: (t) => t.palette.custom?.brand?.primary ?? 'primary.main', mb: 1 }}>
-                    ₹{item.product_price}
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.9375rem', color: (t) => t.palette.custom?.brand?.primary ?? 'primary.main', mb: 1 }}>
+                    {formatUsd(item.product_price)}
                   </Typography>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
@@ -219,13 +220,13 @@ const Cart = () => {
                       onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                       sx={{ width: 24, height: 24 }}
                     >
-                      <RemoveIcon sx={{ fontSize: '0.75rem' }} />
+                      <RemoveIcon sx={{ fontSize: '0.9375rem' }} />
                     </IconButton>
                     <TextField
                       size="small"
                       value={item.quantity}
                       onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value))}
-                      inputProps={{ style: { textAlign: 'center', padding: '2px 0', fontWeight: 700, fontSize: '0.75rem' } }}
+                      inputProps={{ style: { textAlign: 'center', padding: '2px 0', fontWeight: 700, fontSize: '0.9375rem' } }}
                       sx={{ width: 36, '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
                     />
                     <IconButton
@@ -233,12 +234,12 @@ const Cart = () => {
                       onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                       sx={{ width: 24, height: 24 }}
                     >
-                      <AddIcon sx={{ fontSize: '0.75rem' }} />
+                      <AddIcon sx={{ fontSize: '0.9375rem' }} />
                     </IconButton>
                   </Box>
 
-                  <Typography sx={{ textAlign: 'center', mt: 0.5, fontWeight: 700, fontSize: '0.68rem', color: 'text.secondary' }}>
-                    Subtotal: ₹{(item.product_price * item.quantity).toFixed(0)}
+                  <Typography sx={{ textAlign: 'center', mt: 0.5, fontWeight: 700, fontSize: '0.8125rem', color: 'text.secondary' }}>
+                    Subtotal: {formatUsd(item.product_price * item.quantity)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -255,11 +256,11 @@ const Cart = () => {
             }}
           >
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Typography sx={{ fontSize: '0.9375rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Total ({cart.items.length} item{cart.items.length !== 1 ? 's' : ''})
               </Typography>
               <Typography sx={{ fontWeight: 800, fontSize: '1.3rem', color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>
-                ₹{calculateTotal().toFixed(0)}
+                {formatUsd(calculateTotal())}
               </Typography>
             </Box>
             <Button

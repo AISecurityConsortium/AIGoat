@@ -40,7 +40,7 @@ const SectionHeader = ({ icon: Icon, title, action }) => (
   }}>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {Icon && <Icon sx={{ fontSize: '1.1rem', color: 'primary.main' }} />}
-      <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.primary' }}>
+      <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'text.primary' }}>
         {title}
       </Typography>
     </Box>
@@ -48,18 +48,19 @@ const SectionHeader = ({ icon: Icon, title, action }) => (
   </Box>
 );
 
-const StyledInput = ({ label, ...rest }) => (
+const StyledInput = ({ label, InputLabelProps, ...rest }) => (
   <TextField
     fullWidth size="small" label={label}
+    InputLabelProps={{ shrink: true, ...InputLabelProps }}
     sx={{
       '& .MuiOutlinedInput-root': {
-        borderRadius: '10px', fontSize: '0.88rem',
+        borderRadius: '10px', fontSize: '1rem',
         bgcolor: (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
         '& fieldset': { borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider },
         '&:hover fieldset': { borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider },
         '&.Mui-focused fieldset': { borderColor: (t) => alpha(t.palette.primary.main, 0.5) },
       },
-      '& .MuiInputLabel-root': { fontSize: '0.82rem' },
+      '& .MuiInputLabel-root': { fontSize: '0.9375rem' },
       '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: (t) => t.palette.text.primary, opacity: 0.85 },
     }}
     {...rest}
@@ -262,7 +263,7 @@ const UserProfile = () => {
                         width: 32, height: 32,
                       }}
                     >
-                      <PhotoCameraIcon sx={{ fontSize: '0.9rem', color: 'primary.main' }} />
+                      <PhotoCameraIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />
                     </IconButton>
                   </label>
                 </Box>
@@ -270,11 +271,11 @@ const UserProfile = () => {
                 {selectedFile && (
                   <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                     <Button size="small" variant="contained" onClick={handleUploadPicture} disabled={uploading}
-                      sx={{ textTransform: 'none', fontSize: '0.75rem', borderRadius: '8px' }}>
+                      sx={{ textTransform: 'none', fontSize: '0.9375rem', borderRadius: '8px' }}>
                       {uploading ? 'Uploading...' : 'Upload'}
                     </Button>
                     <Button size="small" variant="outlined" onClick={() => setSelectedFile(null)}
-                      sx={{ textTransform: 'none', fontSize: '0.75rem', borderRadius: '8px' }}>
+                      sx={{ textTransform: 'none', fontSize: '0.9375rem', borderRadius: '8px' }}>
                       Cancel
                     </Button>
                   </Box>
@@ -283,16 +284,16 @@ const UserProfile = () => {
                 <Typography sx={{ fontWeight: 700, fontSize: '1.15rem', color: 'text.primary', textAlign: 'center' }}>
                   {profile?.full_name || profile?.username}
                 </Typography>
-                <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.82rem', mb: 1.5 }}>
+                <Typography sx={{ color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', fontSize: '0.9375rem', mb: 1.5 }}>
                   @{profile?.username}
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <Chip label={formData.email || 'No email'} size="small" variant="outlined"
-                    sx={{ fontSize: '0.72rem', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider, color: 'text.secondary' }} />
+                    sx={{ fontSize: '0.8125rem', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider, color: 'text.secondary' }} />
                   {formData.city && (
                     <Chip label={`${formData.city}, ${formData.state}`} size="small" variant="outlined"
-                      sx={{ fontSize: '0.72rem', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider, color: 'text.secondary' }} />
+                      sx={{ fontSize: '0.8125rem', borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider, color: 'text.secondary' }} />
                   )}
                 </Box>
 
@@ -304,19 +305,19 @@ const UserProfile = () => {
                   border: (t) => `1px solid ${t.palette.custom?.border?.subtle ?? t.palette.divider}`,
                 }}>
                   <Box sx={{ flex: 1, textAlign: 'center' }}>
-                    <Typography sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', letterSpacing: '0.05em' }}>
+                    <Typography sx={{ fontSize: '0.8125rem', textTransform: 'uppercase', fontWeight: 600, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', letterSpacing: '0.05em' }}>
                       Member Since
                     </Typography>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary', mt: 0.3 }}>
+                    <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary', mt: 0.3 }}>
                       {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                     </Typography>
                   </Box>
                   <Box sx={{ width: '1px', bgcolor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider }} />
                   <Box sx={{ flex: 1, textAlign: 'center' }}>
-                    <Typography sx={{ fontSize: '0.65rem', textTransform: 'uppercase', fontWeight: 600, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', letterSpacing: '0.05em' }}>
+                    <Typography sx={{ fontSize: '0.8125rem', textTransform: 'uppercase', fontWeight: 600, color: (t) => t.palette.custom?.text?.muted ?? 'text.secondary', letterSpacing: '0.05em' }}>
                       Card
                     </Typography>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: 'text.primary', mt: 0.3 }}>
+                    <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary', mt: 0.3 }}>
                       {formData.card_type || 'None'}
                     </Typography>
                   </Box>
@@ -332,10 +333,10 @@ const UserProfile = () => {
               {/* Action bar */}
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                 {!editing ? (
-                  <Button startIcon={<EditIcon sx={{ fontSize: '0.9rem' }} />} onClick={() => { setEditing(true); setValidationErrors({}); }}
+                  <Button startIcon={<EditIcon sx={{ fontSize: '1rem' }} />} onClick={() => { setEditing(true); setValidationErrors({}); }}
                     variant="outlined" size="small"
                     sx={{
-                      textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', borderRadius: '10px',
+                      textTransform: 'none', fontWeight: 600, fontSize: '0.9375rem', borderRadius: '10px',
                       borderColor: (t) => t.palette.custom?.border?.medium ?? t.palette.divider,
                       color: 'text.primary', px: 2.5,
                       '&:hover': { borderColor: 'primary.main', bgcolor: (t) => alpha(t.palette.primary.main, 0.06) },
@@ -344,12 +345,12 @@ const UserProfile = () => {
                   </Button>
                 ) : (
                   <>
-                    <Button startIcon={<CancelIcon sx={{ fontSize: '0.9rem' }} />} onClick={handleCancel} size="small"
-                      sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: '10px', color: 'text.secondary' }}>
+                    <Button startIcon={<CancelIcon sx={{ fontSize: '1rem' }} />} onClick={handleCancel} size="small"
+                      sx={{ textTransform: 'none', fontSize: '0.9375rem', borderRadius: '10px', color: 'text.secondary' }}>
                       Discard
                     </Button>
-                    <Button startIcon={<SaveIcon sx={{ fontSize: '0.9rem' }} />} onClick={handleSave} variant="contained" size="small"
-                      sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', borderRadius: '10px', px: 2.5, bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}>
+                    <Button startIcon={<SaveIcon sx={{ fontSize: '1rem' }} />} onClick={handleSave} variant="contained" size="small"
+                      sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.9375rem', borderRadius: '10px', px: 2.5, bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}>
                       Save Changes
                     </Button>
                   </>
@@ -404,10 +405,10 @@ const UserProfile = () => {
                     </Grid>
                     <Grid item xs={12} sm={3}>
                       <FormControl fullWidth size="small" disabled={!editing}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Country</InputLabel>
+                        <InputLabel sx={{ fontSize: '0.9375rem' }}>Country</InputLabel>
                         <Select value={formData.country} label="Country" onChange={handleInputChange('country')}
                           sx={{
-                            borderRadius: '10px', fontSize: '0.88rem',
+                            borderRadius: '10px', fontSize: '1rem',
                             bgcolor: (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider },
                           }}>
@@ -435,7 +436,7 @@ const UserProfile = () => {
                         size="small"
                         sx={{
                           bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                          color: 'primary.main', fontWeight: 600, fontSize: '0.7rem',
+                          color: 'primary.main', fontWeight: 600, fontSize: '0.8125rem',
                           border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.2)}`,
                         }}
                       />
@@ -468,10 +469,10 @@ const UserProfile = () => {
                     </Grid>
                     <Grid item xs={12} sm={5}>
                       <FormControl fullWidth size="small" disabled={!editing}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Card Type</InputLabel>
+                        <InputLabel sx={{ fontSize: '0.9375rem' }}>Card Type</InputLabel>
                         <Select value={formData.card_type} label="Card Type" onChange={handleInputChange('card_type')}
                           sx={{
-                            borderRadius: '10px', fontSize: '0.88rem',
+                            borderRadius: '10px', fontSize: '1rem',
                             bgcolor: (t) => alpha(t.palette.mode === 'dark' ? t.palette.common.white : t.palette.common.black, 0.03),
                             '& .MuiOutlinedInput-notchedOutline': { borderColor: (t) => t.palette.custom?.border?.subtle ?? t.palette.divider },
                           }}>
@@ -500,8 +501,8 @@ const UserProfile = () => {
                           bgcolor: (t) => alpha(t.palette.warning.main, 0.06),
                           border: (t) => `1px solid ${alpha(t.palette.warning.main, 0.15)}`,
                         }}>
-                          <ShieldIcon sx={{ fontSize: '0.9rem', color: 'warning.main' }} />
-                          <Typography sx={{ fontSize: '0.72rem', color: 'warning.main', fontWeight: 500 }}>
+                          <ShieldIcon sx={{ fontSize: '1rem', color: 'warning.main' }} />
+                          <Typography sx={{ fontSize: '0.8125rem', color: 'warning.main', fontWeight: 500 }}>
                             Card data stored for checkout auto-fill
                           </Typography>
                         </Box>

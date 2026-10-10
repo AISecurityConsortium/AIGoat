@@ -20,6 +20,7 @@ import {
   Chip,
   CircularProgress,
 } from '@mui/material';
+import { formatUsd } from '../utils/money';
 import {
   CreditCard as CreditCardIcon,
   LocationOn as LocationIcon,
@@ -304,7 +305,7 @@ const CheckoutForm = ({ cart, onBack }) => {
                   </Grid>
                   <Grid item xs={4} sx={{ textAlign: 'right' }}>
                     <Typography variant="subtitle1" sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>
-                      ₹{(item.product_price * item.quantity).toFixed(0)}
+                      {formatUsd(item.product_price * item.quantity)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -334,7 +335,7 @@ const CheckoutForm = ({ cart, onBack }) => {
                 {appliedCoupon ? (
                   <Box sx={{ mb: 2 }}>
                     <Chip
-                      label={`${appliedCoupon.code} - ${appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : `₹${appliedCoupon.discount_value}`}`}
+                      label={`${appliedCoupon.code} - ${appliedCoupon.discount_type === 'percentage' ? `${appliedCoupon.discount_value}%` : formatUsd(appliedCoupon.discount_value)}`}
                       color="success"
                       onDelete={handleRemoveCoupon}
                       deleteIcon={<CloseIcon />}
@@ -363,7 +364,7 @@ const CheckoutForm = ({ cart, onBack }) => {
                 )}
 
                 {couponError && (
-                  <Alert severity="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
+                  <Alert severity="error" sx={{ mt: 1, fontSize: '0.9375rem' }}>
                     {couponError}
                   </Alert>
                 )}
@@ -373,14 +374,14 @@ const CheckoutForm = ({ cart, onBack }) => {
 
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>Subtotal:</Typography>
-                <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>₹{calculateTotal().toFixed(0)}</Typography>
+                <Typography sx={{ color: (t) => t.palette.custom?.text?.body ?? t.palette.text.primary }}>{formatUsd(calculateTotal())}</Typography>
               </Box>
 
               {appliedCoupon && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography color="success.main">Discount:</Typography>
                   <Typography color="success.main">
-                    -₹{calculateDiscount().toFixed(2)}
+                    -{formatUsd(calculateDiscount())}
                   </Typography>
                 </Box>
               )}
@@ -390,7 +391,7 @@ const CheckoutForm = ({ cart, onBack }) => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" sx={{ color: (t) => t.palette.custom?.text?.heading ?? t.palette.text.primary }}>Total:</Typography>
                 <Typography variant="h6" color="primary">
-                  ₹{calculateFinalTotal().toFixed(0)}
+                  {formatUsd(calculateFinalTotal())}
                 </Typography>
               </Box>
             </CardContent>

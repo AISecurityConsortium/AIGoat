@@ -12,8 +12,9 @@ import {
 } from '@mui/material';
 import { useDefense } from '../contexts/DefenseContext';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { DEFENSE_LEVEL_LABELS } from './common/DefenseLevelChip';
 
-const DefenseLevelToggle = () => {
+const DefenseLevelToggle = ({ compact = false }) => {
   const { defenseLevel, levelDetails, changeDefenseLevel, loading, LEVELS } = useDefense();
   const { mode } = useThemeMode();
   const isDark = mode === 'dark';
@@ -61,13 +62,16 @@ const DefenseLevelToggle = () => {
         <Typography sx={{ fontSize: '0.85rem', lineHeight: 1 }}>{current.icon}</Typography>
         <Typography
           sx={{
-            fontSize: '0.7rem',
+            fontSize: '0.68rem',
             fontWeight: 700,
             color: current.color,
-            letterSpacing: '0.04em',
+            letterSpacing: '0.02em',
+            whiteSpace: 'nowrap',
           }}
         >
-          {current.shortLabel}
+          {compact
+            ? current.shortLabel
+            : (DEFENSE_LEVEL_LABELS[defenseLevel] || current.shortLabel).replace(':', '')}
         </Typography>
       </ButtonBase>
 
@@ -78,7 +82,7 @@ const DefenseLevelToggle = () => {
               sx={{
                 mt: 1,
                 p: 1,
-                minWidth: 240,
+                minWidth: 260,
                 bgcolor: isDark ? '#1a1a2e' : '#ffffff',
                 border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.12)',
                 borderRadius: '12px',
@@ -129,6 +133,18 @@ const DefenseLevelToggle = () => {
                       </Box>
                     </ButtonBase>
                   ))}
+                  <Typography
+                    sx={{
+                      color: isDark ? '#64748b' : '#94a3b8',
+                      fontSize: '0.65rem',
+                      lineHeight: 1.4,
+                      px: 1.5,
+                      pt: 0.75,
+                      pb: 0.5,
+                    }}
+                  >
+                    Applies to every lab and challenge, not only this page.
+                  </Typography>
                 </Box>
               </ClickAwayListener>
             </Paper>

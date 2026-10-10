@@ -12,24 +12,24 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.api.support import _get_ticket, add_message, ticket_payload
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.core.dependencies import require_admin as _require_admin
+from app.core.exceptions import NotFoundError, ValidationError
 from app.models import (
     Coupon,
     CouponUsage,
     Order,
     OrderItem,
     Product,
+    SupportMessage,
+    SupportTicket,
     User,
 )
+from app.schemas.support import MessageCreate, TicketStatusUpdate
 
 router = APIRouter(prefix="", tags=["admin"])
-
-
-def _require_admin(user: User) -> None:
-    if not user.is_staff:
-        raise ForbiddenError("Access denied. Admin privileges required.")
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +244,7 @@ async def admin_update_order(
     new_status = body.get("status")
     if not new_status:
         raise ValidationError("Status is required")
-    valid = ["pending", "processing", "shipped", "delivered", "cancelled"]
+    valid = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"]
     if new_status not in valid:
         raise ValidationError(f"Invalid status. Must be one of: {', '.join(valid)}")
     old_status = order.status
@@ -258,6 +258,42 @@ async def admin_update_order(
             "id": order.id,
             "order_id": order.custom_order_id or f"ORD-{order.id:06d}",
             "status": order.status,
+            "updated_at": order.updated_at.isoformat() if order.updated_at else None,
+        },
+    }
+
+
+@router.post("/api/admin/orders/{order_id}/refund/")
+async def admin_refund_order(
+    order_id: int,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    body: dict | None = None,
+) -> dict:
+    """Refund an order: mark it refunded and report the amount returned."""
+    _require_admin(user)
+    result = await db.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order:
+        raise NotFoundError("Order not found")
+    if order.status == "refunded":
+        raise ValidationError("Order is already refunded")
+    reason = (body or {}).get("reason", "")
+    amount = order.final_amount if order.final_amount is not None else order.total_amount
+    old_status = order.status
+    order.status = "refunded"
+    await db.commit()
+    await db.refresh(order)
+    oid = order.custom_order_id or f"ORD-{order.id:06d}"
+    return {
+        "success": True,
+        "message": f"Refunded {amount} for order {oid} (was {old_status}).",
+        "order": {
+            "id": order.id,
+            "order_id": oid,
+            "status": order.status,
+            "refunded_amount": str(amount),
+            "reason": reason,
             "updated_at": order.updated_at.isoformat() if order.updated_at else None,
         },
     }
@@ -576,13 +612,71 @@ async def admin_coupon_usage(
 # Feedback (placeholder)
 # ---------------------------------------------------------------------------
 
-@router.get("/api/admin/feedback/")
-async def admin_feedback(user: Annotated[User, Depends(get_current_user)]) -> list:
+@router.get("/api/admin/support/tickets/")
+async def admin_support_tickets(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict[str, Any]]:
+    """Privileged read of every customer's ticket. The admin assistant uses the same rows."""
     _require_admin(user)
-    return []
+    result = await db.execute(
+        select(SupportTicket)
+        .options(joinedload(SupportTicket.user), selectinload(SupportTicket.messages).joinedload(SupportMessage.user))
+        .order_by(SupportTicket.id.desc())
+    )
+    return [ticket_payload(ticket) for ticket in result.scalars().all()]
+
+
+@router.patch("/api/admin/support/tickets/{ticket_id}/")
+async def admin_update_ticket(
+    ticket_id: int,
+    body: TicketStatusUpdate,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    _require_admin(user)
+    result = await db.execute(
+        select(SupportTicket).options(joinedload(SupportTicket.user)).where(SupportTicket.id == ticket_id)
+    )
+    ticket = result.scalar_one_or_none()
+    if ticket is None:
+        raise NotFoundError("Ticket not found")
+    ticket.status = body.status
+    await db.commit()
+    return ticket_payload(await _get_ticket(db, ticket.id))
+
+
+@router.post("/api/admin/support/tickets/{ticket_id}/messages/")
+async def admin_reply_ticket(
+    ticket_id: int,
+    body: MessageCreate,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    _require_admin(user)
+    ticket = await _get_ticket(db, ticket_id)
+    if ticket.status != "open":
+        raise ValidationError("This ticket is closed")
+    return ticket_payload(await add_message(db, ticket, user, body.body))
+
+
+@router.get("/api/admin/feedback/")
+async def admin_feedback(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict[str, Any]]:
+    """Legacy path. Returns support tickets so the old feedback link is not empty."""
+    _require_admin(user)
+    return await admin_support_tickets(user, db)
 
 
 @router.get("/api/admin/feedback/stats/")
-async def admin_feedback_stats(user: Annotated[User, Depends(get_current_user)]) -> dict:
+async def admin_feedback_stats(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, int]:
     _require_admin(user)
-    return {"total": 0, "stats": {}}
+    result = await db.execute(select(SupportTicket.status))
+    statuses = [row[0] for row in result.all()]
+    open_count = sum(1 for status in statuses if status == "open")
+    return {"total": len(statuses), "open": open_count, "closed": len(statuses) - open_count}
