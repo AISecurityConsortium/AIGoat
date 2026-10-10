@@ -17,11 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.loop import GatedAgentLoop
 from app.labs.containment import is_halted
-from app.labs.killchain import policy
+from app.labs.killchain import guardrails, policy
 from app.labs.killchain.constants import (
     AGENT_MAX_STEPS,
     LAB_ID,
     MAX_MESSAGE_CHARS,
+    MODE_GUARDRAILED,
     PROMPT_FILE,
 )
 from app.labs.killchain.memory import memory_block, retrieve_for_request, sync_agent_memory
@@ -35,7 +36,7 @@ from app.services.ollama_client import get_llm_client
 MODEL_NAME = re.compile(r"^[A-Za-z0-9._:/\-]{1,80}$")
 MAX_RUNS_KEPT = 30
 MAX_CONVERSATION = 24
-IMPACT_KINDS = ("approval_required", "exfiltration", "coupon_abuse", "mail_delivered")
+IMPACT_KINDS = ("approval_required", "exfiltration", "coupon_abuse", "mail_delivered", "guardrail")
 
 
 @dataclass
@@ -139,6 +140,14 @@ async def _finish(db: AsyncSession, run: KcRun, result: Any) -> dict[str, Any]:
         return payload
     run.status = "completed" if result.success else (result.terminated_reason or "completed")
     answer = result.answer or ""
+    if run.mode == MODE_GUARDRAILED and answer:
+        answer, masked = guardrails.redact_cards(answer)
+        if masked:
+            await emit(
+                db, ctx.user_id, run.run_id, "guardrail",
+                f"Guardrail {guardrails.RAIL_OUTPUT} masked {masked} card number(s) in the answer",
+                status="warning", detail={"rail": guardrails.RAIL_OUTPUT, "masked": masked},
+            )
     payload.update(status=run.status, answer=answer)
     if result.terminated_reason in {"model_error", "tool_error"}:
         await emit(
@@ -280,11 +289,15 @@ async def decide(db: AsyncSession, user: User, approval_id: int, decision: str) 
             finally:
                 ctx.token = None
             failed = "error" in observation
-            await policy.finalize(db, user.id, row.id, ok=not failed, result=summarize_result(row.tool, observation))
+            refused = observation.get("error") == "guardrail_blocked"
+            await policy.finalize(
+                db, user.id, row.id, ok=not failed, result=summarize_result(row.tool, observation), blocked=refused,
+            )
             await emit(
                 db, user.id, row.execution_id, "tool_result",
-                f"{row.tool}: {'failed' if failed else 'returned'} after approval",
-                status="failed" if failed else "ok",
+                f"{row.tool}: blocked by a guardrail after approval" if refused
+                else f"{row.tool}: {'failed' if failed else 'returned'} after approval",
+                status="blocked" if refused else ("failed" if failed else "ok"),
                 detail={"tool": row.tool, "result": summarize_result(row.tool, observation)},
                 refs={"approval_id": row.id},
             )

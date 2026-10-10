@@ -70,18 +70,24 @@ fi
 info "Applying database migrations..."
 DB_FILE="${DB_FILE:-/app/data/aigoat.db}"
 if [ -f "$DB_FILE" ]; then
-    NEEDS_STAMP=$(python -c "
+    # 0001 matches the pre-Alembic schema. Stamp that revision, then upgrade, so later
+    # migrations still run. Stamping head would mark them applied without running them.
+    DB_STATE=$(python -c "
 import sqlite3
 try:
-    c = sqlite3.connect('$DB_FILE')
-    row = c.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'\").fetchone()
-    print('no' if row else 'yes')
+    names = {row[0] for row in sqlite3.connect('$DB_FILE').execute(\"SELECT name FROM sqlite_master WHERE type='table'\")}
 except Exception:
-    print('no')
+    names = set()
+if 'alembic_version' in names:
+    print('current')
+elif 'users' in names:
+    print('baseline')
+else:
+    print('empty')
 ")
-    if [ "$NEEDS_STAMP" = "yes" ]; then
-        info "Pre-Alembic database detected — stamping baseline (does not wipe data)"
-        python -m alembic stamp head
+    if [ "$DB_STATE" = "baseline" ]; then
+        info "Pre-Alembic database detected. Stamping revision 0001, then applying later migrations. Data is kept."
+        python -m alembic stamp 0001
     fi
 fi
 python -m alembic upgrade head

@@ -52,8 +52,8 @@ async def load_shop(db: AsyncSession) -> ShopSnapshot | None:
 
     snap = ShopSnapshot()
     for row in products:
-        # The shop stores prices in cents.
-        price = (Decimal(row.price) / Decimal(100)).quantize(Decimal("0.01"))
+        # The shop stores whole dollars (2499 is shown as $2,499), so copy the number as it is.
+        price = Decimal(row.price).quantize(Decimal("0.01"))
         snap.products.append((sku_for(row.id), row.name[:120], str(price), True))
 
     by_id = {row.id: sku_for(row.id) for row in products}

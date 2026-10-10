@@ -186,6 +186,15 @@ describe('KillChainWorkbench', () => {
     expect(await screen.findByText(/Extracted into connector memory CM-7/)).toBeInTheDocument();
   });
 
+  it('says so when the ingestion guardrail quarantined a submitted review', async () => {
+    api.postReview.mockResolvedValue({ review_id: 42, connector_memory_id: 8, quarantined: true });
+    renderBench();
+    fireEvent.change(await screen.findByLabelText(/Review text/), { target: { value: 'Nice hoodie' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Customer export' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit review' }));
+    expect(await screen.findByText(/quarantined CM-8, so agent memory was not written/)).toBeInTheDocument();
+  });
+
   it('keeps the ticket scenario independent and offers the invoice fixture', async () => {
     renderBench();
     fireEvent.click(await screen.findByRole('tab', { name: '2. Ticket attachment' }));
@@ -230,6 +239,46 @@ describe('KillChainWorkbench', () => {
     expect(api.postCleanup).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('tab', { name: /Connector memory/ }));
     expect(screen.getByText('CM-7')).toBeInTheDocument();
+  });
+
+  it('offers a Guardrailed mode, lists its rails and says what an approval cannot override', async () => {
+    api.setMode.mockResolvedValue({ mode: 'guardrailed' });
+    const rails = [
+      { id: 'ingest.scan', stage: 'Ingestion', kind: 'pattern scan', summary: 'Quarantines instructions.', note: '' },
+      { id: 'egress.allowlist', stage: 'Mail tool', kind: 'deterministic', summary: 'Only the shop domain.', note: 'Cannot be approved away.' },
+    ];
+    api.getState.mockResolvedValueOnce(poisoned()).mockResolvedValue({ ...poisoned(), mode: 'guardrailed', rails });
+    renderBench();
+    fireEvent.click(await screen.findByRole('button', { name: 'Guardrailed' }));
+    await waitFor(() => expect(api.setMode).toHaveBeenCalledWith('guardrailed'));
+    const list = within(await screen.findByRole('list', { name: 'Active guardrails' }));
+    expect(list.getByText('egress.allowlist')).toBeInTheDocument();
+    expect(list.getByText('Cannot be approved away.')).toBeInTheDocument();
+    expect(screen.getByText(/A wrong Approve still does not move data/)).toBeInTheDocument();
+    expect(api.postCleanup).not.toHaveBeenCalled();
+  });
+
+  it('tells the administrator when an approved action was refused by a guardrail', async () => {
+    api.getState.mockResolvedValue(baseState({ approvals: [pendingApproval], mode: 'guardrailed', rails: [] }));
+    api.postDecision.mockResolvedValue({
+      status: 'completed', answer: 'Not sent.', steps: [], pending: null,
+      approval: { ...pendingApproval, status: 'blocked', result: { error: 'guardrail_blocked', rail: 'egress.allowlist' } },
+    });
+    renderBench();
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }));
+    expect(await screen.findByText(/Approved, but egress.allowlist refused to run it/)).toBeInTheDocument();
+  });
+
+  it('labels a guardrail block in the trace', async () => {
+    api.getState.mockResolvedValue(baseState({
+      mode: 'guardrailed',
+      events: [{
+        id: 1, op_id: 'r1', kind: 'guardrail', status: 'blocked', title: 'Guardrail egress.allowlist blocked customer_data_export',
+        detail: { rail: 'egress.allowlist' }, refs: {}, created_at: '2026-01-02T10:00:00Z',
+      }],
+    }));
+    renderBench();
+    expect(await screen.findByRole('button', { name: /Guardrail blocked: Guardrail egress.allowlist blocked/ })).toBeInTheDocument();
   });
 
   it('shows the connector and agent memory on separate tabs with full record fields', async () => {

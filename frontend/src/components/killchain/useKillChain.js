@@ -86,19 +86,25 @@ const useKillChain = () => {
   const changeMode = (mode) => quick('mode', () => api.setMode(mode), `Mode set to ${mode}. Memory was not touched.`);
 
   const submitReview = (body) => quick('review', () => api.postReview(body), (r) => (
-    r.connector_memory_id
+    r.quarantined
+      ? `Review ${r.review_id} stored. The ingestion guardrail quarantined CM-${r.connector_memory_id}, so agent memory was not written.`
+      : r.connector_memory_id
       ? `Review ${r.review_id} stored. Extracted into connector memory CM-${r.connector_memory_id}.`
       : `Review ${r.review_id} stored. Nothing hidden was found.`
   ));
 
   const createTicket = (form) => quick('ticket', () => api.postTicket(form), (r) => (
-    r.attachment?.connector_memory_id
+    r.attachment?.quarantined
+      ? `Ticket ${r.ticket_id} created. The ingestion guardrail quarantined CM-${r.attachment.connector_memory_id}, so agent memory was not written.`
+      : r.attachment?.connector_memory_id
       ? `Ticket ${r.ticket_id} created. The attachment was extracted into connector memory CM-${r.attachment.connector_memory_id}.`
       : `Ticket ${r.ticket_id} created.`
   ));
 
   const attach = (ticketId, form) => quick('ticket', () => api.postAttachment(ticketId, form), (r) => (
-    r.connector_memory_id
+    r.quarantined
+      ? `Attachment stored. The ingestion guardrail quarantined CM-${r.connector_memory_id}, so agent memory was not written.`
+      : r.connector_memory_id
       ? `Attachment stored. Extracted into connector memory CM-${r.connector_memory_id}.`
       : 'Attachment stored. Nothing hidden was found.'
   ));
@@ -112,6 +118,10 @@ const useKillChain = () => {
   const decide = (id, decision) => live('decision', async () => {
     const run = await api.postDecision(id, decision);
     setLastRun(run);
+    if (run?.approval?.status === 'blocked') {
+      const rail = run.approval.result?.rail || 'a guardrail';
+      setNotice({ severity: 'success', message: `Approved, but ${rail} refused to run it. Nothing left the shop.` });
+    }
     return run;
   });
 

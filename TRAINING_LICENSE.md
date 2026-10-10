@@ -51,10 +51,11 @@ that want to use AI Goat for training — we just ask that you get in touch firs
 
 ## Platform code is separate
 
-The platform itself (backend, frontend, infrastructure, scripts) is licensed
+The platform itself (backend, frontend, infrastructure, scripts, database
+migrations, tests, agent-docs, and Colab notebooks) is licensed
 under **Apache License 2.0** and can be used freely, including for commercial
 purposes. This training license only applies to the educational content listed
-above.
+above. See [NOTICE](NOTICE) for the directory list.
 
 See the root [LICENSE](LICENSE) file for the Apache 2.0 terms.
 

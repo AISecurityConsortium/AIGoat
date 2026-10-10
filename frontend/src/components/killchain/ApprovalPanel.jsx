@@ -71,6 +71,9 @@ const ApprovalPanel = ({ approvals, busy, onDecide }) => {
               <StatusChip status={item.status} />
               <Typography sx={{ fontSize: '0.8rem' }}>{`#${item.id} ${ACTION_LABELS[item.action_type] || item.action_type}`}</Typography>
               <Typography sx={meta}>{`${item.target}, ${fmtTime(item.decided_at || item.created_at)}`}</Typography>
+              {item.status === 'blocked' && item.result?.rail && (
+                <Typography sx={meta}>{`Approved, then refused by ${item.result.rail}`}</Typography>
+              )}
             </Box>
           ))}
         </Box>

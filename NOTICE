@@ -21,7 +21,13 @@ AI Goat uses two licenses to cover different parts of the project.
    • guardrails/
    • scripts/
    • docker/
+   • alembic/
+   • tests/
+   • agent-docs/
+   • colab_notebooks/
    • config/config.yml
+   • config/defense_profiles.yml
+   • config/mcp_servers.yml
 
    You may use, modify, and distribute this code under the terms of the
    Apache License 2.0. See the LICENSE file in the project root.

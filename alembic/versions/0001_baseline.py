@@ -4,12 +4,12 @@ Revision ID: 0001
 Revises:
 Create Date: 2026-09-18 02:11:47.105770
 
-This revision is the current schema. Existing ``aigoat.db`` files that
-already contain these tables must be marked current with
-``alembic stamp head`` — do **not** run ``upgrade`` on them first, or
-Alembic will try to CREATE TABLE on objects that already exist and fail.
-``scripts/start.sh`` and ``docker/docker-entrypoint.sh`` stamp automatically
-when they see a database with no ``alembic_version`` table.
+This revision matches the schema from before Alembic. An existing database
+that already has these tables, and has no ``alembic_version`` table, must be
+marked with ``alembic stamp 0001``. ``alembic upgrade head`` then applies the
+later revisions. Stamping ``head`` would skip them. ``scripts/start.sh`` and
+``docker/docker-entrypoint.sh`` stamp 0001 when they see a ``users`` table
+and no ``alembic_version`` table.
 """
 from typing import Sequence, Union
 

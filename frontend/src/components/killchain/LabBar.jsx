@@ -4,17 +4,40 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { chipSx, meta, panel } from '../common/panelStyles';
+import { chipSx, inset, meta, mono, panel } from '../common/panelStyles';
 import { OVERALL } from './styles';
 
 export const LAB_TITLE = 'Agentic Kill Chain: The Compromised eCommerce Agent';
 const DESCRIPTION = 'Untrusted content hides an instruction. Ingestion stores it in the connector\'s memory, the agent copies it into its own, '
-  + 'and a routine request later makes the agent act on it. Poison the agent, watch the chain, then switch on human approval.';
+  + 'and a routine request later makes the agent act on it. Poison the agent, watch the chain, then switch on human approval and the guardrails.';
 
 const MODE_TEXT = {
   vulnerable: 'Vulnerable: the poison persists and sensitive tools run with no approval.',
   defended: 'Defended: the poison persists and is retrieved, but the backend holds each sensitive operation for an administrator.',
+  guardrailed: 'Guardrailed: the same approval step, plus rails the approval cannot override. A wrong Approve still does not move data outside the shop.',
 };
+
+const MODE_COLOR = { vulnerable: 'error', defended: 'success', guardrailed: 'info' };
+
+const Rails = ({ rails }) => (
+  <Box
+    component="ul"
+    aria-label="Active guardrails"
+    sx={{ m: 0, mt: 1, p: 0, listStyle: 'none', display: 'grid', gap: 0.75, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}
+  >
+    {rails.map((rail) => (
+      <Box key={rail.id} component="li" sx={{ ...inset, p: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: '0.8rem' }}>{rail.stage}</Typography>
+          <Typography sx={{ ...meta, ...mono }}>{rail.id}</Typography>
+          <Chip label={rail.kind} size="small" variant="outlined" sx={{ ...chipSx, ml: 'auto' }} />
+        </Box>
+        <Typography sx={{ ...meta, mt: 0.25 }}>{rail.summary}</Typography>
+        {rail.note && <Typography sx={{ ...meta, mt: 0.25, fontStyle: 'italic' }}>{rail.note}</Typography>}
+      </Box>
+    ))}
+  </Box>
+);
 
 const Indicator = ({ label, value, tone = 'text.primary' }) => (
   <Box sx={{ minWidth: 0 }}>
@@ -28,7 +51,7 @@ const LabBar = ({
 }) => {
   const { mode, overall, status } = state;
   const overallMeta = OVERALL[overall] || OVERALL.baseline;
-  const defended = mode === 'defended';
+  const accent = MODE_COLOR[mode] || 'error';
   const disabled = Boolean(busy);
   return (
     <Box
@@ -37,7 +60,7 @@ const LabBar = ({
       sx={{
         ...panel,
         p: 2,
-        borderLeft: (t) => `4px solid ${defended ? t.palette.success.main : t.palette.error.main}`,
+        borderLeft: (t) => `4px solid ${t.palette[accent].main}`,
       }}
     >
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -84,6 +107,15 @@ const LabBar = ({
             >
               Defended
             </ToggleButton>
+            <ToggleButton
+              value="guardrailed"
+              sx={{
+                textTransform: 'none', fontWeight: 700, px: 2,
+                '&.Mui-selected': { bgcolor: (t) => alpha(t.palette.info.main, 0.2), color: 'info.light' },
+              }}
+            >
+              Guardrailed
+            </ToggleButton>
           </ToggleButtonGroup>
           <Button
             size="small"
@@ -98,13 +130,14 @@ const LabBar = ({
           </Button>
         </Box>
       </Box>
-      <Typography sx={{ ...meta, mt: 1, fontWeight: 600, color: defended ? 'success.light' : 'error.light' }} role="status">
+      <Typography sx={{ ...meta, mt: 1, fontWeight: 600, color: `${accent}.light` }} role="status">
         {MODE_TEXT[mode]}
       </Typography>
+      {mode === 'guardrailed' && Array.isArray(state.rails) && state.rails.length > 0 && <Rails rails={state.rails} />}
       <Box
         sx={{
           mt: 1.5, pt: 1.5, display: 'grid', gap: 2,
-          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(5, 1fr)' },
           borderTop: (t) => `1px solid ${t.palette.divider}`,
         }}
       >
@@ -112,6 +145,11 @@ const LabBar = ({
           label="Poisoned memory"
           value={status.poisoned_memory}
           tone={status.poisoned_memory ? 'warning.main' : 'text.primary'}
+        />
+        <Indicator
+          label="Quarantined"
+          value={status.quarantined || 0}
+          tone={status.quarantined ? 'info.main' : 'text.primary'}
         />
         <Indicator
           label="Pending approvals"

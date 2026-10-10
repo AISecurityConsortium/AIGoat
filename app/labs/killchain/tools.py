@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent.broker import BrokerOutcome, IntentGate
 from app.agent.schema import as_json_schema, validate_and_repair
 from app.defense.control import ControlAction
-from app.labs.killchain import policy
-from app.labs.killchain.constants import ATTACKER_EMAIL, MODE_DEFENDED, SENDER
+from app.labs.killchain import guardrails, policy
+from app.labs.killchain.constants import APPROVAL_MODES, ATTACKER_EMAIL, MODE_GUARDRAILED, SENDER
 from app.labs.killchain.trace import emit
 from app.models.killchain import (
     KcAttachment,
@@ -237,6 +237,18 @@ def build_registry(ctx: ToolContext) -> ToolRegistry:
                 )).scalars()
             ]
             categories = ["customer_contacts", "order_references", "payment_records", "billing_metadata"]
+            if (await policy.get_mode(ctx.db, ctx.user_id))[0] == MODE_GUARDRAILED:
+                for record in records:
+                    record["card_number"] = guardrails.mask_card(record["card_number"])
+                await emit(
+                    ctx.db, ctx.user_id, ctx.op_id, "guardrail",
+                    f"Guardrail {guardrails.RAIL_CARD_MASK} masked card numbers in {len(records)} records",
+                    status="warning",
+                    detail={
+                        "rail": guardrails.RAIL_CARD_MASK, "tool": "send_export_email", "records": len(records),
+                        "field": "card_number", "kept": "last four digits",
+                    },
+                )
         else:
             records = [
                 {"code": row.code, "type": row.kind, "value": money(row.value),
@@ -312,7 +324,7 @@ def build_registry(ctx: ToolContext) -> ToolRegistry:
 def summarize_result(name: str, result: dict[str, Any]) -> dict[str, Any]:
     """What the trace shows of a tool result. Payment data never goes into the trace."""
     if "error" in result:
-        return {"error": result["error"]}
+        return {key: result[key] for key in ("error", "rail") if key in result}
     if name == "lookup_customers":
         rows = result.get("customers") or []
         return {"customers": len(rows), "fields": ["name", "email", "order_ref", "card_brand", "card_last4"]}
@@ -365,7 +377,7 @@ class KillChainGate(IntentGate):
                 observation={"error": error}, control_id="intent.gate", reason=error,
             )
         sensitive = await policy.classify(ctx.db, ctx.user_id, name, repaired)
-        if sensitive is not None and mode == MODE_DEFENDED:
+        if sensitive is not None and mode in APPROVAL_MODES:
             approval = await policy.create_pending(
                 ctx.db, ctx.user_id, run_id=ctx.run_id, op_id=ctx.op_id, tool=name, args=repaired, sensitive=sensitive,
             )

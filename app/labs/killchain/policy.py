@@ -1,4 +1,8 @@
-"""Approval policy for the Defended mode.
+"""Approval policy for the Defended and Guardrailed modes.
+
+Both modes hold a sensitive operation for an administrator. Guardrailed mode also runs the
+deterministic rails in ``guardrails`` after the approval and before the side effect, so an approval
+that should not have been given still does not release the data.
 
 Two places enforce it. The gate stops a sensitive call and files an approval request. The
 sensitive handler asks ``guard`` again right before it acts, so a call that reaches the handler
@@ -16,10 +20,12 @@ from typing import Any
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.labs.killchain import guardrails
 from app.labs.killchain.constants import (
+    APPROVAL_MODES,
     ATTACKER_EMAIL,
     INTERNAL_DOMAIN,
-    MODE_DEFENDED,
+    MODE_GUARDRAILED,
     UNIVERSAL_COUPON,
 )
 from app.labs.killchain.trace import emit, iso
@@ -204,14 +210,17 @@ async def transition(
     return bool(result.rowcount)
 
 
-async def finalize(db: AsyncSession, user_id: int, approval_id: int, *, ok: bool, result: dict[str, Any]) -> None:
-    """Record how an approved operation ended: Executed when it ran, Failed when the handler errored."""
+async def finalize(
+    db: AsyncSession, user_id: int, approval_id: int, *, ok: bool, result: dict[str, Any], blocked: bool = False
+) -> None:
+    """Record how an approved operation ended: Executed when it ran, Blocked when a guardrail refused it,
+    Failed when the handler errored."""
     row = (await db.execute(
         select(KcApproval).where(KcApproval.id == approval_id, KcApproval.user_id == user_id)
     )).scalar_one_or_none()
     if row is None or row.status not in {"approved", "executed"}:
         return
-    row.status = "executed" if ok else "failed"
+    row.status = "executed" if ok else ("blocked" if blocked else "failed")
     row.result = result
     if ok and row.executed_at is None:
         row.executed_at = _now()
@@ -233,14 +242,19 @@ async def consume(db: AsyncSession, user_id: int, token: ApprovalToken) -> bool:
 
 
 async def guard(ctx: Any, tool: str, args: dict[str, Any]) -> dict[str, Any] | None:
-    """Last check before a side effect. ``None`` means go ahead. A dict is the refusal to return."""
+    """Last check before a side effect. ``None`` means go ahead. A dict is the refusal to return.
+
+    Order in Guardrailed mode: a valid approval is required first, then every rail must allow the call,
+    and only then is the approval spent. A rail refusal leaves the approval unspent and is final.
+    """
     sensitive = await classify(ctx.db, ctx.user_id, tool, args)
-    if sensitive is None:
-        return None
     mode, epoch = await get_mode(ctx.db, ctx.user_id)
+    if sensitive is None and mode != MODE_GUARDRAILED:
+        return None
     if epoch != ctx.epoch:
         return {"error": "The lab was reset during this run. Nothing was executed."}
-    if mode != MODE_DEFENDED:
+    if mode not in APPROVAL_MODES:
+        assert sensitive is not None
         await emit(
             ctx.db, ctx.user_id, ctx.op_id, "policy_decision",
             f"Policy: {sensitive.action_type} allowed, Vulnerable mode requires no approval",
@@ -250,17 +264,41 @@ async def guard(ctx: Any, tool: str, args: dict[str, Any]) -> dict[str, Any] | N
         return None
     digest = args_hash(tool, args)
     token: ApprovalToken | None = ctx.token
-    if token is None or token.args_hash != digest or not await consume(ctx.db, ctx.user_id, token):
-        await emit(
-            ctx.db, ctx.user_id, ctx.op_id, "policy_decision",
-            f"Policy: {sensitive.action_type} blocked, no valid approval at execution time",
-            status="blocked",
-            detail={"action_type": sensitive.action_type, "mode": mode, "target": sensitive.target},
-        )
-        return {
-            "error": "approval_required",
-            "message": "This operation needs administrator approval. Nothing was executed.",
-        }
+    target = sensitive.target if sensitive else ""
+    action = sensitive.action_type if sensitive else tool
+    if sensitive is not None and (token is None or token.args_hash != digest):
+        return await _no_approval(ctx, action, mode, target)
+    if mode == MODE_GUARDRAILED:
+        verdicts = await guardrails.evaluate(ctx.db, ctx.user_id, tool, norm_args(tool, args))
+        for verdict in verdicts:
+            if verdict.allowed:
+                if sensitive is not None:
+                    await emit(
+                        ctx.db, ctx.user_id, ctx.op_id, "guardrail", f"Guardrail {verdict.rail} passed",
+                        status="ok", detail={"rail": verdict.rail, "tool": tool, "reason": verdict.reason, **verdict.detail},
+                    )
+                continue
+            await emit(
+                ctx.db, ctx.user_id, ctx.op_id, "guardrail",
+                f"Guardrail {verdict.rail} blocked {action}"
+                + (f" even with approval {token.approval_id}" if token is not None else ""),
+                status="blocked",
+                detail={
+                    "rail": verdict.rail, "tool": tool, "action_type": action, "target": target, "executed": False,
+                    "reason": verdict.reason, "approval_id": token.approval_id if token else None, **verdict.detail,
+                },
+                refs={"approval_id": token.approval_id} if token else {},
+            )
+            return {
+                "error": "guardrail_blocked",
+                "rail": verdict.rail,
+                "message": f"Blocked by guardrail {verdict.rail}: {verdict.reason} Nothing was executed.",
+            }
+    if sensitive is None:
+        return None
+    assert token is not None
+    if not await consume(ctx.db, ctx.user_id, token):
+        return await _no_approval(ctx, action, mode, target)
     await emit(
         ctx.db, ctx.user_id, ctx.op_id, "policy_decision",
         f"Policy: {sensitive.action_type} executing under approval {token.approval_id}",
@@ -269,6 +307,19 @@ async def guard(ctx: Any, tool: str, args: dict[str, Any]) -> dict[str, Any] | N
         refs={"approval_id": token.approval_id},
     )
     return None
+
+
+async def _no_approval(ctx: Any, action: str, mode: str, target: str) -> dict[str, Any]:
+    await emit(
+        ctx.db, ctx.user_id, ctx.op_id, "policy_decision",
+        f"Policy: {action} blocked, no valid approval at execution time",
+        status="blocked",
+        detail={"action_type": action, "mode": mode, "target": target},
+    )
+    return {
+        "error": "approval_required",
+        "message": "This operation needs administrator approval. Nothing was executed.",
+    }
 
 
 def involves_attacker(*addresses: str) -> bool:

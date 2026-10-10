@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.labs.killchain import agent, memory, policy
+from app.labs.killchain import agent, guardrails, memory, policy
 from app.labs.killchain.constants import (
     ATTACKER_EMAIL,
     COUPON_PLACEHOLDER,
@@ -42,7 +42,7 @@ from app.models.killchain import (
 
 async def set_mode(db: AsyncSession, user_id: int, mode: str) -> dict[str, Any]:
     if mode not in MODES:
-        raise KillChainError("Mode must be 'vulnerable' or 'defended'.")
+        raise KillChainError("Mode must be 'vulnerable', 'defended' or 'guardrailed'.")
     state = await ensure_baseline(db, user_id)
     previous = state.mode
     state.mode = mode
@@ -178,7 +178,9 @@ async def snapshot(db: AsyncSession, user_id: int, *, event_limit: int = 300) ->
     pending = [a for a in approvals if a.status == "pending"]
     exfil = sum(1 for e in events if e["kind"] == "exfiltration" and e["status"] == "success")
     abuse = sum(1 for e in events if e["kind"] == "coupon_abuse" and e["status"] == "success")
-    poisoned = bool(connector or agent_rows)
+    live_connector = [row for row in connector if row.status == "persistent"]
+    quarantined = len(connector) - len(live_connector)
+    poisoned = bool(live_connector or agent_rows)
     if pending:
         overall = "awaiting_approval"
     elif exfil or abuse:
@@ -214,7 +216,8 @@ async def snapshot(db: AsyncSession, user_id: int, *, event_limit: int = 300) ->
         "status": {
             "connector_memory": len(connector),
             "agent_memory": len(agent_rows),
-            "poisoned_memory": len(connector) + len(agent_rows),
+            "poisoned_memory": len(live_connector) + len(agent_rows),
+            "quarantined": quarantined,
             "pending_approvals": len(pending),
             "exfiltration": exfil,
             "coupon_abuse": abuse,
@@ -271,6 +274,7 @@ async def snapshot(db: AsyncSession, user_id: int, *, event_limit: int = 300) ->
         "conversation": list(state.conversation or []),
         "attacker_address": ATTACKER_EMAIL,
         "universal_coupon": UNIVERSAL_COUPON,
+        "rails": list(guardrails.RAILS),
     }
 
 

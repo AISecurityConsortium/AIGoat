@@ -12,7 +12,10 @@ LAB_ID = "killchain-1"
 
 MODE_VULNERABLE = "vulnerable"
 MODE_DEFENDED = "defended"
-MODES = (MODE_VULNERABLE, MODE_DEFENDED)
+MODE_GUARDRAILED = "guardrailed"
+MODES = (MODE_VULNERABLE, MODE_DEFENDED, MODE_GUARDRAILED)
+# Modes in which a sensitive operation waits for an administrator. Guardrailed adds deterministic rails on top.
+APPROVAL_MODES = (MODE_DEFENDED, MODE_GUARDRAILED)
 
 # The shop's own domain and its administrator mailbox, and the address the attacker wants copies sent to.
 # Mail is a database row in this lab. Nothing is delivered to either address.

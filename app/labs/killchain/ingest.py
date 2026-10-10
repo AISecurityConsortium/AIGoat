@@ -3,6 +3,7 @@
 Both go through the same deliberately naive pipeline: persist the record, extract what is hidden in
 it, cache the extraction, write it to connector memory, derive agent memory from that. The pipeline
 never asks whether the hidden text is an instruction. That missing check is the vulnerability.
+Only Guardrailed mode adds one: a pattern scan that quarantines content that reads like an instruction.
 """
 from __future__ import annotations
 
@@ -12,10 +13,12 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.labs.killchain import guardrails, policy
 from app.labs.killchain.constants import (
     MAX_HIDDEN_CHARS,
     MAX_REVIEW_CHARS,
     MAX_TICKET_CHARS,
+    MODE_GUARDRAILED,
     SOURCE_ATTACHMENT,
     SOURCE_REVIEW,
 )
@@ -99,16 +102,32 @@ async def _ingest(
             status="ok", detail={"source_type": source_type, "source_id": source_id},
         )
         return {"connector_memory_id": None, "agent_memory_ids": [], "cache_hit": cache_hit}
+    mode, _ = await policy.get_mode(db, user_id)
+    findings = guardrails.scan_untrusted(extracted) if mode == MODE_GUARDRAILED else []
     connector = await write_connector_memory(
         db, user_id, op_id, source_type=source_type, source_id=source_id, content=extracted,
         provenance={**provenance, "extractor": method, "cache_hit": cache_hit, "hidden": True},
+        status="quarantined" if findings else "persistent",
     )
+    if findings:
+        await emit(
+            db, user_id, op_id, "guardrail",
+            f"Guardrail {guardrails.RAIL_INGEST} quarantined CM-{connector.id}: hidden content reads like an agent instruction",
+            status="blocked",
+            detail={
+                "rail": guardrails.RAIL_INGEST, "findings": findings, "connector_memory_id": connector.id,
+                "agent_memory_derived": False,
+                "note": "The record is kept for audit. It is never copied into agent memory.",
+            },
+            refs={"connector_memory_id": connector.id},
+        )
     derived = await sync_agent_memory(db, user_id, op_id, reason="ingest")
     await db.commit()
     return {
         "connector_memory_id": connector.id,
         "agent_memory_ids": [row.id for row in derived],
         "cache_hit": cache_hit,
+        "quarantined": bool(findings),
     }
 
 

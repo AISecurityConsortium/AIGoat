@@ -6,6 +6,11 @@ export const eventTone = (event) => {
   if ((kind === 'exfiltration' || kind === 'coupon_abuse') && status === 'success') {
     return { label: kind === 'exfiltration' ? 'Exfiltration' : 'Coupon abuse', color: 'error', strong: true };
   }
+  if (kind === 'guardrail') {
+    return status === 'blocked'
+      ? { label: 'Guardrail blocked', color: 'success', strong: true }
+      : { label: 'Guardrail', color: 'info' };
+  }
   if (status === 'pending') return { label: 'Approval required', color: 'warning', strong: true };
   if (status === 'approved') return { label: 'Approved', color: 'info' };
   if (status === 'rejected') return { label: 'Rejected', color: 'success' };
@@ -35,6 +40,7 @@ export const APPROVAL_STATUS = {
   rejected: { label: 'Rejected', color: 'success' },
   executed: { label: 'Executed', color: 'error' },
   failed: { label: 'Failed', color: 'default' },
+  blocked: { label: 'Blocked by guardrail', color: 'success' },
 };
 
 export const OVERALL = {

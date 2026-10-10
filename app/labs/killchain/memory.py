@@ -84,22 +84,26 @@ async def write_connector_memory(
     source_id: int,
     content: str,
     provenance: dict[str, Any],
+    status: str = "persistent",
 ) -> KcConnectorMemory:
+    """Store extracted content verbatim. A ``quarantined`` record is kept for audit and never derived from."""
     row = KcConnectorMemory(
         user_id=user_id,
         source_type=source_type,
         source_id=source_id,
         content=content,
         trust="untrusted",
-        status="persistent",
+        status=status,
         provenance=provenance,
     )
     db.add(row)
     await db.flush()
+    held = status == "quarantined"
     await emit(
         db, user_id, op_id, "connector_memory_write",
-        f"Connector memory CM-{row.id} written from {source_type.replace('_', ' ')} {source_id}",
-        status="warning",
+        f"Connector memory CM-{row.id} {'quarantined' if held else 'written'} "
+        f"from {source_type.replace('_', ' ')} {source_id}",
+        status="blocked" if held else "warning",
         detail={"content": content, "trust": row.trust, "provenance": provenance},
         refs={"connector_memory_id": row.id, "source_type": source_type, "source_id": source_id},
     )
