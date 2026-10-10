@@ -22,9 +22,9 @@ from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.lab_loader import get_lab_by_id, get_lab_dict
 from app.defense.control import ControlAction
 from app.defense.pipeline import defense_pipeline
+from app.defense.profiles import resolve_profile
 from app.labs.containment import is_halted
 from app.labs.effects import apply_coupon_impact
-from app.defense.profiles import resolve_profile
 from app.models.agent import AgentRun, AgentStepRow, PendingApproval
 from app.models.user import User
 from app.services.agent_service import AgentResult, AgentStep

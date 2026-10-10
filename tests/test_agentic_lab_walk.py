@@ -9,11 +9,11 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models import Coupon, Order, SupportTicket, User
-from sqlalchemy import select
 from tests.conftest import auth_header
 from tests.fake_llm import FakeLLMClient
 
