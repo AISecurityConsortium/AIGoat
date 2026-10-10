@@ -82,7 +82,7 @@ Thank you to everyone who opened issues and pull requests.
 ## Upgrade notes
 
 1. **Pull and restart.** `./scripts/stop.sh && git pull && ./scripts/start.sh`. An existing database is stamped and migrated in place. For a clean slate, use `./scripts/start.sh --fresh`. Docker users: `docker compose up --build`.
-2. **New Python dependencies** (installed by `start.sh`): `alembic`, `mcp>=2.2.0`, `pypdf`, `bm25s`, `eval-type-backport`.
+2. **New Python dependencies** (installed by `start.sh`): `alembic`, `mcp>=2.2.0,<2.3`, `pypdf`, `bm25s`, `eval-type-backport`.
 3. **Lab IDs follow the 2026 numbering.** For example, the old `llm10-1` (Token Flood) is now `llm06-1`. Migration `0005` renames stored lab sessions, agent runs, and memory, and the frontend migrates saved lab completion once. Update any bookmarks, scripts, or workshop handouts that use old IDs.
 4. **Pull a tool-calling model** for the agent, MCP host, and kill chain labs: `ollama pull qwen3.5:9b`, then select it in the console or set `ollama.agent_model`. Mistral remains the default and is enough for the chat and RAG labs.
 5. **Docker is now reachable on your network.** Run it only on a trusted network, or publish ports on `127.0.0.1` yourself.
