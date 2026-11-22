@@ -16,6 +16,7 @@ from app.core.dependencies import get_current_user
 from app.defense.nemo_guardrails import get_guardrails_service
 from app.defense.pipeline import defense_pipeline
 from app.models import User
+from app.mcp.evidence import append_events
 from app.schemas.chat import (
     ChatRequest,
     ChatResponse,
@@ -202,8 +203,15 @@ async def chat(
             },
         )
     )
+    reply = result.result["reply"]
+    if body.lab_id:
+        await append_events(db, user.id, body.lab_id, [{
+            "kind": "chat_exchange",
+            "actor": "system",
+            "data": {"user_message": body.message, "model_output": reply},
+        }])
     return ChatResponse(
-        reply=result.result["reply"],
+        reply=reply,
         kb_used=result.result["kb_used"],
         kb_context_count=result.result["kb_context_count"],
         citations=result.result.get("citations") or [],
@@ -267,6 +275,12 @@ async def chat_stream(
                     moderated = nemo_out.message
                     replaced = True
 
+        if body.lab_id:
+            await append_events(db, user.id, body.lab_id, [{
+                "kind": "chat_exchange",
+                "actor": "system",
+                "data": {"user_message": body.message, "model_output": moderated},
+            }])
         if replaced:
             data = json.dumps({"replace": moderated, "done": True})
         else:

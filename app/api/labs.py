@@ -578,14 +578,36 @@ async def lab_submit(
     from app.mcp.progress import record_lab_result
     from app.mcp.service import _evaluation
 
-    lab = await _require_lab(lab_id, user, db)
+    # guided=False: allow challenge_evaluator labs (chat.cracky/rag.kb) that have no completion stages
+    lab = await _require_lab(lab_id, user, db, guided=False)
     fields = body.get("fields") if isinstance(body.get("fields"), dict) else {}
     await append_events(db, user.id, lab_id, [{
         "kind": "submission",
         "actor": "learner",
         "data": {"fields": {str(key): str(value) for key, value in fields.items()}},
     }])
-    evaluation = await _evaluation(lab_id, "", "", [], db=db, user_id=user.id)
+    # Allow chat.cracky / rag.kb labs to pass conversation evidence via submit fields.
+    # If not supplied, hydrate from the most recent chat_exchange event for this lab.
+    _user_msg = str(fields.get("user_message") or "")
+    _model_out = str(fields.get("model_output") or "")
+    if not _user_msg and not _model_out and not (lab.completion):
+        attempt = await current_attempt(db, user.id, lab_id)
+        last_exchange = await db.execute(
+            select(LabEvent)
+            .where(
+                LabEvent.user_id == user.id,
+                LabEvent.lab_id == lab_id,
+                LabEvent.attempt == attempt,
+                LabEvent.kind == "chat_exchange",
+            )
+            .order_by(LabEvent.seq.desc())
+            .limit(1)
+        )
+        row = last_exchange.scalars().first()
+        if row and isinstance(row.data, dict):
+            _user_msg = str(row.data.get("user_message") or "")
+            _model_out = str(row.data.get("model_output") or "")
+    evaluation = await _evaluation(lab_id, _user_msg, _model_out, [], db=db, user_id=user.id)
     await record_lab_result(db, user, lab_id, evaluation)
     guidance = ""
     met = bool((evaluation or {}).get("exploit_triggered"))
