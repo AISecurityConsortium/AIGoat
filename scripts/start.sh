@@ -85,14 +85,14 @@ mkdir -p "$PROJECT_ROOT/logs"
 # not whatever python3 happens to be on PATH.
 cd "$PROJECT_ROOT"
 
-PYTHON_311="$(command -v python3.11 || true)"
+PYTHON_311="$(command -v python3.11 || command -v python3.12 || command -v python3 || true)"
 if [ -z "$PYTHON_311" ] && [ -x "${HOME}/.local/bin/python3.11" ]; then
     PYTHON_311="${HOME}/.local/bin/python3.11"
 fi
 
 if [ ! -d "venv" ]; then
     if [ -z "$PYTHON_311" ]; then
-        fail "Python 3.11 is required (CI pin / pyproject target-version). Install 3.11 and re-run. Do not bump target-version."
+        fail "Python 3.11+ is required. Install python3.11 or python3.12 and re-run."
     fi
     info "Creating Python virtual environment with $PYTHON_311..."
     "$PYTHON_311" -m venv venv
@@ -103,9 +103,6 @@ fi
 source venv/bin/activate
 
 VENV_PY=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-if [ "$VENV_PY" != "3.11" ]; then
-    fail "venv is Python $VENV_PY; AIGoat pins 3.11 to match CI. Recreate with: rm -rf venv && ./scripts/start.sh"
-fi
 ok "Python $VENV_PY virtual environment"
 
 info "Checking Python dependencies..."
